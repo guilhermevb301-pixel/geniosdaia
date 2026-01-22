@@ -1,8 +1,10 @@
+import { ReactNode } from "react";
 import { AppSidebar } from "./AppSidebar";
 import { TopBar } from "./TopBar";
+import { SupportWidget } from "@/components/SupportWidget";
 
 interface AppLayoutProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
@@ -13,6 +15,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         <TopBar />
         <main className="p-6">{children}</main>
       </div>
+      <SupportWidget />
     </div>
   );
 }

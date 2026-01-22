@@ -1,143 +1,118 @@
-import { BookOpen, Clock, BarChart3, Play } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { CourseProgress } from "@/components/aulas/CourseProgress";
+import { ModuleAccordion } from "@/components/aulas/ModuleAccordion";
+import { VideoPlayer } from "@/components/aulas/VideoPlayer";
 
-const courses = [
+// Dados mockados - serão substituídos por dados reais do banco
+const mockModules = [
   {
-    id: 1,
-    title: "Introdução ao n8n",
-    description: "Aprenda os fundamentos do n8n e crie seus primeiros workflows.",
-    level: "Iniciante",
-    duration: "2h 30min",
-    lessons: 12,
-    progress: 75,
+    id: "mod-1",
+    title: "Módulo 1 - Introdução ao n8n",
+    lessons: [
+      { id: "les-1", title: "O que é n8n?", duration: "5:30", completed: false },
+      { id: "les-2", title: "Instalando o n8n", duration: "8:15", completed: false },
+      { id: "les-3", title: "Interface do n8n", duration: "12:00", completed: false },
+      { id: "les-4", title: "Seu primeiro workflow", duration: "15:45", completed: false },
+      { id: "les-5", title: "Nodes básicos", duration: "10:20", completed: false },
+      { id: "les-6", title: "Conectando nodes", duration: "8:30", completed: false },
+      { id: "les-7", title: "Testando workflows", duration: "6:45", completed: false },
+      { id: "les-8", title: "Exercícios práticos", duration: "20:00", completed: false },
+    ],
   },
   {
-    id: 2,
-    title: "Integrações com IA",
-    description: "Conecte GPT, Claude e outras IAs aos seus workflows.",
-    level: "Intermediário",
-    duration: "4h 15min",
-    lessons: 18,
-    progress: 40,
+    id: "mod-2",
+    title: "Módulo 2 - Integrações Avançadas",
+    lessons: [
+      { id: "les-9", title: "Webhooks", duration: "14:30", completed: false },
+      { id: "les-10", title: "APIs REST", duration: "18:00", completed: false },
+      { id: "les-11", title: "Autenticação OAuth", duration: "12:45", completed: false },
+      { id: "les-12", title: "Tratamento de erros", duration: "10:15", completed: false },
+      { id: "les-13", title: "Projeto prático", duration: "25:00", completed: false },
+    ],
   },
   {
-    id: 3,
-    title: "Workflows Avançados",
-    description: "Técnicas avançadas para automações complexas.",
-    level: "Avançado",
-    duration: "6h 00min",
-    lessons: 24,
-    progress: 20,
-  },
-  {
-    id: 4,
-    title: "Automação de Vendas",
-    description: "Automatize seu funil de vendas com n8n e CRMs.",
-    level: "Intermediário",
-    duration: "3h 45min",
-    lessons: 15,
-    progress: 0,
-  },
-  {
-    id: 5,
-    title: "Webhooks e APIs",
-    description: "Domine webhooks e integrações com APIs externas.",
-    level: "Intermediário",
-    duration: "3h 00min",
-    lessons: 14,
-    progress: 0,
-  },
-  {
-    id: 6,
-    title: "Deploy e Produção",
-    description: "Coloque seus workflows em produção de forma segura.",
-    level: "Avançado",
-    duration: "2h 00min",
-    lessons: 8,
-    progress: 0,
+    id: "mod-3",
+    title: "Módulo 3 - IA no n8n",
+    lessons: [
+      { id: "les-14", title: "Integrando ChatGPT", duration: "16:00", completed: false },
+      { id: "les-15", title: "Claude e outros modelos", duration: "14:30", completed: false },
+      { id: "les-16", title: "Automações inteligentes", duration: "20:00", completed: false },
+    ],
   },
 ];
 
-const levelColors: Record<string, string> = {
-  Iniciante: "bg-success/10 text-success border-success/20",
-  Intermediário: "bg-accent/10 text-accent border-accent/20",
-  Avançado: "bg-primary/10 text-primary border-primary/20",
-};
+interface Lesson {
+  id: string;
+  title: string;
+  duration: string;
+  completed: boolean;
+  videoUrl?: string;
+  description?: string;
+}
 
 export default function Aulas() {
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [modules, setModules] = useState(mockModules);
+
+  const totalLessons = modules.reduce((acc, mod) => acc + mod.lessons.length, 0);
+  const completedLessons = modules.reduce(
+    (acc, mod) => acc + mod.lessons.filter((l) => l.completed).length,
+    0
+  );
+
+  const handleSelectLesson = (lesson: Lesson) => {
+    setSelectedLesson(lesson);
+  };
+
+  const handleMarkComplete = () => {
+    if (!selectedLesson) return;
+
+    setModules((prevModules) =>
+      prevModules.map((mod) => ({
+        ...mod,
+        lessons: mod.lessons.map((les) =>
+          les.id === selectedLesson.id ? { ...les, completed: true } : les
+        ),
+      }))
+    );
+
+    setSelectedLesson({ ...selectedLesson, completed: true });
+  };
+
   return (
     <AppLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold">Aulas</h1>
-            <p className="text-sm text-muted-foreground">
-              Todos os cursos disponíveis na plataforma
-            </p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-semibold">Aulas</h1>
+          <p className="text-sm text-muted-foreground">
+            Seu curso de automação com n8n
+          </p>
         </div>
 
-        {/* Courses Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {courses.map((course) => (
-            <Card
-              key={course.id}
-              className="bg-card border-border hover:border-primary/50 transition-colors cursor-pointer group"
-            >
-              <CardContent className="p-4 space-y-4">
-                {/* Header */}
-                <div className="flex items-start justify-between">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                    <BookOpen className="h-5 w-5 text-primary" />
-                  </div>
-                  <Badge variant="outline" className={levelColors[course.level]}>
-                    {course.level}
-                  </Badge>
-                </div>
+        {/* Split Layout */}
+        <div className="grid gap-6 lg:grid-cols-[350px_1fr]">
+          {/* Left Column - Progress & Modules */}
+          <div className="space-y-4">
+            <CourseProgress
+              completedLessons={completedLessons}
+              totalLessons={totalLessons}
+            />
+            <ModuleAccordion
+              modules={modules}
+              selectedLessonId={selectedLesson?.id || null}
+              onSelectLesson={handleSelectLesson}
+            />
+          </div>
 
-                {/* Content */}
-                <div>
-                  <h3 className="font-medium group-hover:text-primary transition-colors">
-                    {course.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                    {course.description}
-                  </p>
-                </div>
-
-                {/* Meta */}
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {course.duration}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <BarChart3 className="h-3 w-3" />
-                    {course.lessons} aulas
-                  </div>
-                </div>
-
-                {/* Progress */}
-                {course.progress > 0 ? (
-                  <div className="flex items-center gap-2">
-                    <Progress value={course.progress} className="h-1.5 flex-1" />
-                    <span className="text-xs text-muted-foreground">
-                      {course.progress}%
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Play className="h-3 w-3" />
-                    Não iniciado
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
+          {/* Right Column - Video Player */}
+          <div>
+            <VideoPlayer
+              lesson={selectedLesson}
+              onMarkComplete={handleMarkComplete}
+            />
+          </div>
         </div>
       </div>
     </AppLayout>

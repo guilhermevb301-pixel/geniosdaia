@@ -7,29 +7,52 @@ import { Sparkles } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
-export default function Login() {
+export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
+  const { signUp } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     
-    const { error } = await signIn(email, password);
+    if (password !== confirmPassword) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "As senhas não coincidem",
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "A senha deve ter no mínimo 6 caracteres",
+      });
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await signUp(email, password);
     setLoading(false);
 
     if (error) {
       toast({
         variant: "destructive",
-        title: "Erro ao fazer login",
+        title: "Erro ao criar conta",
         description: error.message,
       });
     } else {
-      navigate("/");
+      toast({
+        title: "Conta criada com sucesso!",
+        description: "Você será redirecionado para o login.",
+      });
+      navigate("/login");
     }
   };
 
@@ -37,7 +60,6 @@ export default function Login() {
     <div className="min-h-screen flex">
       {/* Left Side - Decorative */}
       <div className="hidden lg:flex lg:w-1/2 gradient-login relative overflow-hidden">
-        {/* Decorative text */}
         <div className="absolute inset-0 flex flex-col justify-center items-center p-12 select-none">
           <div className="space-y-4 text-center">
             <p className="text-6xl font-bold text-white/10 tracking-widest">AUTOMAÇÃO</p>
@@ -48,7 +70,6 @@ export default function Login() {
           </div>
         </div>
         
-        {/* Floating elements */}
         <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-white/5 rounded-full blur-3xl" />
         <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
       </div>
@@ -66,9 +87,9 @@ export default function Login() {
 
           {/* Header */}
           <div className="space-y-2">
-            <h1 className="text-2xl font-semibold text-foreground">Bem-vindo</h1>
+            <h1 className="text-2xl font-semibold text-foreground">Criar conta</h1>
             <p className="text-sm text-muted-foreground">
-              Faça login para continuar
+              Preencha os dados para se cadastrar
             </p>
           </div>
 
@@ -88,15 +109,7 @@ export default function Login() {
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Senha</Label>
-                <Link
-                  to="/forgot-password"
-                  className="text-xs text-muted-foreground hover:text-foreground"
-                >
-                  Esqueceu a senha?
-                </Link>
-              </div>
+              <Label htmlFor="password">Senha</Label>
               <Input
                 id="password"
                 type="password"
@@ -108,16 +121,29 @@ export default function Login() {
               />
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirmar Senha</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="bg-background"
+                required
+              />
+            </div>
+
             <Button type="submit" variant="accent" className="w-full" disabled={loading}>
-              {loading ? "Entrando..." : "Entrar"}
+              {loading ? "Criando conta..." : "Criar conta"}
             </Button>
           </form>
 
-          {/* Sign up link */}
+          {/* Login link */}
           <p className="text-center text-sm text-muted-foreground">
-            Não tem conta?{" "}
-            <Link to="/register" className="text-primary hover:underline">
-              Criar conta
+            Já tem conta?{" "}
+            <Link to="/login" className="text-primary hover:underline">
+              Fazer login
             </Link>
           </p>
         </div>

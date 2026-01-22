@@ -1,4 +1,4 @@
-import { Bell, Search, User, LogOut } from "lucide-react";
+import { Bell, Search, User, LogOut, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -8,9 +8,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function TopBar() {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/login");
+  };
+
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background/80 backdrop-blur-sm px-6">
       {/* Search */}
@@ -26,7 +35,15 @@ export function TopBar() {
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
+        {/* Área de Membros Button */}
+        <Button asChild variant="accent" size="sm">
+          <Link to="/aulas">
+            <BookOpen className="h-4 w-4 mr-2" />
+            Área de Membros
+          </Link>
+        </Button>
+
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
           <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-accent text-[10px] font-bold text-accent-foreground flex items-center justify-center">
@@ -43,6 +60,12 @@ export function TopBar() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
+            {user && (
+              <div className="px-2 py-1.5 text-sm text-muted-foreground truncate">
+                {user.email}
+              </div>
+            )}
+            <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link to="/perfil" className="cursor-pointer">
                 <User className="mr-2 h-4 w-4" />
@@ -50,7 +73,10 @@ export function TopBar() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive cursor-pointer">
+            <DropdownMenuItem 
+              onClick={handleSignOut}
+              className="text-destructive cursor-pointer"
+            >
               <LogOut className="mr-2 h-4 w-4" />
               Sair
             </DropdownMenuItem>
