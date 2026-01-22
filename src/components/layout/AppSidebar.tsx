@@ -11,7 +11,8 @@ import {
   Zap,
   Settings,
   Users,
-  FileText
+  FileText,
+  GraduationCap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -20,6 +21,8 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useIsMentor } from "@/hooks/useIsMentor";
+import { useIsMentee } from "@/hooks/useIsMentee";
 
 const tools = [
   { label: "Templates", href: "/templates", icon: Zap },
@@ -29,6 +32,8 @@ const tools = [
 export function AppSidebar() {
   const location = useLocation();
   const { isAdmin } = useIsAdmin();
+  const { isMentor } = useIsMentor();
+  const { isMentee } = useIsMentee();
   const [adminOpen, setAdminOpen] = useState(true);
 
   const isActive = (href: string) => location.pathname === href;
@@ -107,8 +112,24 @@ export function AppSidebar() {
           Aplicar Mentoria
         </Link>
 
+        {/* Minha Mentoria - Only for approved mentees */}
+        {isMentee && (
+          <Link
+            to="/minha-mentoria"
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
+              isActive("/minha-mentoria")
+                ? "bg-accent text-accent-foreground"
+                : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
+            )}
+          >
+            <GraduationCap className="h-5 w-5" />
+            Minha Mentoria
+          </Link>
+        )}
+
         {/* Admin Section - Only visible for admins */}
-        {isAdmin && (
+        {(isAdmin || isMentor) && (
           <div className="mt-6">
 
             <Collapsible open={adminOpen} onOpenChange={setAdminOpen}>
@@ -187,7 +208,20 @@ export function AppSidebar() {
           <HelpCircle className="h-5 w-5" />
           Suporte
         </Link>
-      </div>
+                  {/* Mentorados - visible for mentors and admins */}
+                  <Link
+                    to="/admin/mentees"
+                    className={cn(
+                      "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                      isActive("/admin/mentees")
+                        ? "text-primary bg-primary/10"
+                        : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
+                    )}
+                  >
+                    <GraduationCap className="h-4 w-4" />
+                    Mentorados
+                  </Link>
+                </div>
     </aside>
   );
 }

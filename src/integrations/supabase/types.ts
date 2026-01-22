@@ -96,6 +96,197 @@ export type Database = {
           },
         ]
       }
+      mentees: {
+        Row: {
+          community_url: string | null
+          created_at: string | null
+          display_name: string
+          id: string
+          mentor_id: string | null
+          plan_tag: string | null
+          scheduling_url: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+          welcome_message: string | null
+        }
+        Insert: {
+          community_url?: string | null
+          created_at?: string | null
+          display_name: string
+          id?: string
+          mentor_id?: string | null
+          plan_tag?: string | null
+          scheduling_url?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+          welcome_message?: string | null
+        }
+        Update: {
+          community_url?: string | null
+          created_at?: string | null
+          display_name?: string
+          id?: string
+          mentor_id?: string | null
+          plan_tag?: string | null
+          scheduling_url?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+          welcome_message?: string | null
+        }
+        Relationships: []
+      }
+      mentorship_meetings: {
+        Row: {
+          created_at: string | null
+          id: string
+          meeting_date: string
+          mentee_id: string
+          notes: string | null
+          title: string
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          meeting_date: string
+          mentee_id: string
+          notes?: string | null
+          title: string
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          meeting_date?: string
+          mentee_id?: string
+          notes?: string | null
+          title?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentorship_meetings_mentee_id_fkey"
+            columns: ["mentee_id"]
+            isOneToOne: false
+            referencedRelation: "mentees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mentorship_notes: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          order_index: number | null
+          stage_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          order_index?: number | null
+          stage_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          order_index?: number | null
+          stage_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentorship_notes_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "mentorship_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mentorship_stages: {
+        Row: {
+          created_at: string | null
+          icon: string | null
+          icon_color: string | null
+          id: string
+          mentee_id: string
+          objective: string | null
+          order_index: number | null
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          icon?: string | null
+          icon_color?: string | null
+          id?: string
+          mentee_id: string
+          objective?: string | null
+          order_index?: number | null
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          icon?: string | null
+          icon_color?: string | null
+          id?: string
+          mentee_id?: string
+          objective?: string | null
+          order_index?: number | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentorship_stages_mentee_id_fkey"
+            columns: ["mentee_id"]
+            isOneToOne: false
+            referencedRelation: "mentees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mentorship_tasks: {
+        Row: {
+          completed: boolean | null
+          content: string
+          created_at: string | null
+          id: string
+          is_subtask: boolean | null
+          order_index: number | null
+          stage_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          content: string
+          created_at?: string | null
+          id?: string
+          is_subtask?: boolean | null
+          order_index?: number | null
+          stage_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_subtask?: boolean | null
+          order_index?: number | null
+          stage_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentorship_tasks_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "mentorship_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       modules: {
         Row: {
           created_at: string
@@ -195,6 +386,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_mentee: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user" | "mentor"
