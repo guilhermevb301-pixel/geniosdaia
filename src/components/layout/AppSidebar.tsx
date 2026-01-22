@@ -77,7 +77,6 @@ export function AppSidebar() {
         </Link>
 
         {/* Tools Section */}
-        <div className="mt-6">
         {tools.map((item) => (
           <Link
             key={item.href}
@@ -93,7 +92,6 @@ export function AppSidebar() {
             {item.label}
           </Link>
         ))}
-        </div>
 
         {/* Mentoria */}
         <Link
