@@ -6,16 +6,21 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/admin/AdminRoute";
+import { MentorRoute } from "@/components/admin/MentorRoute";
+import { MenteeRoute } from "@/components/mentoria/MenteeRoute";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Aulas from "./pages/Aulas";
 import Templates from "./pages/Templates";
 import Mentoria from "./pages/Mentoria";
+import MinhaMentoria from "./pages/MinhaMentoria";
 import Eventos from "./pages/Eventos";
 import AdminModules from "./pages/admin/AdminModules";
 import AdminLessons from "./pages/admin/AdminLessons";
 import AdminTemplates from "./pages/admin/AdminTemplates";
+import AdminMentees from "./pages/admin/AdminMentees";
+import MenteeEditor from "./pages/admin/MenteeEditor";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -74,6 +79,18 @@ const App = () => (
               }
             />
 
+            {/* Mentee route */}
+            <Route
+              path="/minha-mentoria"
+              element={
+                <ProtectedRoute>
+                  <MenteeRoute>
+                    <MinhaMentoria />
+                  </MenteeRoute>
+                </ProtectedRoute>
+              }
+            />
+
             {/* Admin routes */}
             <Route
               path="/admin/modules"
@@ -97,6 +114,24 @@ const App = () => (
                 <AdminRoute>
                   <AdminTemplates />
                 </AdminRoute>
+              }
+            />
+
+            {/* Mentor routes */}
+            <Route
+              path="/admin/mentees"
+              element={
+                <MentorRoute>
+                  <AdminMentees />
+                </MentorRoute>
+              }
+            />
+            <Route
+              path="/admin/mentees/:menteeId"
+              element={
+                <MentorRoute>
+                  <MenteeEditor />
+                </MentorRoute>
               }
             />
             
