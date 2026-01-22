@@ -48,11 +48,6 @@ export function AppSidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-4">
-        {/* Menu Label */}
-        <p className="px-3 mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-          Menu
-        </p>
-
         {/* Dashboard */}
         <Link
           to="/"
@@ -82,10 +77,7 @@ export function AppSidebar() {
         </Link>
 
         {/* Tools Section */}
-        <p className="px-3 mt-6 mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-          Ferramentas
-        </p>
-
+        <div className="mt-6">
         {tools.map((item) => (
           <Link
             key={item.href}
@@ -101,6 +93,7 @@ export function AppSidebar() {
             {item.label}
           </Link>
         ))}
+        </div>
 
         {/* Mentoria */}
         <Link
@@ -118,10 +111,7 @@ export function AppSidebar() {
 
         {/* Admin Section - Only visible for admins */}
         {isAdmin && (
-          <>
-            <p className="px-3 mt-6 mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Administração
-            </p>
+          <div className="mt-6">
 
             <Collapsible open={adminOpen} onOpenChange={setAdminOpen}>
               <CollapsibleTrigger className="w-full">
@@ -186,7 +176,7 @@ export function AppSidebar() {
                 </div>
               </CollapsibleContent>
             </Collapsible>
-          </>
+          </div>
         )}
       </nav>
 
