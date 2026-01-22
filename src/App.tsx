@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AdminRoute } from "@/components/admin/AdminRoute";
 import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -12,6 +13,9 @@ import Aulas from "./pages/Aulas";
 import Templates from "./pages/Templates";
 import Mentoria from "./pages/Mentoria";
 import Eventos from "./pages/Eventos";
+import AdminModules from "./pages/admin/AdminModules";
+import AdminLessons from "./pages/admin/AdminLessons";
+import AdminTemplates from "./pages/admin/AdminTemplates";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -67,6 +71,32 @@ const App = () => (
                 <ProtectedRoute>
                   <Eventos />
                 </ProtectedRoute>
+              }
+            />
+
+            {/* Admin routes */}
+            <Route
+              path="/admin/modules"
+              element={
+                <AdminRoute>
+                  <AdminModules />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/lessons"
+              element={
+                <AdminRoute>
+                  <AdminLessons />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/templates"
+              element={
+                <AdminRoute>
+                  <AdminTemplates />
+                </AdminRoute>
               }
             />
             

@@ -8,7 +8,10 @@ import {
   HelpCircle, 
   Sparkles,
   ChevronDown,
-  Zap
+  Zap,
+  Settings,
+  Users,
+  FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -16,12 +19,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-
-const courses = [
-  { id: 1, label: "Introdução ao n8n", href: "/aulas" },
-  { id: 2, label: "Integrações com IA", href: "/aulas" },
-  { id: 3, label: "Workflows Avançados", href: "/aulas" },
-];
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 const tools = [
   { label: "Templates", href: "/templates", icon: Zap },
@@ -30,7 +28,8 @@ const tools = [
 
 export function AppSidebar() {
   const location = useLocation();
-  const [coursesOpen, setCoursesOpen] = useState(true);
+  const { isAdmin } = useIsAdmin();
+  const [adminOpen, setAdminOpen] = useState(true);
 
   const isActive = (href: string) => location.pathname === href;
 
@@ -68,49 +67,19 @@ export function AppSidebar() {
           Dashboard
         </Link>
 
-        {/* Courses Collapsible */}
-        <Collapsible open={coursesOpen} onOpenChange={setCoursesOpen}>
-          <CollapsibleTrigger className="w-full">
-            <div
-              className={cn(
-                "flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                location.pathname.startsWith("/aulas")
-                  ? "bg-accent/50 text-accent-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
-              )}
-            >
-              <div className="flex items-center gap-3">
-                <BookOpen className="h-5 w-5" />
-                <span>Aulas</span>
-              </div>
-              <ChevronDown
-                className={cn(
-                  "h-4 w-4 transition-transform",
-                  coursesOpen && "rotate-180"
-                )}
-              />
-            </div>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className="ml-4 mt-1 space-y-1 border-l-2 border-accent/30 pl-4">
-              {courses.map((course) => (
-                <Link
-                  key={course.id}
-                  to={course.href}
-                  className={cn(
-                    "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
-                    isActive(course.href) && location.pathname === "/aulas"
-                      ? "text-accent-foreground bg-accent/20"
-                      : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
-                  )}
-                >
-                  <div className="h-1.5 w-1.5 rounded-full bg-accent" />
-                  {course.label}
-                </Link>
-              ))}
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
+        {/* Aulas */}
+        <Link
+          to="/aulas"
+          className={cn(
+            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
+            isActive("/aulas")
+              ? "bg-accent text-accent-foreground"
+              : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
+          )}
+        >
+          <BookOpen className="h-5 w-5" />
+          Aulas
+        </Link>
 
         {/* Tools Section */}
         <p className="px-3 mt-6 mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -146,6 +115,79 @@ export function AppSidebar() {
           <MessageSquare className="h-5 w-5" />
           Aplicar Mentoria
         </Link>
+
+        {/* Admin Section - Only visible for admins */}
+        {isAdmin && (
+          <>
+            <p className="px-3 mt-6 mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Administração
+            </p>
+
+            <Collapsible open={adminOpen} onOpenChange={setAdminOpen}>
+              <CollapsibleTrigger className="w-full">
+                <div
+                  className={cn(
+                    "flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                    location.pathname.startsWith("/admin")
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <Settings className="h-5 w-5" />
+                    <span>Gerenciar</span>
+                  </div>
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 transition-transform",
+                      adminOpen && "rotate-180"
+                    )}
+                  />
+                </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="ml-4 mt-1 space-y-1 border-l-2 border-primary/30 pl-4">
+                  <Link
+                    to="/admin/modules"
+                    className={cn(
+                      "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                      isActive("/admin/modules")
+                        ? "text-primary bg-primary/10"
+                        : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
+                    )}
+                  >
+                    <Users className="h-4 w-4" />
+                    Módulos
+                  </Link>
+                  <Link
+                    to="/admin/lessons"
+                    className={cn(
+                      "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                      isActive("/admin/lessons")
+                        ? "text-primary bg-primary/10"
+                        : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
+                    )}
+                  >
+                    <BookOpen className="h-4 w-4" />
+                    Aulas
+                  </Link>
+                  <Link
+                    to="/admin/templates"
+                    className={cn(
+                      "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                      isActive("/admin/templates")
+                        ? "text-primary bg-primary/10"
+                        : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
+                    )}
+                  >
+                    <FileText className="h-4 w-4" />
+                    Templates
+                  </Link>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          </>
+        )}
       </nav>
 
       {/* Footer */}
