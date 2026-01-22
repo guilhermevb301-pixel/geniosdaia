@@ -1,249 +1,132 @@
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Search, Sparkles, Download, ExternalLink } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { 
-  Search, 
-  Filter, 
-  Download, 
-  Eye, 
-  Star,
-  Zap,
-  Layout,
-  Copy
-} from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { AppLayout } from "@/components/layout/AppLayout";
 
 const templates = [
   {
     id: 1,
-    title: "Lead Capture + CRM Sync",
-    description: "Captura leads do formulário e sincroniza com seu CRM automaticamente.",
-    integrations: ["Typeform", "HubSpot", "Slack"],
-    downloads: 1240,
-    stars: 4.9,
-    complexity: "Fácil",
-    category: "Marketing",
+    name: "Lead Capture → CRM",
+    description: "Capture leads de formulários e envie automaticamente para seu CRM.",
+    tags: ["Slack", "HubSpot", "Forms"],
+    downloads: 234,
   },
   {
     id: 2,
-    title: "ChatGPT Customer Support",
-    description: "Bot de atendimento inteligente com ChatGPT para responder clientes.",
-    integrations: ["OpenAI", "Telegram", "Notion"],
-    downloads: 890,
-    stars: 4.8,
-    complexity: "Médio",
-    category: "IA",
+    name: "Email Parser com GPT",
+    description: "Extraia informações de emails usando GPT e organize em planilhas.",
+    tags: ["Gmail", "OpenAI", "Sheets"],
+    downloads: 189,
   },
   {
     id: 3,
-    title: "E-commerce Order Automation",
-    description: "Automatiza confirmações de pedido, estoque e notificações.",
-    integrations: ["Shopify", "Google Sheets", "WhatsApp"],
-    downloads: 756,
-    stars: 4.7,
-    complexity: "Médio",
-    category: "E-commerce",
+    name: "Social Media Scheduler",
+    description: "Agende posts em múltiplas redes sociais a partir de uma planilha.",
+    tags: ["Twitter", "LinkedIn", "Buffer"],
+    downloads: 156,
   },
   {
     id: 4,
-    title: "Social Media Scheduler",
-    description: "Agende e publique posts em múltiplas redes sociais.",
-    integrations: ["Twitter", "LinkedIn", "Instagram"],
-    downloads: 2100,
-    stars: 4.9,
-    complexity: "Fácil",
-    category: "Marketing",
+    name: "Invoice Automation",
+    description: "Gere faturas automaticamente quando pagamentos são confirmados.",
+    tags: ["Stripe", "Notion", "PDF"],
+    downloads: 145,
   },
   {
     id: 5,
-    title: "Invoice to Accounting",
-    description: "Extrai dados de faturas e envia para seu sistema contábil.",
-    integrations: ["Gmail", "QuickBooks", "Airtable"],
-    downloads: 432,
-    stars: 4.6,
-    complexity: "Avançado",
-    category: "Finanças",
+    name: "Support Ticket Router",
+    description: "Roteie tickets de suporte com base em palavras-chave usando IA.",
+    tags: ["Zendesk", "Slack", "AI"],
+    downloads: 123,
   },
   {
     id: 6,
-    title: "RSS to Newsletter",
-    description: "Transforma posts de blogs em newsletters automáticas.",
-    integrations: ["RSS", "Mailchimp", "Notion"],
-    downloads: 654,
-    stars: 4.5,
-    complexity: "Fácil",
-    category: "Conteúdo",
-  },
-  {
-    id: 7,
-    title: "Slack Notification Hub",
-    description: "Centraliza notificações de múltiplos serviços no Slack.",
-    integrations: ["Slack", "GitHub", "Jira", "Trello"],
-    downloads: 987,
-    stars: 4.8,
-    complexity: "Fácil",
-    category: "Produtividade",
-  },
-  {
-    id: 8,
-    title: "Data Sync Multi-Cloud",
-    description: "Sincroniza dados entre Google Drive, Dropbox e OneDrive.",
-    integrations: ["Google Drive", "Dropbox", "OneDrive"],
-    downloads: 567,
-    stars: 4.5,
-    complexity: "Médio",
-    category: "Produtividade",
-  },
-  {
-    id: 9,
-    title: "AI Content Generator",
-    description: "Gera conteúdo para blog e redes sociais com Claude/GPT.",
-    integrations: ["OpenAI", "Anthropic", "Notion", "WordPress"],
-    downloads: 1456,
-    stars: 4.9,
-    complexity: "Médio",
-    category: "IA",
+    name: "Data Sync Bidirectional",
+    description: "Sincronize dados entre duas plataformas em tempo real.",
+    tags: ["Airtable", "PostgreSQL"],
+    downloads: 98,
   },
 ];
 
-const complexityColors: Record<string, string> = {
-  "Fácil": "bg-accent/10 text-accent border-accent/30",
-  "Médio": "bg-warning/10 text-warning-foreground border-warning/30",
-  "Avançado": "bg-secondary/10 text-secondary border-secondary/30",
-};
-
-const categories = ["Todos", "Marketing", "IA", "E-commerce", "Finanças", "Produtividade", "Conteúdo"];
-
-const Templates = () => {
+export default function Templates() {
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      <main className="flex-1">
-        {/* Hero */}
-        <section className="py-16 md:py-24 bg-muted/30">
-          <div className="container">
-            <div className="max-w-3xl">
-              <Badge variant="outline" className="mb-4">
-                <Layout className="h-4 w-4 mr-2" />
-                {templates.length}0+ templates disponíveis
-              </Badge>
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                Templates <span className="text-gradient">n8n</span>
-              </h1>
-              <p className="text-lg text-muted-foreground mb-8">
-                Automações prontas para usar. Importe para seu n8n e personalize 
-                conforme sua necessidade.
-              </p>
-              
-              {/* Search */}
-              <div className="flex gap-2 max-w-xl">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Buscar por integração, categoria..."
-                    className="pl-10"
-                  />
-                </div>
-                <Button variant="outline">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filtros
-                </Button>
-              </div>
-            </div>
+    <AppLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold">Templates</h1>
+            <p className="text-sm text-muted-foreground">
+              Workflows prontos para usar no n8n
+            </p>
           </div>
-        </section>
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Buscar templates..."
+              className="pl-9 bg-muted border-0"
+            />
+          </div>
+        </div>
 
         {/* Templates Grid */}
-        <section className="py-12 md:py-20">
-          <div className="container">
-            {/* Categories */}
-            <div className="flex flex-wrap gap-2 mb-8">
-              {categories.map((cat) => (
-                <Badge 
-                  key={cat}
-                  variant="outline" 
-                  className="cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
-                >
-                  {cat}
-                </Badge>
-              ))}
-            </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {templates.map((template) => (
+            <Card
+              key={template.id}
+              className="bg-card border-border hover:border-primary/50 transition-colors"
+            >
+              <CardContent className="p-4 space-y-4">
+                {/* Header */}
+                <div className="flex items-start justify-between">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent/10">
+                    <Sparkles className="h-5 w-5 text-accent" />
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Download className="h-3 w-3" />
+                    {template.downloads}
+                  </div>
+                </div>
 
-            {/* Grid */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {templates.map((template) => (
-                <Card
-                  key={template.id}
-                  className="group border-border/50 hover:border-primary/30 transition-all duration-300 hover:shadow-lg hover:-translate-y-1"
-                >
-                  <CardHeader>
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge variant="outline" className="text-xs">
-                            {template.category}
-                          </Badge>
-                          <Badge
-                            variant="outline"
-                            className={`text-xs ${complexityColors[template.complexity]}`}
-                          >
-                            {template.complexity}
-                          </Badge>
-                        </div>
-                        <CardTitle className="text-lg">{template.title}</CardTitle>
-                      </div>
-                      <div className="flex items-center gap-1 text-sm">
-                        <Star className="h-4 w-4 fill-warning text-warning" />
-                        <span className="font-medium">{template.stars}</span>
-                      </div>
-                    </div>
-                    <CardDescription>{template.description}</CardDescription>
-                  </CardHeader>
+                {/* Content */}
+                <div>
+                  <h3 className="font-medium">{template.name}</h3>
+                  <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                    {template.description}
+                  </p>
+                </div>
 
-                  <CardContent className="space-y-4">
-                    {/* Integrations */}
-                    <div className="flex flex-wrap gap-2">
-                      {template.integrations.map((integration) => (
-                        <Badge
-                          key={integration}
-                          variant="secondary"
-                          className="text-xs bg-muted text-muted-foreground"
-                        >
-                          <Zap className="h-3 w-3 mr-1" />
-                          {integration}
-                        </Badge>
-                      ))}
-                    </div>
+                {/* Tags */}
+                <div className="flex flex-wrap gap-1">
+                  {template.tags.map((tag) => (
+                    <Badge
+                      key={tag}
+                      variant="secondary"
+                      className="text-xs bg-muted text-muted-foreground"
+                    >
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
 
-                    {/* Stats & Actions */}
-                    <div className="flex items-center justify-between pt-2">
-                      <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Download className="h-4 w-4" />
-                        {template.downloads.toLocaleString()}
-                      </span>
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4 mr-1" />
-                          Preview
-                        </Button>
-                        <Button size="sm">
-                          <Copy className="h-4 w-4 mr-1" />
-                          Copiar
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
-      </main>
-      <Footer />
-    </div>
+                {/* Actions */}
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="flex-1">
+                    <Download className="mr-1 h-3 w-3" />
+                    Baixar
+                  </Button>
+                  <Button variant="ghost" size="sm">
+                    <ExternalLink className="h-3 w-3" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </AppLayout>
   );
-};
-
-export default Templates;
+}
