@@ -219,28 +219,6 @@ export function RoleChangeModal({
               </div>
 
               <div>
-                <Label htmlFor="scheduling_url" className="text-xs">URL de Agendamento</Label>
-                <Input
-                  id="scheduling_url"
-                  placeholder="https://cal.com/..."
-                  value={menteeForm.scheduling_url}
-                  onChange={(e) => setMenteeForm({ ...menteeForm, scheduling_url: e.target.value })}
-                  className="mt-1"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="community_url" className="text-xs">URL da Comunidade</Label>
-                <Input
-                  id="community_url"
-                  placeholder="https://discord.gg/..."
-                  value={menteeForm.community_url}
-                  onChange={(e) => setMenteeForm({ ...menteeForm, community_url: e.target.value })}
-                  className="mt-1"
-                />
-              </div>
-
-              <div>
                 <Label htmlFor="welcome_message" className="text-xs">Mensagem de Boas-vindas</Label>
                 <Textarea
                   id="welcome_message"
