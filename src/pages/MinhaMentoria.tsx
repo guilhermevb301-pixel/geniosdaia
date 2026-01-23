@@ -59,7 +59,7 @@ export default function MinhaMentoria() {
         />
 
         {/* Meetings Table */}
-        <MeetingsTable meetings={meetings} />
+        <MeetingsTable meetings={meetings} menteeName={mentee.display_name} />
 
         {/* Stages Section */}
         {stages.length > 0 && (

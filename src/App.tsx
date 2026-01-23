@@ -20,6 +20,7 @@ import AdminModules from "./pages/admin/AdminModules";
 import AdminLessons from "./pages/admin/AdminLessons";
 import AdminTemplates from "./pages/admin/AdminTemplates";
 import AdminMentees from "./pages/admin/AdminMentees";
+import AdminUsers from "./pages/admin/AdminUsers";
 import MenteeEditor from "./pages/admin/MenteeEditor";
 import NotFound from "./pages/NotFound";
 
@@ -131,6 +132,14 @@ const App = () => (
               element={
                 <MentorRoute>
                   <MenteeEditor />
+                </MentorRoute>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <MentorRoute>
+                  <AdminUsers />
                 </MentorRoute>
               }
             />

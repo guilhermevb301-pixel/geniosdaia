@@ -12,7 +12,8 @@ import {
   Settings,
   Users,
   FileText,
-  GraduationCap
+  GraduationCap,
+  Layers
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -37,6 +38,7 @@ export function AppSidebar() {
   const [adminOpen, setAdminOpen] = useState(true);
 
   const isActive = (href: string) => location.pathname === href;
+  const isAdminSection = location.pathname.startsWith("/admin");
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-sidebar-border bg-sidebar flex flex-col">
@@ -98,7 +100,7 @@ export function AppSidebar() {
           </Link>
         ))}
 
-        {/* Mentoria */}
+        {/* Mentoria - Apply (visible for all) */}
         <Link
           to="/mentoria"
           className={cn(
@@ -128,16 +130,15 @@ export function AppSidebar() {
           </Link>
         )}
 
-        {/* Admin Section - Only visible for admins */}
+        {/* Admin/Mentor Section - Only visible for admins and mentors */}
         {(isAdmin || isMentor) && (
           <div className="mt-6">
-
             <Collapsible open={adminOpen} onOpenChange={setAdminOpen}>
               <CollapsibleTrigger className="w-full">
                 <div
                   className={cn(
                     "flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                    location.pathname.startsWith("/admin")
+                    isAdminSection
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
                   )}
@@ -156,41 +157,72 @@ export function AppSidebar() {
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <div className="ml-4 mt-1 space-y-1 border-l-2 border-primary/30 pl-4">
+                  {/* Admin-only items */}
+                  {isAdmin && (
+                    <>
+                      <Link
+                        to="/admin/modules"
+                        className={cn(
+                          "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                          isActive("/admin/modules")
+                            ? "text-primary bg-primary/10"
+                            : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
+                        )}
+                      >
+                        <Layers className="h-4 w-4" />
+                        Módulos
+                      </Link>
+                      <Link
+                        to="/admin/lessons"
+                        className={cn(
+                          "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                          isActive("/admin/lessons")
+                            ? "text-primary bg-primary/10"
+                            : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
+                        )}
+                      >
+                        <BookOpen className="h-4 w-4" />
+                        Aulas
+                      </Link>
+                      <Link
+                        to="/admin/templates"
+                        className={cn(
+                          "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                          isActive("/admin/templates")
+                            ? "text-primary bg-primary/10"
+                            : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
+                        )}
+                      >
+                        <FileText className="h-4 w-4" />
+                        Templates
+                      </Link>
+                    </>
+                  )}
+                  
+                  {/* Mentor/Admin items */}
                   <Link
-                    to="/admin/modules"
+                    to="/admin/users"
                     className={cn(
                       "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
-                      isActive("/admin/modules")
+                      isActive("/admin/users")
                         ? "text-primary bg-primary/10"
                         : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
                     )}
                   >
                     <Users className="h-4 w-4" />
-                    Módulos
+                    Usuários
                   </Link>
                   <Link
-                    to="/admin/lessons"
+                    to="/admin/mentees"
                     className={cn(
                       "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
-                      isActive("/admin/lessons")
+                      isActive("/admin/mentees")
                         ? "text-primary bg-primary/10"
                         : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
                     )}
                   >
-                    <BookOpen className="h-4 w-4" />
-                    Aulas
-                  </Link>
-                  <Link
-                    to="/admin/templates"
-                    className={cn(
-                      "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
-                      isActive("/admin/templates")
-                        ? "text-primary bg-primary/10"
-                        : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
-                    )}
-                  >
-                    <FileText className="h-4 w-4" />
-                    Templates
+                    <GraduationCap className="h-4 w-4" />
+                    Mentorados
                   </Link>
                 </div>
               </CollapsibleContent>
@@ -208,20 +240,7 @@ export function AppSidebar() {
           <HelpCircle className="h-5 w-5" />
           Suporte
         </Link>
-                  {/* Mentorados - visible for mentors and admins */}
-                  <Link
-                    to="/admin/mentees"
-                    className={cn(
-                      "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
-                      isActive("/admin/mentees")
-                        ? "text-primary bg-primary/10"
-                        : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
-                    )}
-                  >
-                    <GraduationCap className="h-4 w-4" />
-                    Mentorados
-                  </Link>
-                </div>
+      </div>
     </aside>
   );
 }

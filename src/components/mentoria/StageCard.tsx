@@ -1,5 +1,21 @@
-import { Folder, Target, CheckSquare, MessageCircle } from "lucide-react";
+import { 
+  Folder, 
+  Target, 
+  CheckSquare, 
+  MessageCircle, 
+  Camera, 
+  Briefcase, 
+  FileText, 
+  Star, 
+  Lightbulb, 
+  Rocket, 
+  Code,
+  Palette,
+  Globe,
+  Settings
+} from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { TaskCheckbox } from "./TaskCheckbox";
 import type { Stage } from "@/hooks/useMenteeData";
 
@@ -8,46 +24,76 @@ interface StageCardProps {
   onToggleTask: (taskId: string, completed: boolean) => void;
 }
 
+const iconMap: Record<string, typeof Folder> = {
+  folder: Folder,
+  camera: Camera,
+  briefcase: Briefcase,
+  file: FileText,
+  star: Star,
+  lightbulb: Lightbulb,
+  rocket: Rocket,
+  code: Code,
+  palette: Palette,
+  globe: Globe,
+  settings: Settings,
+  target: Target,
+};
+
 export function StageCard({ stage, onToggleTask }: StageCardProps) {
-  const IconComponent = Folder;
+  const IconComponent = iconMap[stage.icon || "folder"] || Folder;
+
+  const hasTasks = stage.tasks && stage.tasks.length > 0;
+  const hasNotes = stage.notes && stage.notes.length > 0;
 
   return (
-    <Card className="bg-card border-border h-full">
-      <CardHeader className="pb-2">
+    <Card className="bg-card border-border h-full overflow-hidden group hover:shadow-md transition-shadow">
+      <CardHeader className="pb-3 bg-muted/20">
         <div className="flex items-start gap-3">
           <div
-            className="flex h-8 w-8 items-center justify-center rounded-lg shrink-0"
-            style={{ backgroundColor: `${stage.icon_color}20` }}
+            className="flex h-9 w-9 items-center justify-center rounded-lg shrink-0 transition-transform group-hover:scale-105"
+            style={{ backgroundColor: `${stage.icon_color}15` }}
           >
             <IconComponent
-              className="h-4 w-4"
+              className="h-5 w-5"
               style={{ color: stage.icon_color }}
             />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-medium leading-tight">{stage.title}</h3>
+            <h3 className="font-semibold leading-tight text-foreground">
+              {stage.title}
+            </h3>
             {stage.objective && (
-              <p
-                className="text-xs mt-1 font-medium"
-                style={{ color: stage.icon_color }}
-              >
-                <Target className="h-3 w-3 inline mr-1" />
-                {stage.objective}
-              </p>
+              <div className="flex items-center gap-1.5 mt-1.5">
+                <Target 
+                  className="h-3.5 w-3.5 shrink-0" 
+                  style={{ color: stage.icon_color }} 
+                />
+                <p
+                  className="text-xs font-medium truncate"
+                  style={{ color: stage.icon_color }}
+                >
+                  {stage.objective}
+                </p>
+              </div>
             )}
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 pt-4">
         {/* Tasks */}
-        {stage.tasks && stage.tasks.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-              <CheckSquare className="h-3 w-3" />
-              Tarefas
+        {hasTasks && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-1.5">
+              <CheckSquare className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                Tarefas
+              </span>
+              <span className="text-xs text-muted-foreground/60 ml-auto">
+                {stage.tasks?.filter(t => t.completed).length}/{stage.tasks?.length}
+              </span>
             </div>
-            <div className="space-y-1.5">
-              {stage.tasks.map((task) => (
+            <div className="space-y-1">
+              {stage.tasks?.map((task) => (
                 <TaskCheckbox
                   key={task.id}
                   task={task}
@@ -58,18 +104,30 @@ export function StageCard({ stage, onToggleTask }: StageCardProps) {
           </div>
         )}
 
+        {/* Separator */}
+        {hasTasks && hasNotes && (
+          <Separator className="bg-border/50" />
+        )}
+
         {/* Notes */}
-        {stage.notes && stage.notes.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-              <MessageCircle className="h-3 w-3" />
-              Mentoria
+        {hasNotes && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-1.5">
+              <MessageCircle className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+                Mentoria
+              </span>
             </div>
-            <ul className="space-y-1 text-sm text-muted-foreground">
-              {stage.notes.map((note) => (
-                <li key={note.id} className="flex items-start gap-2">
-                  <span className="text-primary mt-1.5">•</span>
-                  <span>{note.content}</span>
+            <ul className="space-y-2">
+              {stage.notes?.map((note) => (
+                <li key={note.id} className="flex items-start gap-2 text-sm">
+                  <span 
+                    className="mt-1.5 h-1.5 w-1.5 rounded-full shrink-0"
+                    style={{ backgroundColor: stage.icon_color }}
+                  />
+                  <span className="text-muted-foreground leading-relaxed">
+                    {note.content}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -77,12 +135,13 @@ export function StageCard({ stage, onToggleTask }: StageCardProps) {
         )}
 
         {/* Empty state */}
-        {(!stage.tasks || stage.tasks.length === 0) &&
-          (!stage.notes || stage.notes.length === 0) && (
-            <p className="text-sm text-muted-foreground text-center py-4">
+        {!hasTasks && !hasNotes && (
+          <div className="py-6 text-center">
+            <p className="text-sm text-muted-foreground">
               Nenhuma tarefa ou nota ainda.
             </p>
-          )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
