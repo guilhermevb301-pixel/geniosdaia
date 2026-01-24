@@ -9,7 +9,7 @@ import { useMenteeData } from "@/hooks/useMenteeData";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function MinhaMentoria() {
-  const { mentee, meetings, stages, todos, isLoading, toggleTask, toggleTodo } = useMenteeData();
+  const { mentee, meetings, stages, todos, isLoading, toggleTask, toggleTodo, createTodo, deleteTodo } = useMenteeData();
 
   if (isLoading) {
     return (
@@ -49,7 +49,7 @@ export default function MinhaMentoria() {
 
   return (
     <AppLayout>
-      <div className="space-y-8 max-w-5xl">
+      <div className="space-y-8">
         {/* Header */}
         <MenteeHeader mentee={mentee} />
 
@@ -59,7 +59,9 @@ export default function MinhaMentoria() {
         {/* To-do List */}
         <TodoList 
           todos={todos} 
-          onToggle={(id, completed) => toggleTodo.mutate({ todoId: id, completed })} 
+          onToggle={(id, completed) => toggleTodo.mutate({ todoId: id, completed })}
+          onCreate={(content) => createTodo.mutate({ content })}
+          onDelete={(id) => deleteTodo.mutate(id)}
         />
 
         {/* Meetings Table */}

@@ -236,6 +236,48 @@ export function useMenteeData(menteeId?: string) {
     },
   });
 
+  // Create new todo
+  const createTodo = useMutation({
+    mutationFn: async ({ content }: { content: string }) => {
+      if (!activeMenteeId) throw new Error("No mentee id");
+
+      const { data: existingTodos } = await supabase
+        .from("mentee_todos")
+        .select("order_index")
+        .eq("mentee_id", activeMenteeId)
+        .order("order_index", { ascending: false })
+        .limit(1);
+
+      const nextOrder = (existingTodos?.[0]?.order_index ?? -1) + 1;
+
+      const { error } = await supabase.from("mentee_todos").insert({
+        mentee_id: activeMenteeId,
+        content,
+        order_index: nextOrder,
+      });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["todos", activeMenteeId] });
+    },
+  });
+
+  // Delete todo
+  const deleteTodo = useMutation({
+    mutationFn: async (todoId: string) => {
+      const { error } = await supabase
+        .from("mentee_todos")
+        .delete()
+        .eq("id", todoId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["todos", activeMenteeId] });
+    },
+  });
+
   return {
     mentee: menteeId ? menteeProfile : myMenteeProfile,
     meetings,
@@ -244,6 +286,8 @@ export function useMenteeData(menteeId?: string) {
     isLoading: isLoadingMyProfile || isLoadingMentee || isLoadingMeetings || isLoadingStages || isLoadingTodos,
     toggleTask,
     toggleTodo,
+    createTodo,
+    deleteTodo,
   };
 }
 
