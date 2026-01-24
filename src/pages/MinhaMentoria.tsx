@@ -4,11 +4,12 @@ import { MenteeHeader } from "@/components/mentoria/MenteeHeader";
 import { QuickAccessCards } from "@/components/mentoria/QuickAccessCards";
 import { MeetingsTable } from "@/components/mentoria/MeetingsTable";
 import { StageCard } from "@/components/mentoria/StageCard";
+import { TodoList } from "@/components/mentoria/TodoList";
 import { useMenteeData } from "@/hooks/useMenteeData";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function MinhaMentoria() {
-  const { mentee, meetings, stages, isLoading, toggleTask } = useMenteeData();
+  const { mentee, meetings, stages, todos, isLoading, toggleTask, toggleTodo } = useMenteeData();
 
   if (isLoading) {
     return (
@@ -54,6 +55,12 @@ export default function MinhaMentoria() {
 
         {/* Quick Access Cards */}
         <QuickAccessCards communityUrl={mentee.community_url} />
+
+        {/* To-do List */}
+        <TodoList 
+          todos={todos} 
+          onToggle={(id, completed) => toggleTodo.mutate({ todoId: id, completed })} 
+        />
 
         {/* Meetings Table */}
         <MeetingsTable meetings={meetings} menteeName={mentee.display_name} />

@@ -57,6 +57,15 @@ export interface Note {
   created_at: string;
 }
 
+export interface Todo {
+  id: string;
+  mentee_id: string;
+  content: string;
+  completed: boolean;
+  order_index: number;
+  created_at: string;
+}
+
 export function useMenteeData(menteeId?: string) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -175,6 +184,28 @@ export function useMenteeData(menteeId?: string) {
     enabled: !!activeMenteeId,
   });
 
+  // Fetch todos
+  const { data: todos = [], isLoading: isLoadingTodos } = useQuery({
+    queryKey: ["todos", activeMenteeId],
+    queryFn: async () => {
+      if (!activeMenteeId) return [];
+
+      const { data, error } = await supabase
+        .from("mentee_todos")
+        .select("*")
+        .eq("mentee_id", activeMenteeId)
+        .order("order_index", { ascending: true });
+
+      if (error) {
+        console.error("Error fetching todos:", error);
+        return [];
+      }
+
+      return data as Todo[];
+    },
+    enabled: !!activeMenteeId,
+  });
+
   // Toggle task completion
   const toggleTask = useMutation({
     mutationFn: async ({ taskId, completed }: { taskId: string; completed: boolean }) => {
@@ -190,12 +221,29 @@ export function useMenteeData(menteeId?: string) {
     },
   });
 
+  // Toggle todo completion
+  const toggleTodo = useMutation({
+    mutationFn: async ({ todoId, completed }: { todoId: string; completed: boolean }) => {
+      const { error } = await supabase
+        .from("mentee_todos")
+        .update({ completed })
+        .eq("id", todoId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["todos", activeMenteeId] });
+    },
+  });
+
   return {
     mentee: menteeId ? menteeProfile : myMenteeProfile,
     meetings,
     stages,
-    isLoading: isLoadingMyProfile || isLoadingMentee || isLoadingMeetings || isLoadingStages,
+    todos,
+    isLoading: isLoadingMyProfile || isLoadingMentee || isLoadingMeetings || isLoadingStages || isLoadingTodos,
     toggleTask,
+    toggleTodo,
   };
 }
 

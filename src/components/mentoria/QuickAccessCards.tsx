@@ -18,8 +18,8 @@ export function QuickAccessCards({ communityUrl }: QuickAccessCardsProps) {
       
       <div className="grid gap-4 sm:grid-cols-3">
         {/* Card 1: Marcar Mentoria */}
-        <Card className="bg-card/50 border-border">
-          <CardContent className="p-4 space-y-3">
+        <Card className="bg-card/50 border-border h-full">
+          <CardContent className="p-4 h-full flex flex-col justify-between gap-3">
             <p className="text-sm text-muted-foreground">
               As mentorias individuais podem ser agendadas por aqui:
             </p>
@@ -35,8 +35,8 @@ export function QuickAccessCards({ communityUrl }: QuickAccessCardsProps) {
         </Card>
 
         {/* Card 2: Comunidade */}
-        <Card className="bg-card/50 border-border">
-          <CardContent className="p-4 space-y-3">
+        <Card className="bg-card/50 border-border h-full">
+          <CardContent className="p-4 h-full flex flex-col justify-between gap-3">
             <p className="text-sm text-muted-foreground">Acesso a Comunidade:</p>
             <Button 
               variant="secondary"
@@ -51,8 +51,8 @@ export function QuickAccessCards({ communityUrl }: QuickAccessCardsProps) {
         </Card>
 
         {/* Card 3: Suporte */}
-        <Card className="bg-card/50 border-border">
-          <CardContent className="p-4 space-y-3">
+        <Card className="bg-card/50 border-border h-full">
+          <CardContent className="p-4 h-full flex flex-col justify-between gap-3">
             <p className="text-sm text-muted-foreground">
               Para suporte mais ágil, abra um chamado:
             </p>
