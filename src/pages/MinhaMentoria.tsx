@@ -53,10 +53,7 @@ export default function MinhaMentoria() {
         <MenteeHeader mentee={mentee} />
 
         {/* Quick Access Cards */}
-        <QuickAccessCards
-          schedulingUrl={mentee.scheduling_url}
-          communityUrl={mentee.community_url}
-        />
+        <QuickAccessCards communityUrl={mentee.community_url} />
 
         {/* Meetings Table */}
         <MeetingsTable meetings={meetings} menteeName={mentee.display_name} />
