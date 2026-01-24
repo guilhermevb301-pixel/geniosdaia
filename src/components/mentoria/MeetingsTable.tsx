@@ -1,3 +1,4 @@
+import React from "react";
 import { ExternalLink, Video, Users2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -30,8 +31,9 @@ function truncateUrl(url: string, maxLength: number = 25): string {
   }
 }
 
-export function MeetingsTable({ meetings, menteeName }: MeetingsTableProps) {
-  return (
+export const MeetingsTable = React.forwardRef<HTMLDivElement, MeetingsTableProps>(
+  ({ meetings, menteeName }, ref) => {
+    return (
     <Card className="bg-card border-border overflow-hidden">
       <CardHeader className="pb-3 bg-muted/30">
         <CardTitle className="text-base flex items-center gap-2">
@@ -106,7 +108,10 @@ export function MeetingsTable({ meetings, menteeName }: MeetingsTableProps) {
             </TableBody>
           </Table>
         )}
-      </CardContent>
-    </Card>
-  );
-}
+        </CardContent>
+      </Card>
+    );
+  }
+);
+
+MeetingsTable.displayName = "MeetingsTable";
