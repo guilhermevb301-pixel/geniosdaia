@@ -96,6 +96,41 @@ export type Database = {
           },
         ]
       }
+      mentee_todos: {
+        Row: {
+          completed: boolean | null
+          content: string
+          created_at: string | null
+          id: string
+          mentee_id: string
+          order_index: number | null
+        }
+        Insert: {
+          completed?: boolean | null
+          content: string
+          created_at?: string | null
+          id?: string
+          mentee_id: string
+          order_index?: number | null
+        }
+        Update: {
+          completed?: boolean | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          mentee_id?: string
+          order_index?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentee_todos_mentee_id_fkey"
+            columns: ["mentee_id"]
+            isOneToOne: false
+            referencedRelation: "mentees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mentees: {
         Row: {
           community_url: string | null
