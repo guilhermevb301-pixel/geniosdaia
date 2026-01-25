@@ -3,13 +3,13 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { MenteeHeader } from "@/components/mentoria/MenteeHeader";
 import { QuickAccessCards } from "@/components/mentoria/QuickAccessCards";
 import { MeetingsTable } from "@/components/mentoria/MeetingsTable";
-import { StageCard } from "@/components/mentoria/StageCard";
+import { PillarCard } from "@/components/mentoria/PillarCard";
 import { TodoList } from "@/components/mentoria/TodoList";
 import { useMenteeData } from "@/hooks/useMenteeData";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function MinhaMentoria() {
-  const { mentee, meetings, stages, todos, isLoading, toggleTask, toggleTodo, createTodo, deleteTodo } = useMenteeData();
+  const { mentee, meetings, pillars, todos, isLoading, toggleTask, toggleTodo, createTodo, deleteTodo } = useMenteeData();
 
   if (isLoading) {
     return (
@@ -67,18 +67,18 @@ export default function MinhaMentoria() {
         {/* Meetings Table */}
         <MeetingsTable meetings={meetings} menteeName={mentee.display_name} />
 
-        {/* Stages Section */}
-        {stages.length > 0 && (
+        {/* Pillars Section (Notion-style) */}
+        {pillars.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Layers className="h-5 w-5 text-primary" />
               <h2 className="text-lg font-semibold">Etapas</h2>
             </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              {stages.map((stage) => (
-                <StageCard
-                  key={stage.id}
-                  stage={stage}
+            <div className="grid gap-4 md:grid-cols-3">
+              {pillars.map((pillar) => (
+                <PillarCard
+                  key={pillar.id}
+                  pillar={pillar}
                   onToggleTask={handleToggleTask}
                 />
               ))}

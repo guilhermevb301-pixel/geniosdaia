@@ -243,6 +243,44 @@ export type Database = {
           },
         ]
       }
+      mentorship_pillars: {
+        Row: {
+          created_at: string | null
+          icon: string | null
+          icon_color: string | null
+          id: string
+          mentee_id: string
+          order_index: number | null
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          icon?: string | null
+          icon_color?: string | null
+          id?: string
+          mentee_id: string
+          order_index?: number | null
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          icon?: string | null
+          icon_color?: string | null
+          id?: string
+          mentee_id?: string
+          order_index?: number | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentorship_pillars_mentee_id_fkey"
+            columns: ["mentee_id"]
+            isOneToOne: false
+            referencedRelation: "mentees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mentorship_stages: {
         Row: {
           created_at: string | null
@@ -252,6 +290,7 @@ export type Database = {
           mentee_id: string
           objective: string | null
           order_index: number | null
+          pillar_id: string | null
           title: string
         }
         Insert: {
@@ -262,6 +301,7 @@ export type Database = {
           mentee_id: string
           objective?: string | null
           order_index?: number | null
+          pillar_id?: string | null
           title: string
         }
         Update: {
@@ -272,6 +312,7 @@ export type Database = {
           mentee_id?: string
           objective?: string | null
           order_index?: number | null
+          pillar_id?: string | null
           title?: string
         }
         Relationships: [
@@ -280,6 +321,13 @@ export type Database = {
             columns: ["mentee_id"]
             isOneToOne: false
             referencedRelation: "mentees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mentorship_stages_pillar_id_fkey"
+            columns: ["pillar_id"]
+            isOneToOne: false
+            referencedRelation: "mentorship_pillars"
             referencedColumns: ["id"]
           },
         ]

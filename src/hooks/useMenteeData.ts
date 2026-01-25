@@ -29,6 +29,7 @@ export interface Meeting {
 export interface Stage {
   id: string;
   mentee_id: string;
+  pillar_id: string | null;
   title: string;
   objective: string | null;
   icon: string;
@@ -37,6 +38,25 @@ export interface Stage {
   created_at: string;
   tasks?: Task[];
   notes?: Note[];
+}
+
+export interface Pillar {
+  id: string;
+  mentee_id: string;
+  title: string;
+  icon: string;
+  icon_color: string;
+  order_index: number;
+  created_at: string;
+  phases: Phase[];
+}
+
+export interface Phase {
+  id: string;
+  title: string;
+  objective: string | null;
+  order_index: number;
+  tasks: Task[];
 }
 
 export interface Task {
@@ -184,6 +204,73 @@ export function useMenteeData(menteeId?: string) {
     enabled: !!activeMenteeId,
   });
 
+  // Fetch pillars with phases and tasks
+  const { data: pillars = [], isLoading: isLoadingPillars } = useQuery({
+    queryKey: ["pillars", activeMenteeId],
+    queryFn: async () => {
+      if (!activeMenteeId) return [];
+
+      // 1. Fetch pillars
+      const { data: pillarsData, error: pillarsError } = await supabase
+        .from("mentorship_pillars")
+        .select("*")
+        .eq("mentee_id", activeMenteeId)
+        .order("order_index", { ascending: true });
+
+      if (pillarsError) {
+        console.error("Error fetching pillars:", pillarsError);
+        return [];
+      }
+
+      if (!pillarsData || pillarsData.length === 0) return [];
+
+      const pillarIds = pillarsData.map((p) => p.id);
+
+      // 2. Fetch stages (phases) linked to pillars
+      const { data: phasesData, error: phasesError } = await supabase
+        .from("mentorship_stages")
+        .select("*")
+        .in("pillar_id", pillarIds)
+        .order("order_index", { ascending: true });
+
+      if (phasesError) {
+        console.error("Error fetching phases:", phasesError);
+        return pillarsData.map((p) => ({ ...p, phases: [] })) as Pillar[];
+      }
+
+      const phaseIds = (phasesData || []).map((s) => s.id);
+
+      // 3. Fetch tasks for phases
+      let tasksData: Task[] = [];
+      if (phaseIds.length > 0) {
+        const { data: tasks, error: tasksError } = await supabase
+          .from("mentorship_tasks")
+          .select("*")
+          .in("stage_id", phaseIds)
+          .order("order_index", { ascending: true });
+
+        if (!tasksError && tasks) {
+          tasksData = tasks as Task[];
+        }
+      }
+
+      // 4. Build hierarchy
+      return pillarsData.map((pillar) => ({
+        ...pillar,
+        phases: (phasesData || [])
+          .filter((phase) => phase.pillar_id === pillar.id)
+          .map((phase) => ({
+            id: phase.id,
+            title: phase.title,
+            objective: phase.objective,
+            order_index: phase.order_index,
+            tasks: tasksData.filter((t) => t.stage_id === phase.id),
+          })),
+      })) as Pillar[];
+    },
+    enabled: !!activeMenteeId,
+  });
+
   // Fetch todos
   const { data: todos = [], isLoading: isLoadingTodos } = useQuery({
     queryKey: ["todos", activeMenteeId],
@@ -282,8 +369,9 @@ export function useMenteeData(menteeId?: string) {
     mentee: menteeId ? menteeProfile : myMenteeProfile,
     meetings,
     stages,
+    pillars,
     todos,
-    isLoading: isLoadingMyProfile || isLoadingMentee || isLoadingMeetings || isLoadingStages || isLoadingTodos,
+    isLoading: isLoadingMyProfile || isLoadingMentee || isLoadingMeetings || isLoadingStages || isLoadingTodos || isLoadingPillars,
     toggleTask,
     toggleTodo,
     createTodo,
