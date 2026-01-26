@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -364,6 +365,55 @@ export function useMenteeData(menteeId?: string) {
       queryClient.invalidateQueries({ queryKey: ["todos", activeMenteeId] });
     },
   });
+
+  // Realtime subscriptions
+  useEffect(() => {
+    if (!activeMenteeId) return;
+
+    const channel = supabase
+      .channel(`mentee-realtime-${activeMenteeId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "mentorship_pillars", filter: `mentee_id=eq.${activeMenteeId}` },
+        () => queryClient.invalidateQueries({ queryKey: ["pillars", activeMenteeId] })
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "mentorship_stages", filter: `mentee_id=eq.${activeMenteeId}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["stages", activeMenteeId] });
+          queryClient.invalidateQueries({ queryKey: ["pillars", activeMenteeId] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "mentorship_tasks" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["stages", activeMenteeId] });
+          queryClient.invalidateQueries({ queryKey: ["pillars", activeMenteeId] });
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "mentorship_meetings", filter: `mentee_id=eq.${activeMenteeId}` },
+        () => queryClient.invalidateQueries({ queryKey: ["meetings", activeMenteeId] })
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "mentorship_notes" },
+        () => queryClient.invalidateQueries({ queryKey: ["stages", activeMenteeId] })
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "mentee_todos", filter: `mentee_id=eq.${activeMenteeId}` },
+        () => queryClient.invalidateQueries({ queryKey: ["todos", activeMenteeId] })
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeMenteeId, queryClient]);
 
   return {
     mentee: menteeId ? menteeProfile : myMenteeProfile,

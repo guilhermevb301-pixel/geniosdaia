@@ -16,9 +16,11 @@ import Templates from "./pages/Templates";
 import Mentoria from "./pages/Mentoria";
 import MinhaMentoria from "./pages/MinhaMentoria";
 import Eventos from "./pages/Eventos";
+import Prompts from "./pages/Prompts";
 import AdminModules from "./pages/admin/AdminModules";
 import AdminLessons from "./pages/admin/AdminLessons";
 import AdminTemplates from "./pages/admin/AdminTemplates";
+import AdminPrompts from "./pages/admin/AdminPrompts";
 import AdminMentees from "./pages/admin/AdminMentees";
 import AdminUsers from "./pages/admin/AdminUsers";
 import MenteeEditor from "./pages/admin/MenteeEditor";
@@ -79,6 +81,14 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/prompts"
+              element={
+                <ProtectedRoute>
+                  <Prompts />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Mentee route */}
             <Route
@@ -114,6 +124,14 @@ const App = () => (
               element={
                 <AdminRoute>
                   <AdminTemplates />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/prompts"
+              element={
+                <AdminRoute>
+                  <AdminPrompts />
                 </AdminRoute>
               }
             />
