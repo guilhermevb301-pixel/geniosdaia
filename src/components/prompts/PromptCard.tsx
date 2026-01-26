@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Copy, Video, Image, Bot, Play, ExternalLink } from "lucide-react";
+import { Copy, Video, Image, Bot } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -135,18 +135,16 @@ export function PromptCard({ prompt }: PromptCardProps) {
             </div>
           )}
 
-          {/* Link do vídeo de exemplo */}
+          {/* Vídeo de exemplo */}
           {prompt.example_video_url && (
-            <a
-              href={prompt.example_video_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm text-primary hover:underline"
-            >
-              <Play className="h-4 w-4" />
-              Ver vídeo de exemplo
-              <ExternalLink className="h-3 w-3" />
-            </a>
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-muted-foreground">Vídeo de exemplo</h4>
+              <video
+                src={prompt.example_video_url}
+                controls
+                className="w-full rounded-lg"
+              />
+            </div>
           )}
 
           {/* Botão de copiar */}
@@ -159,12 +157,12 @@ export function PromptCard({ prompt }: PromptCardProps) {
 
       {/* Modal de imagem ampliada */}
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-        <DialogContent className="max-w-4xl p-2">
+        <DialogContent className="max-w-4xl p-4 flex items-center justify-center">
           {selectedImage && (
             <img
               src={selectedImage}
               alt="Exemplo ampliado"
-              className="w-full rounded-lg"
+              className="max-w-full max-h-[80vh] object-contain rounded-lg"
             />
           )}
         </DialogContent>

@@ -63,10 +63,12 @@ export default function AdminPrompts() {
   const [exampleImageFiles, setExampleImageFiles] = useState<File[]>([]);
   const [exampleImagePreviews, setExampleImagePreviews] = useState<string[]>([]);
   const [existingExampleImages, setExistingExampleImages] = useState<string[]>([]);
-  const [exampleVideoUrl, setExampleVideoUrl] = useState("");
+  const [exampleVideoFile, setExampleVideoFile] = useState<File | null>(null);
+  const [exampleVideoPreview, setExampleVideoPreview] = useState<string>("");
 
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
   const exampleImagesInputRef = useRef<HTMLInputElement>(null);
+  const exampleVideoInputRef = useRef<HTMLInputElement>(null);
 
   const { data: prompts, isLoading } = useQuery({
     queryKey: ["prompts"],
@@ -97,6 +99,7 @@ export default function AdminPrompts() {
 
       let thumbnailUrl: string | null = null;
       let exampleImages: string[] = [];
+      let videoUrl: string | null = null;
 
       // Upload thumbnail
       if (thumbnailFile) {
@@ -109,6 +112,11 @@ export default function AdminPrompts() {
         exampleImages.push(url);
       }
 
+      // Upload example video
+      if (exampleVideoFile) {
+        videoUrl = await uploadFile(exampleVideoFile, "videos");
+      }
+
       const { error } = await supabase.from("prompts").insert({
         title: formData.title,
         content: formData.content,
@@ -117,7 +125,7 @@ export default function AdminPrompts() {
         tags: formData.tags.split(",").map((t) => t.trim()).filter(Boolean),
         thumbnail_url: thumbnailUrl,
         example_images: exampleImages.length > 0 ? exampleImages : null,
-        example_video_url: exampleVideoUrl || null,
+        example_video_url: videoUrl,
       });
       if (error) throw error;
     },
@@ -137,6 +145,7 @@ export default function AdminPrompts() {
 
       let thumbnailUrl = editingPrompt.thumbnail_url;
       let exampleImages = [...existingExampleImages];
+      let videoUrl = editingPrompt.example_video_url;
 
       // Upload new thumbnail if provided
       if (thumbnailFile) {
@@ -149,6 +158,11 @@ export default function AdminPrompts() {
         exampleImages.push(url);
       }
 
+      // Upload new example video if provided
+      if (exampleVideoFile) {
+        videoUrl = await uploadFile(exampleVideoFile, "videos");
+      }
+
       const { error } = await supabase
         .from("prompts")
         .update({
@@ -159,7 +173,7 @@ export default function AdminPrompts() {
           tags: formData.tags.split(",").map((t) => t.trim()).filter(Boolean),
           thumbnail_url: thumbnailUrl,
           example_images: exampleImages.length > 0 ? exampleImages : null,
-          example_video_url: exampleVideoUrl || null,
+          example_video_url: videoUrl,
         })
         .eq("id", editingPrompt.id);
       if (error) throw error;
@@ -217,6 +231,19 @@ export default function AdminPrompts() {
     }
   };
 
+  const handleExampleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setExampleVideoFile(file);
+      setExampleVideoPreview(URL.createObjectURL(file));
+    }
+  };
+
+  const removeExampleVideo = () => {
+    setExampleVideoFile(null);
+    setExampleVideoPreview("");
+  };
+
   const openNewDialog = () => {
     setEditingPrompt(null);
     setFormData({
@@ -231,7 +258,8 @@ export default function AdminPrompts() {
     setExampleImageFiles([]);
     setExampleImagePreviews([]);
     setExistingExampleImages([]);
-    setExampleVideoUrl("");
+    setExampleVideoFile(null);
+    setExampleVideoPreview("");
     setIsDialogOpen(true);
   };
 
@@ -249,7 +277,8 @@ export default function AdminPrompts() {
     setExampleImageFiles([]);
     setExampleImagePreviews([]);
     setExistingExampleImages(prompt.example_images || []);
-    setExampleVideoUrl(prompt.example_video_url || "");
+    setExampleVideoFile(null);
+    setExampleVideoPreview(prompt.example_video_url || "");
     setIsDialogOpen(true);
   };
 
@@ -261,7 +290,8 @@ export default function AdminPrompts() {
     setExampleImageFiles([]);
     setExampleImagePreviews([]);
     setExistingExampleImages([]);
-    setExampleVideoUrl("");
+    setExampleVideoFile(null);
+    setExampleVideoPreview("");
   };
 
   const handleSubmit = () => {
@@ -351,30 +381,9 @@ export default function AdminPrompts() {
                             </Button>
                           </div>
                         </div>
-                        <CardHeader className="pb-2">
+                        <CardHeader className="py-3">
                           <CardTitle className="text-base line-clamp-2">{prompt.title}</CardTitle>
                         </CardHeader>
-                        <CardContent>
-                          {prompt.description && (
-                            <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
-                              {prompt.description}
-                            </p>
-                          )}
-                          {prompt.tags && prompt.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1">
-                              {prompt.tags.slice(0, 3).map((tag) => (
-                                <Badge key={tag} variant="secondary" className="text-xs">
-                                  {tag}
-                                </Badge>
-                              ))}
-                              {prompt.tags.length > 3 && (
-                                <Badge variant="outline" className="text-xs">
-                                  +{prompt.tags.length - 3}
-                                </Badge>
-                              )}
-                            </div>
-                          )}
-                        </CardContent>
                       </Card>
                     );
                   })}
@@ -564,17 +573,49 @@ export default function AdminPrompts() {
                 </div>
               </div>
 
-              {/* Example Video URL */}
+              {/* Example Video Upload */}
               <div className="space-y-2 mt-4">
-                <Label>URL do Vídeo de Exemplo</Label>
-                <Input
-                  value={exampleVideoUrl}
-                  onChange={(e) => setExampleVideoUrl(e.target.value)}
-                  placeholder="https://youtube.com/watch?v=..."
+                <Label>Vídeo de Exemplo</Label>
+                <input
+                  ref={exampleVideoInputRef}
+                  type="file"
+                  accept="video/mp4,video/webm,video/quicktime"
+                  onChange={handleExampleVideoChange}
+                  className="hidden"
                 />
-                <p className="text-xs text-muted-foreground">
-                  YouTube, Vimeo, Google Drive ou link direto
-                </p>
+                <div
+                  onClick={() => !exampleVideoPreview && exampleVideoInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-lg p-4 transition-colors ${
+                    !exampleVideoPreview ? "cursor-pointer hover:border-primary/50" : ""
+                  }`}
+                >
+                  {exampleVideoPreview ? (
+                    <div className="relative">
+                      <video
+                        src={exampleVideoPreview}
+                        controls
+                        className="w-full rounded max-h-48"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 h-6 w-6"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeExampleVideo();
+                        }}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-4 text-muted-foreground">
+                      <Video className="h-8 w-8 mb-2" />
+                      <p className="text-sm">Clique para adicionar vídeo</p>
+                      <p className="text-xs mt-1">MP4, WebM ou MOV</p>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
