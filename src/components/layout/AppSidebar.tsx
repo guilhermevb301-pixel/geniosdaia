@@ -13,7 +13,8 @@ import {
   Users,
   FileText,
   GraduationCap,
-  Layers
+  Layers,
+  Lightbulb
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -27,6 +28,7 @@ import { useIsMentee } from "@/hooks/useIsMentee";
 
 const tools = [
   { label: "Templates", href: "/templates", icon: Zap },
+  { label: "Banco de Prompts", href: "/prompts", icon: Lightbulb },
   { label: "Eventos", href: "/eventos", icon: Calendar },
 ];
 
@@ -183,6 +185,18 @@ export function AppSidebar() {
                       >
                         <BookOpen className="h-4 w-4" />
                         Aulas
+                      </Link>
+                      <Link
+                        to="/admin/prompts"
+                        className={cn(
+                          "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                          isActive("/admin/prompts")
+                            ? "text-primary bg-primary/10"
+                            : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
+                        )}
+                      >
+                        <Lightbulb className="h-4 w-4" />
+                        Prompts
                       </Link>
                       <Link
                         to="/admin/templates"
