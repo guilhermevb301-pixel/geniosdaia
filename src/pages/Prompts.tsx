@@ -17,6 +17,9 @@ interface Prompt {
   content: string;
   description: string | null;
   tags: string[];
+  thumbnail_url: string | null;
+  example_images: string[] | null;
+  example_video_url: string | null;
   created_at: string;
 }
 
