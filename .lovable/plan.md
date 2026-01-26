@@ -1,219 +1,154 @@
 
-# Plano de Implementacao
+# Plano: Correcoes na Visualizacao e Upload de Prompts
 
-## 1. Atualizacoes em Tempo Real para Mentorados
+## Problemas Identificados
 
-### Problema Atual
-Quando o mentor cria etapas ou modifica conteudos no MenteeEditor, o aluno precisa recarregar a pagina para ver as mudancas.
+1. **Visualizacao mostrando informacoes demais**: Card de admin mostra titulo + descricao + tags. Deve mostrar apenas o titulo.
 
-### Solucao: Supabase Realtime
-Habilitar realtime nas tabelas de mentoria para que alteracoes feitas pelo mentor aparecam automaticamente para o aluno.
+2. **Video de exemplo e URL, nao upload**: O sistema usa campo de URL para video. Usuario quer fazer upload de arquivo de video do computador, igual ao upload de imagens.
 
-### Tabelas a Habilitar Realtime
+3. **Imagens cortadas ao visualizar**: O modal de visualizacao de imagem usa `object-cover` que corta a imagem. Deve usar `object-contain` para mostrar imagem completa.
 
-```sql
-ALTER PUBLICATION supabase_realtime ADD TABLE public.mentorship_pillars;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.mentorship_stages;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.mentorship_tasks;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.mentorship_meetings;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.mentorship_notes;
+---
+
+## Mudancas Necessarias
+
+### 1. Simplificar Card de Admin (AdminPrompts.tsx)
+
+**Remover do card**:
+- Descricao do prompt
+- Tags
+
+**Manter no card**:
+- Thumbnail/placeholder
+- Titulo
+- Botoes de editar/excluir
+
+```
+ANTES                          DEPOIS
++-------------------+          +-------------------+
+| [Thumbnail]       |          | [Thumbnail]       |
+| Titulo            |          | Titulo            |
+| Descricao...      |          +-------------------+
+| #tag #tag #tag    |
++-------------------+
 ```
 
-### Modificacoes no Hook `useMenteeData.ts`
+### 2. Upload de Video de Exemplo
 
-Adicionar subscricoes realtime que invalidam as queries quando houver mudancas:
+**Alteracoes**:
+- Adicionar estado para arquivo de video (`exampleVideoFile`)
+- Adicionar preview de video
+- Adicionar ref para input de video (`exampleVideoInputRef`)
+- Criar funcao de upload de video para storage
+- Substituir campo de URL por area de upload similar a imagens
 
+**Interface do formulario**:
+
+```
+Exemplos (opcional)
+--------------------
+Imagens de Exemplo (max. 6)
+[img] [img] [+]
+
+Video de Exemplo
++---------------------------+
+|   [Preview do video]      |
+|   ou                      |
+|   [Upload de video]       |
++---------------------------+
+```
+
+**Formatos aceitos**: MP4, WebM, MOV
+
+### 3. Corrigir Visualizacao de Imagens
+
+**No PromptCard.tsx**:
+- Trocar `object-cover` por `object-contain` no modal de imagem ampliada
+- Garantir que imagem nao seja cortada
+- Manter proporcao original da imagem
+- Ajustar DialogContent para centralizar corretamente
+
+**Codigo corrigido**:
 ```tsx
-useEffect(() => {
-  if (!activeMenteeId) return;
-  
-  const channel = supabase
-    .channel(`mentee-${activeMenteeId}`)
-    .on('postgres_changes', 
-      { event: '*', schema: 'public', table: 'mentorship_pillars', filter: `mentee_id=eq.${activeMenteeId}` },
-      () => queryClient.invalidateQueries({ queryKey: ["pillars", activeMenteeId] })
-    )
-    .on('postgres_changes',
-      { event: '*', schema: 'public', table: 'mentorship_stages', filter: `mentee_id=eq.${activeMenteeId}` },
-      () => queryClient.invalidateQueries({ queryKey: ["stages", activeMenteeId] })
-    )
-    // ... outras tabelas
-    .subscribe();
-
-  return () => { supabase.removeChannel(channel); };
-}, [activeMenteeId]);
+<Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+  <DialogContent className="max-w-4xl p-4 flex items-center justify-center">
+    {selectedImage && (
+      <img
+        src={selectedImage}
+        alt="Exemplo ampliado"
+        className="max-w-full max-h-[80vh] object-contain rounded-lg"
+      />
+    )}
+  </DialogContent>
+</Dialog>
 ```
 
 ---
 
-## 2. Nova Pagina: Banco de Prompts
-
-### Estrutura de Navegacao
-
-A pagina tera navegacao interna com 3 abas (tabs):
-
-```
-/prompts
-  ├── Tab: Videos
-  ├── Tab: Imagens
-  └── Tab: Agentes de IA
-```
-
-### Estrutura do Banco de Dados
-
-Nova tabela para armazenar prompts:
-
-| Coluna | Tipo | Descricao |
-|--------|------|-----------|
-| id | UUID | ID unico |
-| category | TEXT | 'video', 'image' ou 'agent' |
-| title | TEXT | Titulo do prompt |
-| content | TEXT | Conteudo do prompt |
-| description | TEXT | Descricao breve |
-| tags | TEXT[] | Tags para filtro |
-| created_at | TIMESTAMP | Data de criacao |
-| updated_at | TIMESTAMP | Data de atualizacao |
-
-```sql
-CREATE TABLE public.prompts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  category TEXT NOT NULL CHECK (category IN ('video', 'image', 'agent')),
-  title TEXT NOT NULL,
-  content TEXT NOT NULL,
-  description TEXT,
-  tags TEXT[] DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now()
-);
-
--- RLS: Todos podem ver, apenas admins podem gerenciar
-ALTER TABLE public.prompts ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Authenticated can view prompts"
-  ON public.prompts FOR SELECT
-  USING (true);
-
-CREATE POLICY "Admins can manage prompts"
-  ON public.prompts FOR ALL
-  USING (has_role(auth.uid(), 'admin'))
-  WITH CHECK (has_role(auth.uid(), 'admin'));
-```
-
-### Novos Arquivos
-
-| Arquivo | Funcao |
-|---------|--------|
-| `src/pages/Prompts.tsx` | Pagina principal com tabs |
-| `src/pages/admin/AdminPrompts.tsx` | Gerenciamento de prompts (admin) |
-| `src/components/prompts/PromptCard.tsx` | Card para exibir um prompt |
-
-### Interface da Pagina `/prompts`
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│ Banco de Prompts                                            │
-│ Prompts prontos para usar com IAs                           │
-├─────────────────────────────────────────────────────────────┤
-│ [ Videos ] [ Imagens ] [ Agentes de IA ]     🔍 Buscar...   │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│ ┌─────────────┐  ┌─────────────┐  ┌─────────────┐          │
-│ │ 🎬 Titulo   │  │ 🎬 Titulo   │  │ 🎬 Titulo   │          │
-│ │ Descricao  │  │ Descricao  │  │ Descricao  │          │
-│ │ #tag #tag  │  │ #tag #tag  │  │ #tag #tag  │          │
-│ │ [Copiar]   │  │ [Copiar]   │  │ [Copiar]   │          │
-│ └─────────────┘  └─────────────┘  └─────────────┘          │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Atualizacao da Sidebar
-
-Adicionar item "Banco de Prompts" no menu principal:
-
-```tsx
-// Em AppSidebar.tsx
-<Link to="/prompts" ...>
-  <Lightbulb className="h-5 w-5" />
-  Banco de Prompts
-</Link>
-```
-
-### Rotas no App.tsx
-
-```tsx
-<Route path="/prompts" element={<ProtectedRoute><Prompts /></ProtectedRoute>} />
-<Route path="/admin/prompts" element={<AdminRoute><AdminPrompts /></AdminRoute>} />
-```
-
----
-
-## Resumo de Arquivos
-
-### Criar
-
-| Arquivo | Descricao |
-|---------|-----------|
-| `src/pages/Prompts.tsx` | Pagina com tabs para videos, imagens e agentes |
-| `src/pages/admin/AdminPrompts.tsx` | CRUD de prompts para admin |
-| `src/components/prompts/PromptCard.tsx` | Componente card para prompts |
-
-### Modificar
+## Arquivos a Modificar
 
 | Arquivo | Mudancas |
 |---------|----------|
-| `src/App.tsx` | Adicionar rotas /prompts e /admin/prompts |
-| `src/components/layout/AppSidebar.tsx` | Adicionar link "Banco de Prompts" |
-| `src/hooks/useMenteeData.ts` | Adicionar subscricao realtime |
+| `src/pages/admin/AdminPrompts.tsx` | Remover descricao/tags do card, trocar URL por upload de video |
+| `src/components/prompts/PromptCard.tsx` | Corrigir visualizacao de imagem ampliada, exibir video corretamente |
 
-### Migracao SQL
+---
 
-1. Habilitar realtime nas tabelas de mentoria
-2. Criar tabela `prompts` com RLS
+## Fluxo de Upload de Video
+
+1. Usuario clica na area de upload de video
+2. Seleciona arquivo MP4/WebM do computador
+3. Preview do video aparece na area
+4. Ao salvar, video e enviado para Supabase Storage (pasta `videos/`)
+5. URL publica e salva no campo `example_video_url`
 
 ---
 
 ## Secao Tecnica
 
-### Realtime Implementation
-
-O Supabase Realtime usa WebSockets para notificar mudancas. Ao receber um evento, invalidamos a query no React Query que automaticamente refaz a busca.
-
-### Estrutura do PromptCard
+### Novos Estados para Video
 
 ```tsx
-interface Prompt {
-  id: string;
-  category: 'video' | 'image' | 'agent';
-  title: string;
-  content: string;
-  description: string | null;
-  tags: string[];
-}
-
-function PromptCard({ prompt, onCopy }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{prompt.title}</CardTitle>
-        <CardDescription>{prompt.description}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <pre>{prompt.content}</pre>
-        <div className="flex gap-1">
-          {prompt.tags.map(tag => <Badge key={tag}>{tag}</Badge>)}
-        </div>
-      </CardContent>
-      <CardFooter>
-        <Button onClick={() => onCopy(prompt.content)}>
-          <Copy /> Copiar Prompt
-        </Button>
-      </CardFooter>
-    </Card>
-  );
-}
+const [exampleVideoFile, setExampleVideoFile] = useState<File | null>(null);
+const [exampleVideoPreview, setExampleVideoPreview] = useState<string>("");
+const exampleVideoInputRef = useRef<HTMLInputElement>(null);
 ```
 
-### Tabs com Radix UI
+### Funcao de Upload de Video
 
-Usar o componente Tabs ja existente no projeto para navegacao entre categorias.
+```tsx
+const handleExampleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (file) {
+    setExampleVideoFile(file);
+    setExampleVideoPreview(URL.createObjectURL(file));
+  }
+};
+```
+
+### Modificacao na Mutation
+
+No `createMutation` e `updateMutation`, adicionar:
+
+```tsx
+let videoUrl: string | null = null;
+if (exampleVideoFile) {
+  videoUrl = await uploadFile(exampleVideoFile, "videos");
+}
+// usar videoUrl em example_video_url
+```
+
+### Visualizacao de Video no PromptCard
+
+Se houver video, mostrar player nativo:
+
+```tsx
+{prompt.example_video_url && (
+  <video
+    src={prompt.example_video_url}
+    controls
+    className="w-full rounded-lg"
+  />
+)}
+```
