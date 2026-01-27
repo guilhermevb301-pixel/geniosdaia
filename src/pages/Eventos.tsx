@@ -37,7 +37,7 @@ const events = [
   },
   {
     id: 4,
-    title: "Meetup: Comunidade Gêneos",
+    title: "Meetup: Comunidade Gênios",
     description: "Encontro mensal da comunidade para networking.",
     date: "15 Jan",
     time: "19:00",
