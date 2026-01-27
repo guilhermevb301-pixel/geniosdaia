@@ -24,7 +24,7 @@ export const ALLOWED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif
 export const ALLOWED_JSON_EXTENSIONS = ['.json'];
 
 // Maximum file sizes
-export const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+export const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 export const MAX_JSON_SIZE = 2 * 1024 * 1024; // 2MB
 
 export interface FileValidationResult {
