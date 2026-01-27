@@ -1,70 +1,90 @@
 
-# Plano: Corrigir Widget de Suporte
 
-## Problemas Identificados
+# Plano: Corrigir Erro ao Adicionar Imagem nos Prompts
 
-1. **Posicionamento errado**: O widget está posicionado à direita da sidebar (`left-[calc(16rem+1rem)]`), mas deveria estar **dentro da sidebar** no rodapé, como mostra a imagem de referência
-2. **Cor verde não aparece**: A cor `success` está definida no CSS (`--success: 160 100% 38%`), mas **não está mapeada no tailwind.config.ts**, então `bg-success` não funciona
+## Problema Identificado
+
+Quando você tenta adicionar uma imagem maior que **5MB** no prompt, o sistema está bloqueando corretamente (por segurança), mas existem dois problemas:
+
+1. **Validação tardia**: A imagem só é validada quando você clica em "Criar" ou "Salvar", não no momento que seleciona o arquivo
+2. **Mensagem genérica**: O erro "Arquivo muito grande. Tamanho máximo: 5MB" aparece rapidamente, mas é seguido por "Erro ao criar prompt" que é confuso
 
 ---
 
 ## Solução
 
-### 1. Adicionar cor `success` ao Tailwind Config
+### 1. Validar imagem imediatamente ao selecionar
 
-**Arquivo:** `tailwind.config.ts`
+Adicionar validação no momento em que o arquivo é selecionado, tanto na thumbnail quanto nas variações, mostrando o erro instantaneamente.
 
-Adicionar o mapeamento da cor success na seção de cores:
+**Arquivos a modificar:**
+
+| Arquivo | Mudança |
+|---------|---------|
+| `src/components/prompts/VariationEditor.tsx` | Adicionar validação ao selecionar imagem |
+
+### Mudanças no VariationEditor.tsx
 
 ```typescript
-colors: {
-  // ... cores existentes ...
-  success: {
-    DEFAULT: 'hsl(var(--success))',
-    foreground: 'hsl(var(--success-foreground))'
-  },
-  // ...
-}
+// Importar a função de validação
+import { validateImageFile, ALLOWED_IMAGE_EXTENSIONS } from "@/lib/fileValidation";
+
+// Na função handleImageChange, validar ANTES de aceitar o arquivo:
+const handleImageChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (file) {
+    // Validar o arquivo antes de aceitar
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+      toast.error(validation.error || "Arquivo inválido");
+      e.target.value = ''; // Limpar o input
+      return;
+    }
+    updateVariation(index, "imageFile", file);
+  }
+};
 ```
 
 ---
 
-### 2. Mover o Widget para Dentro da Sidebar
+### 2. Melhorar mensagem de erro na mutação
 
-**Arquivo:** `src/components/layout/AppSidebar.tsx`
+Modificar o `onError` para exibir a mensagem de erro específica em vez de uma genérica.
 
-Ao invés de ter o widget como componente flutuante separado, incorporá-lo diretamente no footer da sidebar, substituindo o link de "Suporte" atual pelo card de WhatsApp.
+**Arquivo:** `src/pages/admin/AdminPrompts.tsx`
 
-O footer da sidebar (linhas 248-257) será atualizado para incluir:
-- Título "Precisa de Ajuda?"
-- Subtexto "Entre em contato conosco pelo nosso suporte"
-- Botão verde "Falar no WhatsApp" com o número correto
+```typescript
+// Antes
+onError: () => toast.error("Erro ao criar prompt"),
 
----
-
-### 3. Remover Widget Flutuante do Layout
-
-**Arquivo:** `src/components/layout/AppLayout.tsx`
-
-Remover a importação e uso do `<SupportWidget />` já que ele agora estará dentro da sidebar.
+// Depois
+onError: (error: Error) => toast.error(error.message || "Erro ao criar prompt"),
+```
 
 ---
 
-## Arquivos a Modificar
+## Observações Importantes
 
-| Arquivo | Mudança |
-|---------|---------|
-| `tailwind.config.ts` | Adicionar cor `success` |
-| `src/components/layout/AppSidebar.tsx` | Substituir footer por card de suporte WhatsApp |
-| `src/components/layout/AppLayout.tsx` | Remover `<SupportWidget />` |
+Se a imagem que você está tentando enviar tem mais de 5MB, você tem duas opções:
+
+1. **Comprimir a imagem** antes de fazer upload (usando ferramentas como TinyPNG, Squoosh, ou redimensionando)
+2. **Aumentar o limite** de 5MB para um valor maior (se necessário)
 
 ---
 
-## Resultado Visual Esperado
+## Resumo das Mudanças
 
-O widget ficará exatamente como na imagem de referência:
-- Posicionado no canto inferior esquerdo, dentro da sidebar
-- Card com fundo escuro e borda sutil
-- Título "Precisa de Ajuda?"
-- Subtexto descritivo
-- Botão verde com ícone de WhatsApp e texto "Falar no WhatsApp"
+| Arquivo | Tipo | Descrição |
+|---------|------|-----------|
+| `src/components/prompts/VariationEditor.tsx` | Modificar | Adicionar validação imediata ao selecionar arquivo |
+| `src/pages/admin/AdminPrompts.tsx` | Modificar | Melhorar mensagens de erro nas mutações |
+
+---
+
+## Resultado Esperado
+
+1. Ao selecionar uma imagem maior que 5MB, você verá imediatamente: **"Arquivo muito grande. Tamanho máximo: 5MB"**
+2. A imagem não será aceita e o campo será limpo
+3. Você poderá tentar novamente com uma imagem menor
+4. Se houver outros erros, a mensagem específica será exibida
+
