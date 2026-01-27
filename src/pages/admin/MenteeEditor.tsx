@@ -57,7 +57,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useMenteeData, type Stage, type Task, type Note, type Meeting, type Pillar } from "@/hooks/useMenteeData";
+import { useMenteeData, type Stage, type Task, type Note, type Meeting } from "@/hooks/useMenteeData";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -96,7 +96,7 @@ export default function MenteeEditor() {
   const { menteeId } = useParams<{ menteeId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { mentee, meetings, stages, pillars, isLoading } = useMenteeData(menteeId);
+  const { mentee, meetings, stages, isLoading } = useMenteeData(menteeId);
 
   // Meeting dialog state
   const [isMeetingOpen, setIsMeetingOpen] = useState(false);
@@ -108,15 +108,6 @@ export default function MenteeEditor() {
     notes: "",
   });
 
-  // Pillar dialog state
-  const [isPillarOpen, setIsPillarOpen] = useState(false);
-  const [editingPillar, setEditingPillar] = useState<Pillar | null>(null);
-  const [pillarForm, setPillarForm] = useState({
-    title: "",
-    icon: "folder",
-    icon_color: "#FFD93D",
-  });
-
   // Stage dialog state
   const [isStageOpen, setIsStageOpen] = useState(false);
   const [editingStage, setEditingStage] = useState<Stage | null>(null);
@@ -124,7 +115,6 @@ export default function MenteeEditor() {
     title: "",
     objective: "",
     icon_color: "#F59E0B",
-    pillar_id: "",
   });
 
   // Task dialog state
@@ -146,7 +136,6 @@ export default function MenteeEditor() {
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ["meetings", menteeId] });
     queryClient.invalidateQueries({ queryKey: ["stages", menteeId] });
-    queryClient.invalidateQueries({ queryKey: ["pillars", menteeId] });
     queryClient.invalidateQueries({ queryKey: ["menteeProfile", menteeId] });
   };
 
@@ -205,61 +194,6 @@ export default function MenteeEditor() {
     invalidateAll();
   };
 
-  // Pillar CRUD
-  const handleSavePillar = async () => {
-    if (!menteeId || !pillarForm.title) {
-      toast.error("Preencha o título do pilar");
-      return;
-    }
-
-    if (editingPillar) {
-      const { error } = await supabase
-        .from("mentorship_pillars")
-        .update({
-          title: pillarForm.title,
-          icon: pillarForm.icon,
-          icon_color: pillarForm.icon_color,
-        })
-        .eq("id", editingPillar.id);
-
-      if (error) {
-        toast.error("Erro ao atualizar pilar");
-        return;
-      }
-      toast.success("Pilar atualizado!");
-    } else {
-      const maxOrder = pillars.length > 0 ? Math.max(...pillars.map((p) => p.order_index)) + 1 : 0;
-      const { error } = await supabase.from("mentorship_pillars").insert({
-        mentee_id: menteeId,
-        title: pillarForm.title,
-        icon: pillarForm.icon,
-        icon_color: pillarForm.icon_color,
-        order_index: maxOrder,
-      });
-
-      if (error) {
-        toast.error("Erro ao criar pilar");
-        return;
-      }
-      toast.success("Pilar criado!");
-    }
-
-    invalidateAll();
-    setIsPillarOpen(false);
-    setEditingPillar(null);
-    setPillarForm({ title: "", icon: "folder", icon_color: "#FFD93D" });
-  };
-
-  const handleDeletePillar = async (id: string) => {
-    const { error } = await supabase.from("mentorship_pillars").delete().eq("id", id);
-    if (error) {
-      toast.error("Erro ao excluir pilar");
-      return;
-    }
-    toast.success("Pilar excluído!");
-    invalidateAll();
-  };
-
   // Stage CRUD
   const handleSaveStage = async () => {
     if (!menteeId || !stageForm.title) {
@@ -274,7 +208,6 @@ export default function MenteeEditor() {
           title: stageForm.title,
           objective: stageForm.objective || null,
           icon_color: stageForm.icon_color,
-          pillar_id: stageForm.pillar_id || null,
         })
         .eq("id", editingStage.id);
 
@@ -290,7 +223,6 @@ export default function MenteeEditor() {
         title: stageForm.title,
         objective: stageForm.objective || null,
         icon_color: stageForm.icon_color,
-        pillar_id: stageForm.pillar_id || null,
         order_index: maxOrder,
       });
 
@@ -304,7 +236,7 @@ export default function MenteeEditor() {
     invalidateAll();
     setIsStageOpen(false);
     setEditingStage(null);
-    setStageForm({ title: "", objective: "", icon_color: "#F59E0B", pillar_id: "" });
+    setStageForm({ title: "", objective: "", icon_color: "#F59E0B" });
   };
 
   const handleDeleteStage = async (id: string) => {
@@ -570,85 +502,6 @@ export default function MenteeEditor() {
           </CardContent>
         </Card>
 
-        {/* Pilares - Compact Management */}
-        <Card className="bg-card border-border">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Layers className="h-5 w-5 text-primary" />
-                <CardTitle className="text-base">Pilares</CardTitle>
-                <span className="text-xs text-muted-foreground">
-                  (categorias para organizar fases)
-                </span>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  setEditingPillar(null);
-                  setPillarForm({ title: "", icon: "folder", icon_color: "#FFD93D" });
-                  setIsPillarOpen(true);
-                }}
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Novo Pilar
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {pillars.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Nenhum pilar criado. Crie pilares para categorizar as fases.
-              </p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {pillars.map((pillar) => {
-                  const IconComponent = getIconComponent(pillar.icon);
-                  return (
-                    <Badge
-                      key={pillar.id}
-                      variant="outline"
-                      className="gap-1.5 py-1.5 px-3 text-sm cursor-pointer hover:bg-muted/50 transition-colors group"
-                      style={{ 
-                        backgroundColor: `${pillar.icon_color}10`,
-                        borderColor: `${pillar.icon_color}30`
-                      }}
-                    >
-                      <IconComponent 
-                        className="h-3.5 w-3.5" 
-                        style={{ color: pillar.icon_color }} 
-                      />
-                      <span style={{ color: pillar.icon_color }}>
-                        {pillar.title}
-                      </span>
-                      <button
-                        className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => {
-                          setEditingPillar(pillar);
-                          setPillarForm({
-                            title: pillar.title,
-                            icon: pillar.icon,
-                            icon_color: pillar.icon_color,
-                          });
-                          setIsPillarOpen(true);
-                        }}
-                      >
-                        <Edit className="h-3 w-3" />
-                      </button>
-                      <button
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => handleDeletePillar(pillar.id)}
-                      >
-                        <Trash2 className="h-3 w-3 text-destructive" />
-                      </button>
-                    </Badge>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
         {/* Stages Section */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -661,7 +514,7 @@ export default function MenteeEditor() {
               variant="outline"
               onClick={() => {
                 setEditingStage(null);
-                setStageForm({ title: "", objective: "", icon_color: "#F59E0B", pillar_id: "" });
+                setStageForm({ title: "", objective: "", icon_color: "#F59E0B" });
                 setIsStageOpen(true);
               }}
             >
@@ -676,9 +529,7 @@ export default function MenteeEditor() {
             </Card>
           ) : (
             <div className="grid gap-4">
-              {stages.map((stage) => {
-                const linkedPillar = pillars.find((p) => p.id === stage.pillar_id);
-                return (
+              {stages.map((stage) => (
                   <Card key={stage.id} className="bg-card border-border">
                     <CardHeader className="pb-2">
                       <div className="flex items-start justify-between">
@@ -690,14 +541,7 @@ export default function MenteeEditor() {
                             <GripVertical className="h-4 w-4" style={{ color: stage.icon_color }} />
                           </div>
                           <div>
-                            <div className="flex items-center gap-2">
-                              <h3 className="font-medium">{stage.title}</h3>
-                              {linkedPillar && (
-                                <Badge variant="outline" className="text-xs">
-                                  {linkedPillar.title}
-                                </Badge>
-                              )}
-                            </div>
+                            <h3 className="font-medium">{stage.title}</h3>
                             {stage.objective && (
                               <p
                                 className="text-xs mt-1 font-medium flex items-center gap-1"
@@ -719,7 +563,6 @@ export default function MenteeEditor() {
                                 title: stage.title,
                                 objective: stage.objective || "",
                                 icon_color: stage.icon_color,
-                                pillar_id: stage.pillar_id || "",
                               });
                               setIsStageOpen(true);
                             }}
@@ -880,8 +723,7 @@ export default function MenteeEditor() {
                       </div>
                     </CardContent>
                   </Card>
-                );
-              })}
+              ))}
             </div>
           )}
         </div>
@@ -943,76 +785,6 @@ export default function MenteeEditor() {
         </DialogContent>
       </Dialog>
 
-      {/* Pillar Dialog */}
-      <Dialog open={isPillarOpen} onOpenChange={setIsPillarOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editingPillar ? "Editar Pilar" : "Novo Pilar"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Título *</Label>
-              <Input
-                value={pillarForm.title}
-                onChange={(e) => setPillarForm({ ...pillarForm, title: e.target.value })}
-                placeholder="Ex: Pilar Técnico"
-                className="bg-background"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Ícone</Label>
-              <Select
-                value={pillarForm.icon}
-                onValueChange={(value) => setPillarForm({ ...pillarForm, icon: value })}
-              >
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Selecione um ícone" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover">
-                  {iconOptions.map((option) => {
-                    const IconComp = option.icon;
-                    return (
-                      <SelectItem key={option.value} value={option.value}>
-                        <div className="flex items-center gap-2">
-                          <IconComp className="h-4 w-4" />
-                          {option.label}
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Cor</Label>
-              <div className="flex flex-wrap gap-2">
-                {colorOptions.map((color) => (
-                  <button
-                    key={color.value}
-                    type="button"
-                    className={`h-8 w-8 rounded-full border-2 transition-transform hover:scale-110 ${
-                      pillarForm.icon_color === color.value ? "border-foreground" : "border-transparent"
-                    }`}
-                    style={{ backgroundColor: color.value }}
-                    onClick={() => setPillarForm({ ...pillarForm, icon_color: color.value })}
-                    title={color.label}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsPillarOpen(false)}>
-              Cancelar
-            </Button>
-            <Button variant="accent" onClick={handleSavePillar}>
-              <Save className="h-4 w-4 mr-1" />
-              Salvar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Stage Dialog */}
       <Dialog open={isStageOpen} onOpenChange={setIsStageOpen}>
         <DialogContent className="max-w-md">
@@ -1037,25 +809,6 @@ export default function MenteeEditor() {
                 placeholder="Objetivo desta fase"
                 className="bg-background"
               />
-            </div>
-            <div className="space-y-2">
-              <Label>Pilar (opcional)</Label>
-              <Select
-                value={stageForm.pillar_id}
-                onValueChange={(value) => setStageForm({ ...stageForm, pillar_id: value === "none" ? "" : value })}
-              >
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Selecione um pilar" />
-                </SelectTrigger>
-                <SelectContent className="bg-popover">
-                  <SelectItem value="none">Nenhum (fase avulsa)</SelectItem>
-                  {pillars.map((pillar) => (
-                    <SelectItem key={pillar.id} value={pillar.id}>
-                      {pillar.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
             <div className="space-y-2">
               <Label>Cor</Label>
