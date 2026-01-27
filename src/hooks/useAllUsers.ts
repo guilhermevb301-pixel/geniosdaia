@@ -2,6 +2,86 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+const DEFAULT_MENTORSHIP_TEMPLATE = [
+  {
+    title: "Fase 1: Preparação Técnica",
+    objective: "Ter o ambiente pronto para começar a criar e testar.",
+    icon_color: "#4D96FF",
+    tasks: [
+      { content: "Onboarding e alinhamento de expectativas", completed: false },
+      { content: "Contratação e configuração de VPS", completed: false },
+      { content: "Instalação das ferramentas", completed: false },
+      { content: "Configuração de credenciais", completed: false },
+      { content: "Visão geral do N8N e instalação de templates", completed: false },
+      { content: "Criação do primeiro agente de IA", completed: false },
+    ],
+  },
+  {
+    title: "Fase 2: Construção de Projeto",
+    objective: "Criar um projeto funcional, mesmo que simples, para ganhar experiência prática.",
+    icon_color: "#4D96FF",
+    tasks: [
+      { content: "Escolha de nicho do primeiro projeto", completed: false },
+      { content: "Definição do objetivo e escopo", completed: false },
+      { content: "Montagem do projeto real (passo a passo guiado)", completed: false },
+    ],
+  },
+  {
+    title: "Fase 3: Estratégia de Vendas",
+    objective: "Preparar a base para conseguir os primeiros clientes.",
+    icon_color: "#FFD93D",
+    tasks: [
+      { content: "Definir estratégia de venda e nicho", completed: false },
+      { content: "Estruturar presença no Instagram para vendas", completed: false },
+      { content: "Roteiro para primeiras reuniões", completed: false },
+      { content: "Mapeamento, precificação e criação de proposta comercial", completed: false },
+    ],
+  },
+  {
+    title: "Fase 4: Entrega e Escala",
+    objective: "Aprender a entregar bem e preparar o negócio para crescer.",
+    icon_color: "#6BCB77",
+    tasks: [
+      { content: "Passo a passo: \"Cliente fechou, e agora?\"", completed: false },
+      { content: "Modelo validado de organização e entrega de projetos", completed: false },
+      { content: "Ajustes para aumentar a capacidade e eficiência", completed: false },
+    ],
+  },
+];
+
+const createDefaultStagesAndTasks = async (menteeId: string) => {
+  for (let i = 0; i < DEFAULT_MENTORSHIP_TEMPLATE.length; i++) {
+    const stage = DEFAULT_MENTORSHIP_TEMPLATE[i];
+    
+    const { data: stageData, error: stageError } = await supabase
+      .from("mentorship_stages")
+      .insert({
+        mentee_id: menteeId,
+        title: stage.title,
+        objective: stage.objective,
+        icon_color: stage.icon_color,
+        order_index: i,
+      })
+      .select("id")
+      .single();
+    
+    if (stageError || !stageData) {
+      console.error("Error creating stage:", stageError);
+      continue;
+    }
+    
+    const tasksToInsert = stage.tasks.map((task, index) => ({
+      stage_id: stageData.id,
+      content: task.content,
+      completed: task.completed,
+      order_index: index,
+      is_subtask: false,
+    }));
+    
+    await supabase.from("mentorship_tasks").insert(tasksToInsert);
+  }
+};
+
 export interface UserWithRoles {
   user_id: string;
   email: string;
@@ -77,7 +157,7 @@ export function useAllUsers() {
           if (error) throw error;
         } else {
           // Create new mentee record
-          const { error } = await supabase
+          const { data: newMentee, error } = await supabase
             .from("mentees")
             .insert({
               user_id: userId,
@@ -88,9 +168,16 @@ export function useAllUsers() {
               welcome_message: menteeData.welcome_message,
               mentor_id: user.id,
               status: "active",
-            });
+            })
+            .select("id")
+            .single();
           
           if (error) throw error;
+          
+          // Create default stages and tasks for new mentee
+          if (newMentee) {
+            await createDefaultStagesAndTasks(newMentee.id);
+          }
         }
       } else {
         // Deactivate mentee if demoting from mentee
