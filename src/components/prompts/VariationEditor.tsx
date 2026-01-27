@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { validateImageFile } from "@/lib/fileValidation";
 
 export interface Variation {
   id?: string;
@@ -64,6 +65,12 @@ export function VariationEditor({ variations, onChange, isUploading }: Variation
   const handleImageChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      const validation = validateImageFile(file);
+      if (!validation.valid) {
+        toast.error(validation.error || "Arquivo inválido");
+        e.target.value = '';
+        return;
+      }
       updateVariation(index, "imageFile", file);
     }
   };

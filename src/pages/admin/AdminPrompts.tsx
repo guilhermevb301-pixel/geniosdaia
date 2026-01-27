@@ -170,7 +170,7 @@ export default function AdminPrompts() {
       toast.success("Prompt criado com sucesso!");
       closeDialog();
     },
-    onError: () => toast.error("Erro ao criar prompt"),
+    onError: (error: Error) => toast.error(error.message || "Erro ao criar prompt"),
     onSettled: () => setIsUploading(false),
   });
 
@@ -234,7 +234,7 @@ export default function AdminPrompts() {
       toast.success("Prompt atualizado com sucesso!");
       closeDialog();
     },
-    onError: () => toast.error("Erro ao atualizar prompt"),
+    onError: (error: Error) => toast.error(error.message || "Erro ao atualizar prompt"),
     onSettled: () => setIsUploading(false),
   });
 
