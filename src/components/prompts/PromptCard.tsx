@@ -1,10 +1,17 @@
-import { useState } from "react";
-import { Copy, Video, Image, Bot } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Copy, Video, Image, Bot, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+
+interface PromptVariation {
+  id: string;
+  content: string;
+  image_url: string | null;
+  order_index: number;
+}
 
 interface Prompt {
   id: string;
@@ -17,6 +24,7 @@ interface Prompt {
   thumbnail_focus: string | null;
   example_images: string[] | null;
   example_video_url: string | null;
+  variations?: PromptVariation[];
 }
 
 interface PromptCardProps {
@@ -32,15 +40,36 @@ const categoryIcons = {
 export function PromptCard({ prompt }: PromptCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [currentVariationIndex, setCurrentVariationIndex] = useState(0);
   const Icon = categoryIcons[prompt.category];
 
-  const handleCopy = async () => {
+  // Sort variations by order_index
+  const variations = (prompt.variations || []).sort((a, b) => a.order_index - b.order_index);
+  const hasVariations = variations.length > 0;
+  const currentVariation = variations[currentVariationIndex];
+
+  // Reset variation index when modal opens
+  useEffect(() => {
+    if (isModalOpen) {
+      setCurrentVariationIndex(0);
+    }
+  }, [isModalOpen]);
+
+  const handleCopy = async (content: string) => {
     try {
-      await navigator.clipboard.writeText(prompt.content);
+      await navigator.clipboard.writeText(content);
       toast.success("Prompt copiado!");
     } catch {
       toast.error("Erro ao copiar prompt");
     }
+  };
+
+  const goToPrevious = () => {
+    setCurrentVariationIndex((prev) => Math.max(0, prev - 1));
+  };
+
+  const goToNext = () => {
+    setCurrentVariationIndex((prev) => Math.min(variations.length - 1, prev + 1));
   };
 
   return (
@@ -87,26 +116,10 @@ export function PromptCard({ prompt }: PromptCardProps) {
             </div>
           </DialogHeader>
 
-          {/* Thumbnail principal */}
-          {prompt.thumbnail_url && (
-            <img
-              src={prompt.thumbnail_url}
-              alt={prompt.title}
-              className="w-full rounded-lg"
-            />
-          )}
-
           {/* Descrição */}
           {prompt.description && (
             <p className="text-muted-foreground text-sm">{prompt.description}</p>
           )}
-
-          {/* Conteúdo do Prompt */}
-          <div className="bg-muted rounded-lg p-4 max-h-64 overflow-y-auto">
-            <pre className="text-sm whitespace-pre-wrap font-mono text-foreground">
-              {prompt.content}
-            </pre>
-          </div>
 
           {/* Tags */}
           {prompt.tags && prompt.tags.length > 0 && (
@@ -119,41 +132,118 @@ export function PromptCard({ prompt }: PromptCardProps) {
             </div>
           )}
 
-          {/* Galeria de imagens de exemplo */}
-          {prompt.example_images && prompt.example_images.length > 0 && (
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium text-muted-foreground">Exemplos de imagem</h4>
-              <div className="grid grid-cols-3 gap-2">
-                {prompt.example_images.map((img, i) => (
-                  <img
-                    key={i}
-                    src={img}
-                    alt={`Exemplo ${i + 1}`}
-                    className="w-full aspect-square object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => setSelectedImage(img)}
-                  />
-                ))}
+          {/* Conteúdo com Variações */}
+          {hasVariations ? (
+            <div className="space-y-4">
+              {/* Navegação de Variações */}
+              <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={goToPrevious}
+                  disabled={currentVariationIndex === 0}
+                  className="h-8 w-8"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm font-medium">
+                  Prompt {currentVariationIndex + 1} de {variations.length}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={goToNext}
+                  disabled={currentVariationIndex === variations.length - 1}
+                  className="h-8 w-8"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
               </div>
+
+              {/* Conteúdo da Variação Atual */}
+              {currentVariation && (
+                <div className="space-y-4">
+                  {/* Imagem da Variação */}
+                  {currentVariation.image_url && (
+                    <img
+                      src={currentVariation.image_url}
+                      alt={`Resultado do Prompt ${currentVariationIndex + 1}`}
+                      className="w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={() => setSelectedImage(currentVariation.image_url)}
+                    />
+                  )}
+
+                  {/* Texto do Prompt */}
+                  <div className="bg-muted rounded-lg p-4 max-h-64 overflow-y-auto">
+                    <pre className="text-sm whitespace-pre-wrap font-mono text-foreground">
+                      {currentVariation.content}
+                    </pre>
+                  </div>
+
+                  {/* Botão de Copiar */}
+                  <Button onClick={() => handleCopy(currentVariation.content)} className="w-full">
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copiar Prompt {currentVariationIndex + 1}
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Fallback para prompts sem variações (legado) */
+            <div className="space-y-4">
+              {/* Thumbnail principal */}
+              {prompt.thumbnail_url && (
+                <img
+                  src={prompt.thumbnail_url}
+                  alt={prompt.title}
+                  className="w-full rounded-lg"
+                />
+              )}
+
+              {/* Conteúdo do Prompt */}
+              <div className="bg-muted rounded-lg p-4 max-h-64 overflow-y-auto">
+                <pre className="text-sm whitespace-pre-wrap font-mono text-foreground">
+                  {prompt.content}
+                </pre>
+              </div>
+
+              {/* Galeria de imagens de exemplo (legado) */}
+              {prompt.example_images && prompt.example_images.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-muted-foreground">Exemplos de imagem</h4>
+                  <div className="grid grid-cols-3 gap-2">
+                    {prompt.example_images.map((img, i) => (
+                      <img
+                        key={i}
+                        src={img}
+                        alt={`Exemplo ${i + 1}`}
+                        className="w-full aspect-square object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => setSelectedImage(img)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Vídeo de exemplo */}
+              {prompt.example_video_url && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium text-muted-foreground">Vídeo de exemplo</h4>
+                  <video
+                    src={prompt.example_video_url}
+                    controls
+                    className="w-full rounded-lg"
+                  />
+                </div>
+              )}
+
+              {/* Botão de copiar */}
+              <Button onClick={() => handleCopy(prompt.content)} className="w-full">
+                <Copy className="h-4 w-4 mr-2" />
+                Copiar Prompt
+              </Button>
             </div>
           )}
-
-          {/* Vídeo de exemplo */}
-          {prompt.example_video_url && (
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium text-muted-foreground">Vídeo de exemplo</h4>
-              <video
-                src={prompt.example_video_url}
-                controls
-                className="w-full rounded-lg"
-              />
-            </div>
-          )}
-
-          {/* Botão de copiar */}
-          <Button onClick={handleCopy} className="w-full">
-            <Copy className="h-4 w-4 mr-2" />
-            Copiar Prompt
-          </Button>
         </DialogContent>
       </Dialog>
 

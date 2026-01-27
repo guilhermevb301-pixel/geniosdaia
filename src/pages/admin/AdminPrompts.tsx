@@ -7,15 +7,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FocalPointSelector } from "@/components/prompts/FocalPointSelector";
+import { VariationEditor, Variation } from "@/components/prompts/VariationEditor";
 
 type PromptCategory = "video" | "image" | "agent";
+
+interface PromptVariation {
+  id: string;
+  content: string;
+  image_url: string | null;
+  order_index: number;
+}
 
 interface Prompt {
   id: string;
@@ -29,6 +36,7 @@ interface Prompt {
   example_images: string[] | null;
   example_video_url: string | null;
   created_at: string;
+  variations?: PromptVariation[];
 }
 
 const categoryIcons = {
@@ -54,7 +62,6 @@ export default function AdminPrompts() {
   // Form state
   const [formData, setFormData] = useState({
     title: "",
-    content: "",
     description: "",
     category: "video" as PromptCategory,
     tags: "",
@@ -62,22 +69,23 @@ export default function AdminPrompts() {
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string>("");
   const [thumbnailFocus, setThumbnailFocus] = useState<string>("center");
-  const [exampleImageFiles, setExampleImageFiles] = useState<File[]>([]);
-  const [exampleImagePreviews, setExampleImagePreviews] = useState<string[]>([]);
-  const [existingExampleImages, setExistingExampleImages] = useState<string[]>([]);
-  const [exampleVideoFile, setExampleVideoFile] = useState<File | null>(null);
-  const [exampleVideoPreview, setExampleVideoPreview] = useState<string>("");
+  const [variations, setVariations] = useState<Variation[]>([
+    { content: "", image_url: null, order_index: 0, isNew: true },
+  ]);
 
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
-  const exampleImagesInputRef = useRef<HTMLInputElement>(null);
-  const exampleVideoInputRef = useRef<HTMLInputElement>(null);
 
   const { data: prompts, isLoading } = useQuery({
-    queryKey: ["prompts"],
+    queryKey: ["admin-prompts"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("prompts")
-        .select("*")
+        .select(`
+          *,
+          variations:prompt_variations(
+            id, content, image_url, order_index
+          )
+        `)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as Prompt[];
@@ -88,8 +96,7 @@ export default function AdminPrompts() {
     const fileExt = file.name.split(".").pop();
     const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-    console.log("Uploading file:", fileName);
-    const { error, data } = await supabase.storage.from("prompts").upload(fileName, file);
+    const { error } = await supabase.storage.from("prompts").upload(fileName, file);
     
     if (error) {
       console.error("Upload error:", error);
@@ -97,9 +104,7 @@ export default function AdminPrompts() {
       throw error;
     }
 
-    console.log("Upload success:", data);
     const { data: urlData } = supabase.storage.from("prompts").getPublicUrl(fileName);
-    console.log("Public URL:", urlData.publicUrl);
     return urlData.publicUrl;
   };
 
@@ -108,39 +113,51 @@ export default function AdminPrompts() {
       setIsUploading(true);
 
       let thumbnailUrl: string | null = null;
-      let exampleImages: string[] = [];
-      let videoUrl: string | null = null;
 
       // Upload thumbnail
       if (thumbnailFile) {
         thumbnailUrl = await uploadFile(thumbnailFile, "thumbnails");
       }
 
-      // Upload example images
-      for (const file of exampleImageFiles) {
-        const url = await uploadFile(file, "examples");
-        exampleImages.push(url);
-      }
+      // Create prompt first
+      const { data: promptData, error: promptError } = await supabase
+        .from("prompts")
+        .insert({
+          title: formData.title,
+          content: variations[0]?.content || "", // Use first variation as main content for backwards compatibility
+          description: formData.description || null,
+          category: formData.category,
+          tags: formData.tags.split(",").map((t) => t.trim()).filter(Boolean),
+          thumbnail_url: thumbnailUrl,
+          thumbnail_focus: thumbnailFocus,
+        })
+        .select()
+        .single();
 
-      // Upload example video
-      if (exampleVideoFile) {
-        videoUrl = await uploadFile(exampleVideoFile, "videos");
-      }
+      if (promptError) throw promptError;
 
-      const { error } = await supabase.from("prompts").insert({
-        title: formData.title,
-        content: formData.content,
-        description: formData.description || null,
-        category: formData.category,
-        tags: formData.tags.split(",").map((t) => t.trim()).filter(Boolean),
-        thumbnail_url: thumbnailUrl,
-        thumbnail_focus: thumbnailFocus,
-        example_images: exampleImages.length > 0 ? exampleImages : null,
-        example_video_url: videoUrl,
-      });
-      if (error) throw error;
+      // Upload variation images and create variations
+      for (const variation of variations) {
+        let imageUrl = variation.image_url;
+        
+        if (variation.imageFile) {
+          imageUrl = await uploadFile(variation.imageFile, "variations");
+        }
+
+        const { error: variationError } = await supabase
+          .from("prompt_variations")
+          .insert({
+            prompt_id: promptData.id,
+            content: variation.content,
+            image_url: imageUrl,
+            order_index: variation.order_index,
+          });
+
+        if (variationError) throw variationError;
+      }
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-prompts"] });
       queryClient.invalidateQueries({ queryKey: ["prompts"] });
       toast.success("Prompt criado com sucesso!");
       closeDialog();
@@ -155,42 +172,56 @@ export default function AdminPrompts() {
       setIsUploading(true);
 
       let thumbnailUrl = editingPrompt.thumbnail_url;
-      let exampleImages = [...existingExampleImages];
-      let videoUrl = editingPrompt.example_video_url;
 
       // Upload new thumbnail if provided
       if (thumbnailFile) {
         thumbnailUrl = await uploadFile(thumbnailFile, "thumbnails");
       }
 
-      // Upload new example images
-      for (const file of exampleImageFiles) {
-        const url = await uploadFile(file, "examples");
-        exampleImages.push(url);
-      }
-
-      // Upload new example video if provided
-      if (exampleVideoFile) {
-        videoUrl = await uploadFile(exampleVideoFile, "videos");
-      }
-
-      const { error } = await supabase
+      // Update prompt
+      const { error: promptError } = await supabase
         .from("prompts")
         .update({
           title: formData.title,
-          content: formData.content,
+          content: variations[0]?.content || "",
           description: formData.description || null,
           category: formData.category,
           tags: formData.tags.split(",").map((t) => t.trim()).filter(Boolean),
           thumbnail_url: thumbnailUrl,
           thumbnail_focus: thumbnailFocus,
-          example_images: exampleImages.length > 0 ? exampleImages : null,
-          example_video_url: videoUrl,
         })
         .eq("id", editingPrompt.id);
-      if (error) throw error;
+
+      if (promptError) throw promptError;
+
+      // Delete existing variations
+      await supabase
+        .from("prompt_variations")
+        .delete()
+        .eq("prompt_id", editingPrompt.id);
+
+      // Create new variations
+      for (const variation of variations) {
+        let imageUrl = variation.image_url;
+        
+        if (variation.imageFile) {
+          imageUrl = await uploadFile(variation.imageFile, "variations");
+        }
+
+        const { error: variationError } = await supabase
+          .from("prompt_variations")
+          .insert({
+            prompt_id: editingPrompt.id,
+            content: variation.content,
+            image_url: imageUrl,
+            order_index: variation.order_index,
+          });
+
+        if (variationError) throw variationError;
+      }
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-prompts"] });
       queryClient.invalidateQueries({ queryKey: ["prompts"] });
       toast.success("Prompt atualizado com sucesso!");
       closeDialog();
@@ -205,6 +236,7 @@ export default function AdminPrompts() {
       if (error) throw error;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-prompts"] });
       queryClient.invalidateQueries({ queryKey: ["prompts"] });
       toast.success("Prompt excluído com sucesso!");
       setDeleteId(null);
@@ -220,47 +252,10 @@ export default function AdminPrompts() {
     }
   };
 
-  const handleExampleImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    const totalImages = existingExampleImages.length + exampleImageFiles.length + files.length;
-    
-    if (totalImages > 6) {
-      toast.error("Máximo de 6 imagens de exemplo");
-      return;
-    }
-
-    setExampleImageFiles((prev) => [...prev, ...files]);
-    const previews = files.map((file) => URL.createObjectURL(file));
-    setExampleImagePreviews((prev) => [...prev, ...previews]);
-  };
-
-  const removeExampleImage = (index: number, isExisting: boolean) => {
-    if (isExisting) {
-      setExistingExampleImages((prev) => prev.filter((_, i) => i !== index));
-    } else {
-      setExampleImageFiles((prev) => prev.filter((_, i) => i !== index));
-      setExampleImagePreviews((prev) => prev.filter((_, i) => i !== index));
-    }
-  };
-
-  const handleExampleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setExampleVideoFile(file);
-      setExampleVideoPreview(URL.createObjectURL(file));
-    }
-  };
-
-  const removeExampleVideo = () => {
-    setExampleVideoFile(null);
-    setExampleVideoPreview("");
-  };
-
   const openNewDialog = () => {
     setEditingPrompt(null);
     setFormData({
       title: "",
-      content: "",
       description: "",
       category: activeTab,
       tags: "",
@@ -268,11 +263,7 @@ export default function AdminPrompts() {
     setThumbnailFile(null);
     setThumbnailPreview("");
     setThumbnailFocus("center");
-    setExampleImageFiles([]);
-    setExampleImagePreviews([]);
-    setExistingExampleImages([]);
-    setExampleVideoFile(null);
-    setExampleVideoPreview("");
+    setVariations([{ content: "", image_url: null, order_index: 0, isNew: true }]);
     setIsDialogOpen(true);
   };
 
@@ -280,7 +271,6 @@ export default function AdminPrompts() {
     setEditingPrompt(prompt);
     setFormData({
       title: prompt.title,
-      content: prompt.content,
       description: prompt.description || "",
       category: prompt.category,
       tags: prompt.tags?.join(", ") || "",
@@ -288,11 +278,30 @@ export default function AdminPrompts() {
     setThumbnailFile(null);
     setThumbnailPreview(prompt.thumbnail_url || "");
     setThumbnailFocus(prompt.thumbnail_focus || "center");
-    setExampleImageFiles([]);
-    setExampleImagePreviews([]);
-    setExistingExampleImages(prompt.example_images || []);
-    setExampleVideoFile(null);
-    setExampleVideoPreview(prompt.example_video_url || "");
+    
+    // Load existing variations or create one from legacy content
+    if (prompt.variations && prompt.variations.length > 0) {
+      setVariations(
+        prompt.variations
+          .sort((a, b) => a.order_index - b.order_index)
+          .map((v) => ({
+            id: v.id,
+            content: v.content,
+            image_url: v.image_url,
+            order_index: v.order_index,
+          }))
+      );
+    } else {
+      // Fallback for prompts without variations
+      setVariations([
+        {
+          content: prompt.content,
+          image_url: null,
+          order_index: 0,
+          isNew: true,
+        },
+      ]);
+    }
     setIsDialogOpen(true);
   };
 
@@ -302,16 +311,16 @@ export default function AdminPrompts() {
     setThumbnailFile(null);
     setThumbnailPreview("");
     setThumbnailFocus("center");
-    setExampleImageFiles([]);
-    setExampleImagePreviews([]);
-    setExistingExampleImages([]);
-    setExampleVideoFile(null);
-    setExampleVideoPreview("");
+    setVariations([{ content: "", image_url: null, order_index: 0, isNew: true }]);
   };
 
   const handleSubmit = () => {
-    if (!formData.title || !formData.content) {
-      toast.error("Preencha título e conteúdo");
+    if (!formData.title) {
+      toast.error("Preencha o título");
+      return;
+    }
+    if (!variations.some((v) => v.content.trim())) {
+      toast.error("Adicione pelo menos uma variação com conteúdo");
       return;
     }
     if (editingPrompt) {
@@ -361,6 +370,7 @@ export default function AdminPrompts() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {filteredPrompts.map((prompt) => {
                     const Icon = categoryIcons[prompt.category];
+                    const variationCount = prompt.variations?.length || 0;
                     return (
                       <Card key={prompt.id} className="overflow-hidden">
                         {/* Thumbnail preview with focal point */}
@@ -396,6 +406,12 @@ export default function AdminPrompts() {
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                           </div>
+                          {/* Variation count badge */}
+                          {variationCount > 0 && (
+                            <div className="absolute bottom-2 left-2 bg-background/80 backdrop-blur-sm px-2 py-1 rounded text-xs font-medium">
+                              {variationCount} variação(ões)
+                            </div>
+                          )}
                         </div>
                         <CardHeader className="py-3">
                           <CardTitle className="text-base line-clamp-2">{prompt.title}</CardTitle>
@@ -516,17 +532,6 @@ export default function AdminPrompts() {
               />
             </div>
 
-            {/* Conteúdo */}
-            <div className="space-y-2">
-              <Label>Conteúdo do Prompt *</Label>
-              <Textarea
-                value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                placeholder="Cole o prompt aqui..."
-                rows={6}
-              />
-            </div>
-
             {/* Tags */}
             <div className="space-y-2">
               <Label>Tags (separadas por vírgula)</Label>
@@ -539,113 +544,11 @@ export default function AdminPrompts() {
 
             {/* Separator */}
             <div className="border-t pt-4">
-              <h4 className="text-sm font-medium mb-4">Exemplos (opcional)</h4>
-
-              {/* Example Images */}
-              <div className="space-y-2">
-                <Label>Imagens de Exemplo (máx. 6)</Label>
-                <input
-                  ref={exampleImagesInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleExampleImagesChange}
-                  className="hidden"
-                />
-                <div className="grid grid-cols-4 gap-2">
-                  {/* Existing images */}
-                  {existingExampleImages.map((url, index) => (
-                    <div key={`existing-${index}`} className="relative group">
-                      <img
-                        src={url}
-                        alt={`Exemplo ${index + 1}`}
-                        className="w-full aspect-square object-cover rounded"
-                      />
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        className="absolute -top-2 -right-2 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => removeExampleImage(index, true)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
-                  {/* New images */}
-                  {exampleImagePreviews.map((url, index) => (
-                    <div key={`new-${index}`} className="relative group">
-                      <img
-                        src={url}
-                        alt={`Novo exemplo ${index + 1}`}
-                        className="w-full aspect-square object-cover rounded"
-                      />
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        className="absolute -top-2 -right-2 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => removeExampleImage(index, false)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
-                  {/* Add button */}
-                  {existingExampleImages.length + exampleImageFiles.length < 6 && (
-                    <button
-                      type="button"
-                      onClick={() => exampleImagesInputRef.current?.click()}
-                      className="aspect-square border-2 border-dashed rounded flex items-center justify-center hover:border-primary/50 transition-colors"
-                    >
-                      <Plus className="h-5 w-5 text-muted-foreground" />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Example Video Upload */}
-              <div className="space-y-2 mt-4">
-                <Label>Vídeo de Exemplo</Label>
-                <input
-                  ref={exampleVideoInputRef}
-                  type="file"
-                  accept="video/mp4,video/webm,video/quicktime"
-                  onChange={handleExampleVideoChange}
-                  className="hidden"
-                />
-                <div
-                  onClick={() => !exampleVideoPreview && exampleVideoInputRef.current?.click()}
-                  className={`border-2 border-dashed rounded-lg p-4 transition-colors ${
-                    !exampleVideoPreview ? "cursor-pointer hover:border-primary/50" : ""
-                  }`}
-                >
-                  {exampleVideoPreview ? (
-                    <div className="relative">
-                      <video
-                        src={exampleVideoPreview}
-                        controls
-                        className="w-full rounded max-h-48"
-                      />
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-2 right-2 h-6 w-6"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeExampleVideo();
-                        }}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-4 text-muted-foreground">
-                      <Video className="h-8 w-8 mb-2" />
-                      <p className="text-sm">Clique para adicionar vídeo</p>
-                      <p className="text-xs mt-1">MP4, WebM ou MOV</p>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <VariationEditor
+                variations={variations}
+                onChange={setVariations}
+                isUploading={isUploading}
+              />
             </div>
           </div>
           <DialogFooter>
