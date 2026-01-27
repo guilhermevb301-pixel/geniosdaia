@@ -1,96 +1,174 @@
 
 
-# Plano: Seletor de Ponto Focal com Arrastar (Drag)
+# Plano: Multiplas Variacoes de Prompts por Estilo
 
 ## Resumo
 
-Substituir o grid de 9 botoes por uma interacao de arrastar (drag) na propria imagem. O mentor clica e arrasta sobre a imagem de preview para definir exatamente qual parte deve ficar visivel no card.
+Atualmente cada prompt tem apenas UM texto e pode ter varias imagens de exemplo separadas. Voce quer que cada prompt seja uma "colecao" de variacoes, onde cada variacao tem seu proprio texto + imagem, navegaveis como paginas.
 
 ---
 
-## Como Vai Funcionar
+## Exemplo Visual
 
 ```text
-+----------------------------------+
-|                                  |
-|    [Imagem de Preview]           |
-|         +----+                   |
-|         | X  |  <-- Marcador     |
-|         +----+     arrastavel    |
-|                                  |
-+----------------------------------+
-    Clique e arraste para ajustar
-```
+Estrutura Atual:
++-------------------+
+| Prompt Card       |
++-------------------+
+      |
+      v
++-----------------------------------+
+| Titulo: "Influencer Skincare"    |
+| Prompt: [texto unico]            |
+| Imagens: img1, img2, img3        | <- imagens separadas do texto
++-----------------------------------+
 
-1. O mentor faz upload da imagem
-2. Um marcador (crosshair/circulo) aparece sobre a imagem
-3. O mentor clica e arrasta o marcador para a posicao desejada
-4. O valor do foco e salvo como porcentagem (ex: "35% 70%")
-5. O preview simula como ficara no grid
-
----
-
-## Mudanca no Armazenamento
-
-**Antes:** Valores como `"top left"`, `"center"`, `"bottom right"`
-
-**Depois:** Valores em porcentagem como `"25% 50%"`, `"0% 100%"`, `"50% 50%"`
-
-Isso permite precisao de pixel. O CSS `object-position` aceita valores em porcentagem nativamente.
-
----
-
-## Componente FocalPointSelector
-
-Criar um componente reutilizavel que:
-
-1. Exibe a imagem em tamanho maior
-2. Mostra um marcador circular na posicao atual
-3. Captura eventos de mouse (mousedown, mousemove, mouseup)
-4. Calcula a posicao relativa do click como porcentagem
-5. Atualiza o estado em tempo real
-
-```tsx
-interface FocalPointSelectorProps {
-  imageUrl: string;
-  value: string; // "50% 50%" format
-  onChange: (value: string) => void;
-}
+Nova Estrutura:
++-------------------+
+| Prompt Card       |
++-------------------+
+      |
+      v
++-----------------------------------+
+| Titulo: "Influencer Skincare"    |
+|                                   |
+| [1/3]  < Prompt 1 >  [>]         |
+| [Texto do Prompt 1]              |
+| [Imagem do Prompt 1]             |
+|-----------------------------------|
+| [2/3]  < Prompt 2 >  [>]         |
+| [Texto do Prompt 2]              |
+| [Imagem do Prompt 2]             |
+|-----------------------------------|
+| etc...                           |
++-----------------------------------+
 ```
 
 ---
 
-## Interacao do Usuario
+## Estrutura de Dados
 
-| Acao | Resultado |
-|------|-----------|
-| Click na imagem | Move o ponto focal para essa posicao |
-| Arrastar (drag) | Move o ponto focal continuamente |
-| Soltar mouse | Finaliza o ajuste |
+### Tabela Nova: prompt_variations
 
-O marcador segue o mouse enquanto arrasta, dando feedback visual imediato.
+Uma tabela separada para armazenar as variacoes de cada prompt:
+
+| Campo | Tipo | Descricao |
+|-------|------|-----------|
+| id | UUID | Identificador unico |
+| prompt_id | UUID | FK para prompts.id |
+| content | TEXT | Texto do prompt desta variacao |
+| image_url | TEXT | Imagem desta variacao (opcional) |
+| order_index | INT | Ordem de exibicao |
+| created_at | TIMESTAMP | Data de criacao |
+
+### Impacto na Tabela prompts
+
+- Manter `content` como prompt principal/descricao geral (ou deixar vazio se usar variacoes)
+- Manter `thumbnail_url` como capa do card no grid
+- Remover dependencia de `example_images` (as imagens agora vem das variacoes)
 
 ---
 
-## Preview Simulado
+## Interface do Usuario (Visualizacao)
 
-Abaixo do seletor, mostrar um mini-preview de como a imagem ficara no card:
+Ao clicar no card, o modal tera navegacao de paginas:
 
 ```text
-Ponto Focal:
-+----------------------------------+
-|                                  |
-|    [Imagem grande com marcador]  |
-|              O                   |
-|                                  |
-+----------------------------------+
-    Clique e arraste para ajustar
++----------------------------------------------+
+|  [X]                                         |
+|  Titulo do Estilo                            |
+|----------------------------------------------|
+|                                              |
+|  Prompt 1:                                   |
+|  +----------------------------------------+  |
+|  | Vertical portrait of a [DESCREVA...]   |  |
+|  | wearing a clean white fitted tank...   |  |
+|  +----------------------------------------+  |
+|                                              |
+|  [Imagem gerada com este prompt]             |
+|  +------------------------+                  |
+|  |                        |                  |
+|  |   (imagem)             |                  |
+|  |                        |                  |
+|  +------------------------+                  |
+|                                              |
+|  [Copiar Prompt 1]                           |
+|                                              |
+|----------------------------------------------|
+|           < 1/3 >  (paginacao)               |
++----------------------------------------------+
+```
 
-Preview no Card:
-+------------+
-|   Corte    |
-|  aplicado  |
-+------------+
+Botoes de navegacao permitem ir para Prompt 2, Prompt 3, etc.
+
+---
+
+## Interface de Edicao (Admin)
+
+No painel admin, ao criar/editar um prompt:
+
+```text
+Titulo: [Influencer Skincare Style]
+Descricao: [Prompts para fotos de influencer...]
+Imagem de Capa: [upload thumbnail]
+
+Variacoes:
++------------------------------------------+
+| Variacao 1                          [-]  |
+| Prompt: [textarea com texto]             |
+| Imagem: [upload/preview]                 |
++------------------------------------------+
++------------------------------------------+
+| Variacao 2                          [-]  |
+| Prompt: [textarea com texto]             |
+| Imagem: [upload/preview]                 |
++------------------------------------------+
+         [+ Adicionar Variacao]
+```
+
+---
+
+## Migracao do Banco de Dados
+
+### 1. Criar tabela prompt_variations
+
+```sql
+CREATE TABLE public.prompt_variations (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  prompt_id UUID REFERENCES public.prompts(id) ON DELETE CASCADE NOT NULL,
+  content TEXT NOT NULL,
+  image_url TEXT,
+  order_index INT DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- RLS
+ALTER TABLE public.prompt_variations ENABLE ROW LEVEL SECURITY;
+
+-- Politica: qualquer usuario autenticado pode ler
+CREATE POLICY "Anyone can read prompt_variations"
+  ON public.prompt_variations FOR SELECT
+  USING (true);
+
+-- Politica: mentores podem inserir/atualizar/deletar
+CREATE POLICY "Mentors can manage prompt_variations"
+  ON public.prompt_variations FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.user_roles
+      WHERE user_roles.user_id = auth.uid()
+      AND user_roles.role IN ('admin', 'mentor')
+    )
+  );
+```
+
+### 2. Migrar dados existentes (opcional)
+
+Se houver prompts com `content` preenchido, criar uma variacao inicial:
+
+```sql
+INSERT INTO public.prompt_variations (prompt_id, content, order_index)
+SELECT id, content, 0 FROM public.prompts WHERE content IS NOT NULL;
 ```
 
 ---
@@ -99,117 +177,126 @@ Preview no Card:
 
 | Arquivo | Mudancas |
 |---------|----------|
-| `src/pages/admin/AdminPrompts.tsx` | Substituir grid de botoes pelo componente de drag |
-| `src/components/prompts/PromptCard.tsx` | Ja suporta valores em porcentagem (nenhuma mudanca) |
+| Migracao SQL | Criar tabela `prompt_variations` com RLS |
+| `src/pages/admin/AdminPrompts.tsx` | Adicionar UI para gerenciar variacoes |
+| `src/components/prompts/PromptCard.tsx` | Adicionar navegacao entre variacoes |
+| `src/pages/Prompts.tsx` | Buscar variacoes junto com prompts |
+| `src/integrations/supabase/types.ts` | Auto-gerado apos migracao |
 
 ---
 
-## Implementacao Detalhada
+## Fluxo do Mentor
 
-### 1. Estado do Componente
+1. Criar novo prompt com titulo e thumbnail
+2. Adicionar variacoes (cada uma com texto + imagem)
+3. Reordenar variacoes se necessario
+4. Salvar
 
-```tsx
-const [isDragging, setIsDragging] = useState(false);
-const imageContainerRef = useRef<HTMLDivElement>(null);
+---
 
-// Converter "50% 50%" para {x: 50, y: 50}
-const parsePosition = (value: string) => {
-  const [x, y] = value.split(' ').map(v => parseFloat(v));
-  return { x: x || 50, y: y || 50 };
-};
-```
+## Fluxo do Usuario
 
-### 2. Handlers de Mouse
-
-```tsx
-const handleMouseDown = (e: React.MouseEvent) => {
-  setIsDragging(true);
-  updatePosition(e);
-};
-
-const handleMouseMove = (e: React.MouseEvent) => {
-  if (!isDragging) return;
-  updatePosition(e);
-};
-
-const handleMouseUp = () => {
-  setIsDragging(false);
-};
-
-const updatePosition = (e: React.MouseEvent) => {
-  const rect = imageContainerRef.current?.getBoundingClientRect();
-  if (!rect) return;
-  
-  const x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
-  const y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
-  
-  setThumbnailFocus(`${x.toFixed(0)}% ${y.toFixed(0)}%`);
-};
-```
-
-### 3. Marcador Visual
-
-```tsx
-<div 
-  className="absolute w-6 h-6 border-2 border-white rounded-full shadow-lg pointer-events-none"
-  style={{
-    left: `${position.x}%`,
-    top: `${position.y}%`,
-    transform: 'translate(-50%, -50%)',
-    boxShadow: '0 0 0 2px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3)'
-  }}
->
-  <div className="absolute inset-1 bg-white/50 rounded-full" />
-</div>
-```
-
-### 4. Cursor e Feedback
-
-- Cursor `crosshair` ao passar sobre a imagem
-- Cursor `grabbing` durante o arrasto
-- Marcador pulsa levemente ao arrastar
+1. Ver galeria de prompts (thumbnails)
+2. Clicar em um prompt
+3. Ver modal com primeira variacao
+4. Navegar entre variacoes usando setas < >
+5. Copiar o prompt da variacao desejada
 
 ---
 
 ## Secao Tecnica
 
-### Compatibilidade com Valores Existentes
+### Query para buscar prompts com variacoes
 
-O sistema precisa ser compativel com os valores antigos ("center", "top left", etc). Ao carregar um prompt antigo:
-
-```tsx
-const normalizePosition = (value: string): string => {
-  const presets: Record<string, string> = {
-    'top left': '0% 0%',
-    'top center': '50% 0%',
-    'top right': '100% 0%',
-    'center left': '0% 50%',
-    'center': '50% 50%',
-    'center right': '100% 50%',
-    'bottom left': '0% 100%',
-    'bottom center': '50% 100%',
-    'bottom right': '100% 100%',
-  };
-  return presets[value] || value;
-};
+```typescript
+const { data } = await supabase
+  .from("prompts")
+  .select(`
+    *,
+    variations:prompt_variations(
+      id, content, image_url, order_index
+    )
+  `)
+  .order("created_at", { ascending: false });
 ```
 
-### Touch Support (Mobile)
-
-Adicionar suporte para toque em dispositivos moveis:
+### Componente de navegacao no modal
 
 ```tsx
-onTouchStart={(e) => handleTouchStart(e)}
-onTouchMove={(e) => handleTouchMove(e)}
-onTouchEnd={() => setIsDragging(false)}
+const [currentIndex, setCurrentIndex] = useState(0);
+const variations = prompt.variations || [];
+const current = variations[currentIndex];
+
+return (
+  <div>
+    {/* Conteudo da variacao atual */}
+    <pre>{current?.content}</pre>
+    {current?.image_url && <img src={current.image_url} />}
+    
+    {/* Navegacao */}
+    <div className="flex justify-between">
+      <Button 
+        disabled={currentIndex === 0}
+        onClick={() => setCurrentIndex(i => i - 1)}
+      >
+        Anterior
+      </Button>
+      <span>{currentIndex + 1} / {variations.length}</span>
+      <Button 
+        disabled={currentIndex === variations.length - 1}
+        onClick={() => setCurrentIndex(i => i + 1)}
+      >
+        Proximo
+      </Button>
+    </div>
+  </div>
+);
+```
+
+### Componente de edicao de variacoes
+
+```tsx
+const [variations, setVariations] = useState<Variation[]>([]);
+
+const addVariation = () => {
+  setVariations([...variations, { content: "", image_url: null }]);
+};
+
+const removeVariation = (index: number) => {
+  setVariations(variations.filter((_, i) => i !== index));
+};
+
+return (
+  <div className="space-y-4">
+    {variations.map((v, i) => (
+      <div key={i} className="border rounded p-4">
+        <div className="flex justify-between mb-2">
+          <Label>Variacao {i + 1}</Label>
+          <Button variant="ghost" size="icon" onClick={() => removeVariation(i)}>
+            <X />
+          </Button>
+        </div>
+        <Textarea
+          value={v.content}
+          onChange={(e) => updateVariation(i, "content", e.target.value)}
+          placeholder="Texto do prompt..."
+        />
+        {/* Upload de imagem */}
+      </div>
+    ))}
+    <Button variant="outline" onClick={addVariation}>
+      <Plus /> Adicionar Variacao
+    </Button>
+  </div>
+);
 ```
 
 ---
 
 ## Resultado Esperado
 
-- Interface mais intuitiva e precisa
-- Mentor pode posicionar o foco em qualquer ponto da imagem
-- Feedback visual imediato do resultado
-- Compativel com valores existentes no banco de dados
+- Cada prompt pode ter multiplas variacoes (texto + imagem)
+- Usuario navega entre variacoes no modal
+- Mentor gerencia variacoes facilmente no admin
+- Visual como as imagens de referencia que voce enviou: Prompt 1 + Imagem, Prompt 2 + Imagem, etc.
 
