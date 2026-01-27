@@ -1,100 +1,196 @@
 
-# Plano: Corrigir Upload e Exibição de Imagens nos Prompts
+# Plano: Miniatura com Foco Ajustavel e Titulo Abaixo
 
-## Problemas Identificados
+## Resumo
 
-1. **Upload não está funcionando**: A imagem do thumbnail não está sendo salva no banco. O campo `thumbnail_url` está `null` mesmo após editar e salvar.
+Atualmente a imagem esta usando `object-contain` que deixa espacos vazios. Voce quer:
 
-2. **Visualização cortando imagens**: O card usa `object-cover` que corta as imagens para preencher o espaço.
-
----
-
-## Causa Raiz
-
-O problema principal é que quando você **edita** um prompt existente e adiciona uma imagem, o sistema mostra apenas o preview local mas pode estar falhando no upload. Preciso verificar e corrigir o fluxo de upload.
+1. Imagem preenchendo o card completamente (`object-cover`)
+2. Titulo abaixo da imagem (fora do overlay)
+3. Mentor pode ajustar o ponto focal da imagem para escolher qual parte aparece
 
 ---
 
-## Correções Necessárias
+## Solucao Proposta
 
-### 1. Corrigir o Preview de Imagens no PromptCard.tsx
+Adicionar um campo `thumbnail_focus` na tabela `prompts` que armazena a posicao do foco (ex: "center", "top", "bottom", "left", "right"). O mentor seleciona isso ao fazer upload da imagem, e a exibicao usa essa posicao como `object-position`.
 
-Trocar `object-cover` por `object-contain` para mostrar a imagem completa sem cortar:
+---
 
-**Arquivo**: `src/components/prompts/PromptCard.tsx`
+## Mudancas Visuais
 
+```text
+ANTES (object-contain):          DEPOIS (object-cover + foco):
++--------------------+           +--------------------+
+|    [ Imagem    ]   |           |####################|
+|    [ com       ]   |           |## Imagem cheia  ##|
+|    [ espacos   ]   |           |## foco ajustado ##|
+|                    |           |####################|
++--------------------+           +--------------------+
+|~~~ Titulo ~~~      |           | Titulo do Prompt   |
++--------------------+           +--------------------+
+     (overlay)                        (abaixo)
 ```
-ANTES (linha 58):
-className="w-full h-full object-cover transition-transform..."
 
-DEPOIS:
-className="w-full h-full object-contain transition-transform..."
+---
+
+## 1. Migracao do Banco de Dados
+
+Adicionar coluna para armazenar a posicao do foco:
+
+```sql
+ALTER TABLE public.prompts 
+ADD COLUMN thumbnail_focus TEXT DEFAULT 'center';
 ```
 
-Isso garante que:
-- A imagem aparece inteira, sem cortes
-- Mantém a proporção original da imagem
-- Fundo do card fica visível nas bordas se a imagem não tiver a mesma proporção
+**Valores possiveis:**
+- `center` (padrao)
+- `top`
+- `bottom`
+- `left`
+- `right`
+- `top-left`
+- `top-right`
+- `bottom-left`
+- `bottom-right`
 
-### 2. Adicionar Log de Erros no Upload
+---
 
-Para diagnosticar melhor, adicionar tratamento de erro mais detalhado no `AdminPrompts.tsx`:
+## 2. Interface de Edicao (AdminPrompts.tsx)
 
+Adicionar seletor de foco abaixo do upload de thumbnail:
+
+```text
+Imagem de Capa
++---------------------------+
+|   [Preview da imagem]     |
++---------------------------+
+        
+Ponto Focal:
+[Topo] [Centro] [Baixo]
+[Esq]   [•]    [Dir]
+```
+
+O mentor clica em uma das opcoes e o preview atualiza em tempo real mostrando como ficara.
+
+**Implementacao:**
+- Adicionar estado `thumbnailFocus` 
+- Criar grid 3x3 com botoes para as 9 posicoes
+- Aplicar `object-position` no preview
+
+---
+
+## 3. Exibicao no Grid (PromptCard.tsx)
+
+Alterar o layout do card:
+
+**Antes (overlay):**
 ```tsx
-const uploadFile = async (file: File, folder: string): Promise<string> => {
-  const fileExt = file.name.split(".").pop();
-  const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-
-  const { error, data } = await supabase.storage.from("prompts").upload(fileName, file);
-  
-  if (error) {
-    console.error("Upload error:", error);
-    toast.error(`Erro no upload: ${error.message}`);
-    throw error;
-  }
-
-  const { data: urlData } = supabase.storage.from("prompts").getPublicUrl(fileName);
-  return urlData.publicUrl;
-};
+<Card>
+  <div className="aspect-video">
+    <img className="object-contain" />
+  </div>
+  <div className="absolute overlay">Titulo</div>
+</Card>
 ```
 
-### 3. Verificar e Corrigir a Mutation de Update
-
-Garantir que ao editar, os arquivos estão sendo processados corretamente e a mutation está aguardando o upload.
+**Depois (titulo abaixo):**
+```tsx
+<Card>
+  <div className="aspect-video">
+    <img 
+      className="object-cover" 
+      style={{ objectPosition: prompt.thumbnail_focus || 'center' }}
+    />
+  </div>
+  <div className="p-3">
+    <span>Titulo</span>
+  </div>
+</Card>
+```
 
 ---
 
-## Mudanças no Card de Visualização
+## 4. Atualizacao da Interface Prompt
 
-### Layout Atual vs Layout Corrigido
+Adicionar `thumbnail_focus` ao tipo:
 
-```
-ATUAL (object-cover):          CORRIGIDO (object-contain):
-+--------------------+         +--------------------+
-|                    |         |    [ Imagem    ]   |
-|    Imagem cortada  |         |    [ completa  ]   |
-|    para preencher  |         |    [ sem corte ]   |
-|                    |         |                    |
-+--------------------+         +--------------------+
-| Título             |         | Título             |
-+--------------------+         +--------------------+
+```typescript
+interface Prompt {
+  // ... campos existentes
+  thumbnail_focus: string | null;
+}
 ```
 
 ---
 
 ## Arquivos a Modificar
 
-| Arquivo | Mudanças |
+| Arquivo | Mudancas |
 |---------|----------|
-| `src/components/prompts/PromptCard.tsx` | Trocar `object-cover` por `object-contain` no thumbnail do card |
-| `src/pages/admin/AdminPrompts.tsx` | Adicionar logs de erro no upload e verificar fluxo da mutation |
+| Migracao SQL | Adicionar coluna `thumbnail_focus` |
+| `src/pages/admin/AdminPrompts.tsx` | Adicionar seletor de foco, salvar na mutation |
+| `src/components/prompts/PromptCard.tsx` | Usar `object-cover` + `objectPosition`, mover titulo para baixo |
+| `src/pages/Prompts.tsx` | Atualizar interface Prompt |
 
 ---
 
-## Teste Após Implementação
+## Fluxo do Mentor
 
-1. Criar novo prompt com imagem
-2. Verificar se imagem aparece no grid sem cortes
-3. Editar prompt existente e adicionar imagem
-4. Confirmar que imagem foi salva no storage
-5. Verificar que modal de visualização mostra imagem completa
+1. Mentor faz upload da imagem de capa
+2. Preview aparece com foco centralizado
+3. Mentor clica nos botoes para ajustar o foco (ex: "Topo" para mostrar a parte de cima)
+4. Preview atualiza mostrando como ficara no grid
+5. Mentor salva e a imagem aparece corretamente no Banco de Prompts
+
+---
+
+## Secao Tecnica
+
+### Componente de Selecao de Foco
+
+```tsx
+const focusOptions = [
+  { label: '↖', value: 'top left' },
+  { label: '↑', value: 'top center' },
+  { label: '↗', value: 'top right' },
+  { label: '←', value: 'center left' },
+  { label: '•', value: 'center' },
+  { label: '→', value: 'center right' },
+  { label: '↙', value: 'bottom left' },
+  { label: '↓', value: 'bottom center' },
+  { label: '↘', value: 'bottom right' },
+];
+
+<div className="grid grid-cols-3 gap-1 w-32">
+  {focusOptions.map((opt) => (
+    <Button
+      key={opt.value}
+      variant={thumbnailFocus === opt.value ? 'default' : 'outline'}
+      size="sm"
+      onClick={() => setThumbnailFocus(opt.value)}
+    >
+      {opt.label}
+    </Button>
+  ))}
+</div>
+```
+
+### CSS para Object Position
+
+```tsx
+<img
+  src={prompt.thumbnail_url}
+  className="w-full h-full object-cover"
+  style={{ objectPosition: prompt.thumbnail_focus || 'center' }}
+/>
+```
+
+---
+
+## Resultado Esperado
+
+- Cards com imagens preenchendo todo o espaco (sem bordas vazias)
+- Titulo limpo abaixo da imagem
+- Mentor tem controle sobre qual parte da imagem aparece no grid
+- Visual consistente e profissional no Banco de Prompts
