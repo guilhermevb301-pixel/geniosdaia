@@ -7,7 +7,7 @@ interface QuickAccessCardsProps {
 }
 
 const SCHEDULING_URL = "https://cal.com/guilherme-felice-kutk35/1-hora";
-const SUPPORT_WHATSAPP = "5511999999999";
+const SUPPORT_WHATSAPP = "5571981939047";
 
 export function QuickAccessCards({ communityUrl }: QuickAccessCardsProps) {
   const whatsappUrl = `https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent("Olá! Preciso de suporte.")}`;
