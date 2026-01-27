@@ -39,6 +39,7 @@ export interface Stage {
   created_at: string;
   tasks?: Task[];
   notes?: Note[];
+  pillar?: Pillar | null;
 }
 
 export interface Pillar {
@@ -161,12 +162,13 @@ export function useMenteeData(menteeId?: string) {
     enabled: !!activeMenteeId,
   });
 
-  // Fetch stages with tasks and notes
+  // Fetch stages with tasks, notes, and pillar info
   const { data: stages = [], isLoading: isLoadingStages } = useQuery({
     queryKey: ["stages", activeMenteeId],
     queryFn: async () => {
       if (!activeMenteeId) return [];
 
+      // Fetch stages
       const { data: stagesData, error: stagesError } = await supabase
         .from("mentorship_stages")
         .select("*")
@@ -178,9 +180,13 @@ export function useMenteeData(menteeId?: string) {
         return [];
       }
 
-      const stageIds = stagesData.map((s) => s.id);
+      if (!stagesData || stagesData.length === 0) return [];
 
-      const [tasksResult, notesResult] = await Promise.all([
+      const stageIds = stagesData.map((s) => s.id);
+      const pillarIds = [...new Set(stagesData.map((s) => s.pillar_id).filter(Boolean))];
+
+      // Fetch tasks, notes, and pillars in parallel
+      const [tasksResult, notesResult, pillarsResult] = await Promise.all([
         supabase
           .from("mentorship_tasks")
           .select("*")
@@ -191,15 +197,25 @@ export function useMenteeData(menteeId?: string) {
           .select("*")
           .in("stage_id", stageIds)
           .order("order_index", { ascending: true }),
+        pillarIds.length > 0
+          ? supabase
+              .from("mentorship_pillars")
+              .select("*")
+              .in("id", pillarIds)
+          : Promise.resolve({ data: [] }),
       ]);
 
       const tasks = (tasksResult.data || []) as Task[];
       const notes = (notesResult.data || []) as Note[];
+      const pillarsMap = new Map(
+        ((pillarsResult.data || []) as Pillar[]).map((p) => [p.id, p])
+      );
 
       return stagesData.map((stage) => ({
         ...stage,
         tasks: tasks.filter((t) => t.stage_id === stage.id),
         notes: notes.filter((n) => n.stage_id === stage.id),
+        pillar: stage.pillar_id ? pillarsMap.get(stage.pillar_id) || null : null,
       })) as Stage[];
     },
     enabled: !!activeMenteeId,

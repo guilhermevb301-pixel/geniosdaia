@@ -570,103 +570,84 @@ export default function MenteeEditor() {
           </CardContent>
         </Card>
 
-        {/* Pillars Section */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Layers className="h-5 w-5 text-primary" />
-              <h2 className="text-lg font-semibold">Pilares</h2>
+        {/* Pilares - Compact Management */}
+        <Card className="bg-card border-border">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Layers className="h-5 w-5 text-primary" />
+                <CardTitle className="text-base">Pilares</CardTitle>
+                <span className="text-xs text-muted-foreground">
+                  (categorias para organizar fases)
+                </span>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setEditingPillar(null);
+                  setPillarForm({ title: "", icon: "folder", icon_color: "#FFD93D" });
+                  setIsPillarOpen(true);
+                }}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Novo Pilar
+              </Button>
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setEditingPillar(null);
-                setPillarForm({ title: "", icon: "folder", icon_color: "#FFD93D" });
-                setIsPillarOpen(true);
-              }}
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Novo Pilar
-            </Button>
-          </div>
-
-          {pillars.length === 0 ? (
-            <Card className="bg-card border-border p-6 text-center">
-              <p className="text-muted-foreground">
-                Nenhum pilar criado ainda. Crie pilares para organizar as etapas.
+          </CardHeader>
+          <CardContent>
+            {pillars.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Nenhum pilar criado. Crie pilares para categorizar as fases.
               </p>
-            </Card>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-3">
-              {pillars.map((pillar) => {
-                const IconComponent = getIconComponent(pillar.icon);
-                return (
-                  <Card key={pillar.id} className="bg-card border-border">
-                    <CardHeader className="pb-2">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className="flex h-10 w-10 items-center justify-center rounded-lg shrink-0"
-                            style={{ backgroundColor: `${pillar.icon_color}20` }}
-                          >
-                            <IconComponent
-                              className="h-5 w-5"
-                              style={{ color: pillar.icon_color }}
-                            />
-                          </div>
-                          <h3 className="font-semibold">{pillar.title}</h3>
-                        </div>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              setEditingPillar(pillar);
-                              setPillarForm({
-                                title: pillar.title,
-                                icon: pillar.icon,
-                                icon_color: pillar.icon_color,
-                              });
-                              setIsPillarOpen(true);
-                            }}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeletePillar(pillar.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
-                      <p className="text-xs text-muted-foreground">
-                        {pillar.phases.length} fase(s) vinculada(s)
-                      </p>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-full"
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {pillars.map((pillar) => {
+                  const IconComponent = getIconComponent(pillar.icon);
+                  return (
+                    <Badge
+                      key={pillar.id}
+                      variant="outline"
+                      className="gap-1.5 py-1.5 px-3 text-sm cursor-pointer hover:bg-muted/50 transition-colors group"
+                      style={{ 
+                        backgroundColor: `${pillar.icon_color}10`,
+                        borderColor: `${pillar.icon_color}30`
+                      }}
+                    >
+                      <IconComponent 
+                        className="h-3.5 w-3.5" 
+                        style={{ color: pillar.icon_color }} 
+                      />
+                      <span style={{ color: pillar.icon_color }}>
+                        {pillar.title}
+                      </span>
+                      <button
+                        className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
                         onClick={() => {
-                          setEditingStage(null);
-                          setStageForm({ title: "", objective: "", icon_color: pillar.icon_color, pillar_id: pillar.id });
-                          setIsStageOpen(true);
+                          setEditingPillar(pillar);
+                          setPillarForm({
+                            title: pillar.title,
+                            icon: pillar.icon,
+                            icon_color: pillar.icon_color,
+                          });
+                          setIsPillarOpen(true);
                         }}
                       >
-                        <Plus className="h-3 w-3 mr-1" />
-                        Adicionar Fase
-                      </Button>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                        <Edit className="h-3 w-3" />
+                      </button>
+                      <button
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => handleDeletePillar(pillar.id)}
+                      >
+                        <Trash2 className="h-3 w-3 text-destructive" />
+                      </button>
+                    </Badge>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Stages Section */}
         <div className="space-y-4">
