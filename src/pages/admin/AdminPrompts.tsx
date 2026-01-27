@@ -25,6 +25,7 @@ interface Prompt {
   description: string | null;
   tags: string[];
   thumbnail_url: string | null;
+  thumbnail_focus: string | null;
   example_images: string[] | null;
   example_video_url: string | null;
   created_at: string;
@@ -60,6 +61,7 @@ export default function AdminPrompts() {
   });
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string>("");
+  const [thumbnailFocus, setThumbnailFocus] = useState<string>("center");
   const [exampleImageFiles, setExampleImageFiles] = useState<File[]>([]);
   const [exampleImagePreviews, setExampleImagePreviews] = useState<string[]>([]);
   const [existingExampleImages, setExistingExampleImages] = useState<string[]>([]);
@@ -132,6 +134,7 @@ export default function AdminPrompts() {
         category: formData.category,
         tags: formData.tags.split(",").map((t) => t.trim()).filter(Boolean),
         thumbnail_url: thumbnailUrl,
+        thumbnail_focus: thumbnailFocus,
         example_images: exampleImages.length > 0 ? exampleImages : null,
         example_video_url: videoUrl,
       });
@@ -180,6 +183,7 @@ export default function AdminPrompts() {
           category: formData.category,
           tags: formData.tags.split(",").map((t) => t.trim()).filter(Boolean),
           thumbnail_url: thumbnailUrl,
+          thumbnail_focus: thumbnailFocus,
           example_images: exampleImages.length > 0 ? exampleImages : null,
           example_video_url: videoUrl,
         })
@@ -263,6 +267,7 @@ export default function AdminPrompts() {
     });
     setThumbnailFile(null);
     setThumbnailPreview("");
+    setThumbnailFocus("center");
     setExampleImageFiles([]);
     setExampleImagePreviews([]);
     setExistingExampleImages([]);
@@ -282,6 +287,7 @@ export default function AdminPrompts() {
     });
     setThumbnailFile(null);
     setThumbnailPreview(prompt.thumbnail_url || "");
+    setThumbnailFocus(prompt.thumbnail_focus || "center");
     setExampleImageFiles([]);
     setExampleImagePreviews([]);
     setExistingExampleImages(prompt.example_images || []);
@@ -295,6 +301,7 @@ export default function AdminPrompts() {
     setEditingPrompt(null);
     setThumbnailFile(null);
     setThumbnailPreview("");
+    setThumbnailFocus("center");
     setExampleImageFiles([]);
     setExampleImagePreviews([]);
     setExistingExampleImages([]);
@@ -356,13 +363,14 @@ export default function AdminPrompts() {
                     const Icon = categoryIcons[prompt.category];
                     return (
                       <Card key={prompt.id} className="overflow-hidden">
-                        {/* Thumbnail preview */}
+                        {/* Thumbnail preview with focal point */}
                         <div className="aspect-video bg-muted relative">
                           {prompt.thumbnail_url ? (
                             <img
                               src={prompt.thumbnail_url}
                               alt={prompt.title}
-                              className="w-full h-full object-contain"
+                              className="w-full h-full object-cover"
+                              style={{ objectPosition: prompt.thumbnail_focus || 'center' }}
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
@@ -452,6 +460,7 @@ export default function AdminPrompts() {
                       src={thumbnailPreview}
                       alt="Preview"
                       className="w-full aspect-video object-cover rounded"
+                      style={{ objectPosition: thumbnailFocus }}
                     />
                     <Button
                       variant="destructive"
@@ -473,6 +482,40 @@ export default function AdminPrompts() {
                   </div>
                 )}
               </div>
+
+              {/* Focal Point Selector */}
+              {thumbnailPreview && (
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Ponto Focal</Label>
+                  <div className="grid grid-cols-3 gap-1 w-28">
+                    {[
+                      { label: '↖', value: 'top left' },
+                      { label: '↑', value: 'top center' },
+                      { label: '↗', value: 'top right' },
+                      { label: '←', value: 'center left' },
+                      { label: '•', value: 'center' },
+                      { label: '→', value: 'center right' },
+                      { label: '↙', value: 'bottom left' },
+                      { label: '↓', value: 'bottom center' },
+                      { label: '↘', value: 'bottom right' },
+                    ].map((opt) => (
+                      <Button
+                        key={opt.value}
+                        type="button"
+                        variant={thumbnailFocus === opt.value ? 'default' : 'outline'}
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setThumbnailFocus(opt.value);
+                        }}
+                      >
+                        {opt.label}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Título */}
