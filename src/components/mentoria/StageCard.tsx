@@ -15,13 +15,12 @@ import {
   Settings
 } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { TaskCheckbox } from "./TaskCheckbox";
-import type { Stage, Pillar } from "@/hooks/useMenteeData";
+import type { Stage } from "@/hooks/useMenteeData";
 
 interface StageCardProps {
-  stage: Stage & { pillar?: Pillar | null };
+  stage: Stage;
   onToggleTask: (taskId: string, completed: boolean) => void;
 }
 
@@ -42,7 +41,6 @@ const iconMap: Record<string, typeof Folder> = {
 
 export function StageCard({ stage, onToggleTask }: StageCardProps) {
   const StageIcon = iconMap[stage.icon || "folder"] || Folder;
-  const PillarIcon = stage.pillar ? (iconMap[stage.pillar.icon || "folder"] || Folder) : null;
 
   const hasTasks = stage.tasks && stage.tasks.length > 0;
   const hasNotes = stage.notes && stage.notes.length > 0;
@@ -66,26 +64,6 @@ export function StageCard({ stage, onToggleTask }: StageCardProps) {
             <h3 className="font-semibold leading-tight text-foreground text-base">
               {stage.title}
             </h3>
-            
-            {/* Pillar Badge */}
-            {stage.pillar && PillarIcon && (
-              <Badge 
-                variant="outline" 
-                className="mt-1.5 gap-1.5 text-xs font-medium border-border/60"
-                style={{ 
-                  backgroundColor: `${stage.pillar.icon_color}10`,
-                  borderColor: `${stage.pillar.icon_color}30`
-                }}
-              >
-                <PillarIcon 
-                  className="h-3 w-3" 
-                  style={{ color: stage.pillar.icon_color }} 
-                />
-                <span style={{ color: stage.pillar.icon_color }}>
-                  {stage.pillar.title}
-                </span>
-              </Badge>
-            )}
             
             {/* Objective */}
             {stage.objective && (
