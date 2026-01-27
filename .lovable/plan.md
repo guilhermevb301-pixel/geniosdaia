@@ -1,302 +1,277 @@
 
 
-# Plano: Multiplas Variacoes de Prompts por Estilo
+# Plano: Sistema de Etapas Editaveis para Mentoria
 
 ## Resumo
 
-Atualmente cada prompt tem apenas UM texto e pode ter varias imagens de exemplo separadas. Voce quer que cada prompt seja uma "colecao" de variacoes, onde cada variacao tem seu proprio texto + imagem, navegaveis como paginas.
+Substituir a seção "To-do List" na página /minha-mentoria pela seção "Etapas" já existente, que exibe Pilares com Fases e Tarefas conforme a imagem de referência. Além disso, corrigir todas as ocorrências de "Gêneos" para "Gênios".
 
 ---
 
-## Exemplo Visual
+## Estrutura Visual de Referência
 
 ```text
-Estrutura Atual:
-+-------------------+
-| Prompt Card       |
-+-------------------+
-      |
-      v
-+-----------------------------------+
-| Titulo: "Influencer Skincare"    |
-| Prompt: [texto unico]            |
-| Imagens: img1, img2, img3        | <- imagens separadas do texto
-+-----------------------------------+
-
-Nova Estrutura:
-+-------------------+
-| Prompt Card       |
-+-------------------+
-      |
-      v
-+-----------------------------------+
-| Titulo: "Influencer Skincare"    |
-|                                   |
-| [1/3]  < Prompt 1 >  [>]         |
-| [Texto do Prompt 1]              |
-| [Imagem do Prompt 1]             |
-|-----------------------------------|
-| [2/3]  < Prompt 2 >  [>]         |
-| [Texto do Prompt 2]              |
-| [Imagem do Prompt 2]             |
-|-----------------------------------|
-| etc...                           |
-+-----------------------------------+
+Etapas
++------------------------------------------+------------------------------------------+------------------------------------------+
+| 🔧 Pilar Técnico                         | 💼 Pilar de Vendas                        | 📦 Pilar de Entrega                       |
+|                                          |                                          |                                          |
+| Fase 1: Preparação Técnica               | Fase 3: Estratégia de Vendas             | Fase 4: Entrega e Escala                 |
+| Objetivo: ter o ambiente pronto...       | Objetivo: preparar a base...             | Objetivo: aprender a entregar...         |
+|                                          |                                          |                                          |
+| ✅ Onboarding e alinhamento              | ☐ Definir estratégia de venda            | ☐ Passo a passo: "Cliente fechou..."     |
+| ✅ Contratação e configuração de VPS     | ☐ Estruturar presença no Instagram       | ☐ Modelo validado de organização         |
+| ✅ Instalação das ferramentas            | ☐ Roteiro para primeiras reuniões        | ☐ Ajustes para aumentar capacidade       |
+| ...                                      | ✅ Mapeamento, precificação...           |                                          |
+|                                          |                                          |                                          |
+| Fase 2: Construção de Projeto            |                                          |                                          |
+| Objetivo: criar um projeto funcional...  |                                          |                                          |
+| ☐ Escolha de nicho do primeiro projeto   |                                          |                                          |
+| ...                                      |                                          |                                          |
++------------------------------------------+------------------------------------------+------------------------------------------+
 ```
 
 ---
 
-## Estrutura de Dados
+## Situação Atual
 
-### Tabela Nova: prompt_variations
+O sistema já possui:
 
-Uma tabela separada para armazenar as variacoes de cada prompt:
+1. **Tabela `mentorship_pillars`** - Pilares (ex: "Pilar Técnico")
+2. **Tabela `mentorship_stages`** - Fases vinculadas aos pilares via `pillar_id`
+3. **Tabela `mentorship_tasks`** - Tarefas vinculadas às fases via `stage_id`
+4. **Componente `PillarCard`** - Já exibe a estrutura de Pilares > Fases > Tarefas
+5. **MenteeEditor** - Permite mentores editarem etapas (stages) mas não pilares diretamente
 
-| Campo | Tipo | Descricao |
-|-------|------|-----------|
-| id | UUID | Identificador unico |
-| prompt_id | UUID | FK para prompts.id |
-| content | TEXT | Texto do prompt desta variacao |
-| image_url | TEXT | Imagem desta variacao (opcional) |
-| order_index | INT | Ordem de exibicao |
-| created_at | TIMESTAMP | Data de criacao |
-
-### Impacto na Tabela prompts
-
-- Manter `content` como prompt principal/descricao geral (ou deixar vazio se usar variacoes)
-- Manter `thumbnail_url` como capa do card no grid
-- Remover dependencia de `example_images` (as imagens agora vem das variacoes)
+O problema: A seção "Etapas" (Pillars) já existe mas só aparece se houver pilares criados. A To-do List está sendo exibida acima dela.
 
 ---
 
-## Interface do Usuario (Visualizacao)
+## Mudanças Necessárias
 
-Ao clicar no card, o modal tera navegacao de paginas:
+### 1. Reorganizar Layout da Página MinhaMentoria
 
-```text
-+----------------------------------------------+
-|  [X]                                         |
-|  Titulo do Estilo                            |
-|----------------------------------------------|
-|                                              |
-|  Prompt 1:                                   |
-|  +----------------------------------------+  |
-|  | Vertical portrait of a [DESCREVA...]   |  |
-|  | wearing a clean white fitted tank...   |  |
-|  +----------------------------------------+  |
-|                                              |
-|  [Imagem gerada com este prompt]             |
-|  +------------------------+                  |
-|  |                        |                  |
-|  |   (imagem)             |                  |
-|  |                        |                  |
-|  +------------------------+                  |
-|                                              |
-|  [Copiar Prompt 1]                           |
-|                                              |
-|----------------------------------------------|
-|           < 1/3 >  (paginacao)               |
-+----------------------------------------------+
-```
+Remover a seção TodoList e mover a seção de Pilares/Etapas para o lugar dela:
 
-Botoes de navegacao permitem ir para Prompt 2, Prompt 3, etc.
+| Antes | Depois |
+|-------|--------|
+| Header | Header |
+| QuickAccessCards | QuickAccessCards |
+| **TodoList** | **Etapas (Pillars)** |
+| MeetingsTable | MeetingsTable |
+| Etapas (Pillars) | *(removido daqui)* |
 
----
+### 2. Mostrar Etapas Mesmo Sem Pilares
 
-## Interface de Edicao (Admin)
+Atualmente a seção só aparece se `pillars.length > 0`. Precisamos mostrar uma mensagem quando não há pilares cadastrados.
 
-No painel admin, ao criar/editar um prompt:
+### 3. Adicionar Gerenciamento de Pilares no MenteeEditor
 
-```text
-Titulo: [Influencer Skincare Style]
-Descricao: [Prompts para fotos de influencer...]
-Imagem de Capa: [upload thumbnail]
+O MenteeEditor atual gerencia apenas "Stages" (etapas planas, sem hierarquia de pilares). Precisamos adicionar:
 
-Variacoes:
-+------------------------------------------+
-| Variacao 1                          [-]  |
-| Prompt: [textarea com texto]             |
-| Imagem: [upload/preview]                 |
-+------------------------------------------+
-+------------------------------------------+
-| Variacao 2                          [-]  |
-| Prompt: [textarea com texto]             |
-| Imagem: [upload/preview]                 |
-+------------------------------------------+
-         [+ Adicionar Variacao]
-```
+- CRUD para Pilares (criar, editar, excluir)
+- Vincular Stages (Fases) aos Pilares
+- Interface visual semelhante à imagem de referência
 
----
+### 4. Corrigir Ortografia
 
-## Migracao do Banco de Dados
+Substituir "Gêneos" por "Gênios" em todos os arquivos:
 
-### 1. Criar tabela prompt_variations
-
-```sql
-CREATE TABLE public.prompt_variations (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  prompt_id UUID REFERENCES public.prompts(id) ON DELETE CASCADE NOT NULL,
-  content TEXT NOT NULL,
-  image_url TEXT,
-  order_index INT DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
-);
-
--- RLS
-ALTER TABLE public.prompt_variations ENABLE ROW LEVEL SECURITY;
-
--- Politica: qualquer usuario autenticado pode ler
-CREATE POLICY "Anyone can read prompt_variations"
-  ON public.prompt_variations FOR SELECT
-  USING (true);
-
--- Politica: mentores podem inserir/atualizar/deletar
-CREATE POLICY "Mentors can manage prompt_variations"
-  ON public.prompt_variations FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.user_roles
-      WHERE user_roles.user_id = auth.uid()
-      AND user_roles.role IN ('admin', 'mentor')
-    )
-  );
-```
-
-### 2. Migrar dados existentes (opcional)
-
-Se houver prompts com `content` preenchido, criar uma variacao inicial:
-
-```sql
-INSERT INTO public.prompt_variations (prompt_id, content, order_index)
-SELECT id, content, 0 FROM public.prompts WHERE content IS NOT NULL;
-```
+| Arquivo | Ocorrências |
+|---------|-------------|
+| `index.html` | 4 ocorrências |
+| `src/index.css` | 1 comentário |
+| `src/pages/Eventos.tsx` | 1 ocorrência |
+| `src/pages/Login.tsx` | 2 ocorrências |
+| `src/pages/Register.tsx` | 2 ocorrências |
+| `src/components/SupportWidget.tsx` | 1 ocorrência |
+| `src/components/layout/AppSidebar.tsx` | 1 ocorrência |
 
 ---
 
 ## Arquivos a Modificar
 
-| Arquivo | Mudancas |
+| Arquivo | Mudanças |
 |---------|----------|
-| Migracao SQL | Criar tabela `prompt_variations` com RLS |
-| `src/pages/admin/AdminPrompts.tsx` | Adicionar UI para gerenciar variacoes |
-| `src/components/prompts/PromptCard.tsx` | Adicionar navegacao entre variacoes |
-| `src/pages/Prompts.tsx` | Buscar variacoes junto com prompts |
-| `src/integrations/supabase/types.ts` | Auto-gerado apos migracao |
+| `src/pages/MinhaMentoria.tsx` | Remover TodoList, reposicionar Etapas |
+| `src/pages/admin/MenteeEditor.tsx` | Adicionar CRUD de Pilares e vincular Fases |
+| `index.html` | Corrigir "Gêneos" → "Gênios" |
+| `src/index.css` | Corrigir comentário |
+| `src/pages/Eventos.tsx` | Corrigir texto |
+| `src/pages/Login.tsx` | Corrigir textos |
+| `src/pages/Register.tsx` | Corrigir textos |
+| `src/components/SupportWidget.tsx` | Corrigir mensagem |
+| `src/components/layout/AppSidebar.tsx` | Corrigir nome |
 
 ---
 
-## Fluxo do Mentor
+## Implementação Detalhada
 
-1. Criar novo prompt com titulo e thumbnail
-2. Adicionar variacoes (cada uma com texto + imagem)
-3. Reordenar variacoes se necessario
-4. Salvar
+### Parte 1: Reorganizar MinhaMentoria.tsx
 
----
-
-## Fluxo do Usuario
-
-1. Ver galeria de prompts (thumbnails)
-2. Clicar em um prompt
-3. Ver modal com primeira variacao
-4. Navegar entre variacoes usando setas < >
-5. Copiar o prompt da variacao desejada
-
----
-
-## Secao Tecnica
-
-### Query para buscar prompts com variacoes
-
-```typescript
-const { data } = await supabase
-  .from("prompts")
-  .select(`
-    *,
-    variations:prompt_variations(
-      id, content, image_url, order_index
-    )
-  `)
-  .order("created_at", { ascending: false });
-```
-
-### Componente de navegacao no modal
+Remover o componente TodoList e seus imports/hooks relacionados. Mover a seção de Pillars para onde estava a TodoList:
 
 ```tsx
-const [currentIndex, setCurrentIndex] = useState(0);
-const variations = prompt.variations || [];
-const current = variations[currentIndex];
+// Remover:
+import { TodoList } from "@/components/mentoria/TodoList";
 
-return (
-  <div>
-    {/* Conteudo da variacao atual */}
-    <pre>{current?.content}</pre>
-    {current?.image_url && <img src={current.image_url} />}
-    
-    {/* Navegacao */}
-    <div className="flex justify-between">
-      <Button 
-        disabled={currentIndex === 0}
-        onClick={() => setCurrentIndex(i => i - 1)}
-      >
-        Anterior
-      </Button>
-      <span>{currentIndex + 1} / {variations.length}</span>
-      <Button 
-        disabled={currentIndex === variations.length - 1}
-        onClick={() => setCurrentIndex(i => i + 1)}
-      >
-        Proximo
-      </Button>
-    </div>
+// Na desestruturação do hook, remover:
+// todos, toggleTodo, createTodo, deleteTodo
+
+// Substituir a seção TodoList pela seção Etapas
+<div className="space-y-4">
+  <div className="flex items-center gap-2">
+    <Layers className="h-5 w-5 text-primary" />
+    <h2 className="text-lg font-semibold">Etapas</h2>
   </div>
-);
+  {pillars.length > 0 ? (
+    <div className="grid gap-4 md:grid-cols-3">
+      {pillars.map((pillar) => (
+        <PillarCard
+          key={pillar.id}
+          pillar={pillar}
+          onToggleTask={handleToggleTask}
+        />
+      ))}
+    </div>
+  ) : (
+    <Card className="bg-card/50 border-border p-6 text-center">
+      <p className="text-muted-foreground">
+        Nenhuma etapa foi configurada ainda pelo seu mentor.
+      </p>
+    </Card>
+  )}
+</div>
 ```
 
-### Componente de edicao de variacoes
+### Parte 2: Atualizar MenteeEditor.tsx
 
+Adicionar gerenciamento completo de Pilares:
+
+1. **Novo estado para Pilares**:
 ```tsx
-const [variations, setVariations] = useState<Variation[]>([]);
+const [isPillarOpen, setIsPillarOpen] = useState(false);
+const [editingPillar, setEditingPillar] = useState<Pillar | null>(null);
+const [pillarForm, setPillarForm] = useState({
+  title: "",
+  icon: "folder",
+  icon_color: "#FFD93D",
+});
+```
 
-const addVariation = () => {
-  setVariations([...variations, { content: "", image_url: null }]);
+2. **Funções CRUD de Pilares**:
+```tsx
+const handleSavePillar = async () => {
+  // Criar ou atualizar pilar
 };
 
-const removeVariation = (index: number) => {
-  setVariations(variations.filter((_, i) => i !== index));
+const handleDeletePillar = async (id: string) => {
+  // Deletar pilar
 };
+```
 
-return (
-  <div className="space-y-4">
-    {variations.map((v, i) => (
-      <div key={i} className="border rounded p-4">
-        <div className="flex justify-between mb-2">
-          <Label>Variacao {i + 1}</Label>
-          <Button variant="ghost" size="icon" onClick={() => removeVariation(i)}>
-            <X />
-          </Button>
-        </div>
-        <Textarea
-          value={v.content}
-          onChange={(e) => updateVariation(i, "content", e.target.value)}
-          placeholder="Texto do prompt..."
-        />
-        {/* Upload de imagem */}
-      </div>
-    ))}
-    <Button variant="outline" onClick={addVariation}>
-      <Plus /> Adicionar Variacao
+3. **Formulário de Fase com seleção de Pilar**:
+```tsx
+// Adicionar campo pillar_id ao stageForm
+const [stageForm, setStageForm] = useState({
+  title: "",
+  objective: "",
+  icon_color: "#F59E0B",
+  pillar_id: "", // Novo campo
+});
+```
+
+4. **Nova seção de UI para Pilares**:
+```tsx
+<div className="space-y-4">
+  <div className="flex items-center justify-between">
+    <div className="flex items-center gap-2">
+      <Layers className="h-5 w-5 text-primary" />
+      <h2 className="text-lg font-semibold">Pilares</h2>
+    </div>
+    <Button onClick={() => setIsPillarOpen(true)}>
+      <Plus /> Novo Pilar
     </Button>
   </div>
-);
+  
+  <div className="grid gap-4 md:grid-cols-3">
+    {pillars.map((pillar) => (
+      <Card key={pillar.id}>
+        {/* Header do pilar com botões editar/excluir */}
+        {/* Lista de fases dentro do pilar */}
+        {/* Botão para adicionar fase ao pilar */}
+      </Card>
+    ))}
+  </div>
+</div>
+```
+
+### Parte 3: Correção de Ortografia
+
+Buscar e substituir em todos os arquivos:
+- "Gêneos da IA" → "Gênios da IA"
+- "GÊNEOS" → "GÊNIOS"
+- "Comunidade Gêneos" → "Comunidade Gênios"
+
+---
+
+## Seção Técnica
+
+### Atualização do Hook useMenteeData
+
+O hook já busca pilares corretamente. Precisamos garantir que o MenteeEditor também use a query de pilares:
+
+```typescript
+const { mentee, meetings, stages, pillars, isLoading } = useMenteeData(menteeId);
+```
+
+### CRUD de Pilares no MenteeEditor
+
+```typescript
+// Criar pilar
+const { error } = await supabase.from("mentorship_pillars").insert({
+  mentee_id: menteeId,
+  title: pillarForm.title,
+  icon: pillarForm.icon,
+  icon_color: pillarForm.icon_color,
+  order_index: nextOrder,
+});
+
+// Atualizar pilar
+const { error } = await supabase
+  .from("mentorship_pillars")
+  .update({ title, icon, icon_color })
+  .eq("id", pillarId);
+
+// Deletar pilar (cascade deleta fases e tarefas associadas)
+const { error } = await supabase
+  .from("mentorship_pillars")
+  .delete()
+  .eq("id", pillarId);
+```
+
+### Vincular Fase a Pilar
+
+Ao criar/editar uma fase, incluir o `pillar_id`:
+
+```typescript
+const { error } = await supabase.from("mentorship_stages").insert({
+  mentee_id: menteeId,
+  pillar_id: stageForm.pillar_id, // Vincula ao pilar
+  title: stageForm.title,
+  objective: stageForm.objective,
+  icon_color: stageForm.icon_color,
+  order_index: nextOrder,
+});
 ```
 
 ---
 
 ## Resultado Esperado
 
-- Cada prompt pode ter multiplas variacoes (texto + imagem)
-- Usuario navega entre variacoes no modal
-- Mentor gerencia variacoes facilmente no admin
-- Visual como as imagens de referencia que voce enviou: Prompt 1 + Imagem, Prompt 2 + Imagem, etc.
+1. A página /minha-mentoria exibe a seção "Etapas" no lugar da To-do List
+2. A estrutura visual segue o padrão da imagem: Pilares em grid de 3 colunas, cada um com suas Fases e Tarefas
+3. Mentores podem criar/editar/excluir Pilares no MenteeEditor
+4. Mentores podem vincular Fases aos Pilares
+5. Todas as ocorrências de "Gêneos" são corrigidas para "Gênios"
+6. O sistema de realtime continua funcionando para sincronizar alterações
 
