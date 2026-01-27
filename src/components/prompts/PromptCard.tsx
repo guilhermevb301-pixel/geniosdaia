@@ -14,6 +14,7 @@ interface Prompt {
   description: string | null;
   tags: string[];
   thumbnail_url: string | null;
+  thumbnail_focus: string | null;
   example_images: string[] | null;
   example_video_url: string | null;
 }
@@ -47,15 +48,16 @@ export function PromptCard({ prompt }: PromptCardProps) {
       {/* Card Clicável - Estilo Galeria */}
       <Card
         onClick={() => setIsModalOpen(true)}
-        className="group relative overflow-hidden cursor-pointer border-0 bg-transparent"
+        className="group overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
       >
-        {/* Imagem de fundo */}
-        <div className="aspect-video bg-muted rounded-lg overflow-hidden">
+        {/* Imagem de capa com foco ajustável */}
+        <div className="aspect-video bg-muted overflow-hidden">
           {prompt.thumbnail_url ? (
             <img
               src={prompt.thumbnail_url}
               alt={prompt.title}
-              className="w-full h-full object-contain bg-muted transition-transform duration-300 group-hover:scale-105"
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              style={{ objectPosition: prompt.thumbnail_focus || 'center' }}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
@@ -64,11 +66,11 @@ export function PromptCard({ prompt }: PromptCardProps) {
           )}
         </div>
 
-        {/* Overlay com título */}
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-4 rounded-b-lg">
-          <div className="flex items-center gap-2 text-white">
-            <Icon className="h-4 w-4 opacity-80 shrink-0" />
-            <span className="font-medium line-clamp-2 text-sm">{prompt.title}</span>
+        {/* Título abaixo da imagem */}
+        <div className="p-3">
+          <div className="flex items-center gap-2">
+            <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="font-medium line-clamp-2 text-sm text-foreground">{prompt.title}</span>
           </div>
         </div>
       </Card>
