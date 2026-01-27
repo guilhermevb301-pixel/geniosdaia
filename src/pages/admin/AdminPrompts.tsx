@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FocalPointSelector } from "@/components/prompts/FocalPointSelector";
 import { VariationEditor, Variation } from "@/components/prompts/VariationEditor";
+import { validateImageFile, ALLOWED_IMAGE_EXTENSIONS } from "@/lib/fileValidation";
 
 type PromptCategory = "video" | "image" | "agent";
 
@@ -93,7 +94,14 @@ export default function AdminPrompts() {
   });
 
   const uploadFile = async (file: File, folder: string): Promise<string> => {
-    const fileExt = file.name.split(".").pop();
+    // Validate file before upload
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+      toast.error(validation.error || "Arquivo inválido");
+      throw new Error(validation.error);
+    }
+
+    const fileExt = file.name.split(".").pop()?.toLowerCase();
     const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
     const { error } = await supabase.storage.from("prompts").upload(fileName, file);
@@ -247,6 +255,13 @@ export default function AdminPrompts() {
   const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Validate file before setting
+      const validation = validateImageFile(file);
+      if (!validation.valid) {
+        toast.error(validation.error || "Arquivo inválido");
+        e.target.value = ''; // Reset input
+        return;
+      }
       setThumbnailFile(file);
       setThumbnailPreview(URL.createObjectURL(file));
     }
