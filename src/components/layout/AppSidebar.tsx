@@ -5,7 +5,7 @@ import {
   Layout, 
   Calendar, 
   MessageSquare, 
-  HelpCircle, 
+  MessageCircle,
   Sparkles,
   ChevronDown,
   Zap,
@@ -245,15 +245,25 @@ export function AppSidebar() {
         )}
       </nav>
 
-      {/* Footer */}
+      {/* Footer - Support Widget */}
       <div className="border-t border-sidebar-border p-3">
-        <Link
-          to="/suporte"
-          className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-sidebar-foreground transition-colors"
-        >
-          <HelpCircle className="h-5 w-5" />
-          Suporte
-        </Link>
+        <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+          <div>
+            <h4 className="font-medium text-sm text-foreground">Precisa de Ajuda?</h4>
+            <p className="text-xs text-muted-foreground mt-1">
+              Entre em contato com nosso suporte
+            </p>
+          </div>
+          <a
+            href="https://wa.me/5571981939047?text=Ol%C3%A1!%20Preciso%20de%20ajuda%20com%20a%20plataforma%20G%C3%AAnios%20da%20IA."
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 w-full rounded-lg bg-success hover:bg-success/90 text-success-foreground py-2.5 text-sm font-medium transition-colors"
+          >
+            <MessageCircle className="h-4 w-4" />
+            Falar no WhatsApp
+          </a>
+        </div>
       </div>
     </aside>
   );
