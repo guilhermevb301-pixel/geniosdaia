@@ -1,62 +1,70 @@
 
-# Plano: Atualizar Número de WhatsApp para Suporte
+# Plano: Corrigir Widget de Suporte
 
-## Resumo
+## Problemas Identificados
 
-Atualizar o número de WhatsApp de suporte em dois lugares:
-1. **Widget flutuante** no canto inferior direito (SupportWidget)
-2. **Card "Abrir Chamado"** na página de mentoria dos alunos (QuickAccessCards)
+1. **Posicionamento errado**: O widget está posicionado à direita da sidebar (`left-[calc(16rem+1rem)]`), mas deveria estar **dentro da sidebar** no rodapé, como mostra a imagem de referência
+2. **Cor verde não aparece**: A cor `success` está definida no CSS (`--success: 160 100% 38%`), mas **não está mapeada no tailwind.config.ts**, então `bg-success` não funciona
 
 ---
 
-## Mudanças Necessárias
+## Solução
 
-### 1. Arquivo: `src/components/SupportWidget.tsx`
+### 1. Adicionar cor `success` ao Tailwind Config
 
-Alterar o número de WhatsApp de `5511999999999` para `5571981939047`:
+**Arquivo:** `tailwind.config.ts`
+
+Adicionar o mapeamento da cor success na seção de cores:
 
 ```typescript
-// Antes
-const whatsappNumber = "5511999999999";
-
-// Depois  
-const whatsappNumber = "5571981939047";
+colors: {
+  // ... cores existentes ...
+  success: {
+    DEFAULT: 'hsl(var(--success))',
+    foreground: 'hsl(var(--success-foreground))'
+  },
+  // ...
+}
 ```
 
 ---
 
-### 2. Arquivo: `src/components/mentoria/QuickAccessCards.tsx`
+### 2. Mover o Widget para Dentro da Sidebar
 
-Alterar a constante `SUPPORT_WHATSAPP` de `5511999999999` para `5571981939047`:
+**Arquivo:** `src/components/layout/AppSidebar.tsx`
 
-```typescript
-// Antes
-const SUPPORT_WHATSAPP = "5511999999999";
+Ao invés de ter o widget como componente flutuante separado, incorporá-lo diretamente no footer da sidebar, substituindo o link de "Suporte" atual pelo card de WhatsApp.
 
-// Depois
-const SUPPORT_WHATSAPP = "5571981939047";
-```
+O footer da sidebar (linhas 248-257) será atualizado para incluir:
+- Título "Precisa de Ajuda?"
+- Subtexto "Entre em contato conosco pelo nosso suporte"
+- Botão verde "Falar no WhatsApp" com o número correto
 
 ---
 
-## Observações
+### 3. Remover Widget Flutuante do Layout
 
-- O formato do número para WhatsApp é `55` (código do Brasil) + DDD + número
-- O número fornecido `71981939047` corresponde ao DDD 71 (Salvador/BA)
-- Formato final para a API do WhatsApp: `5571981939047`
+**Arquivo:** `src/components/layout/AppLayout.tsx`
+
+Remover a importação e uso do `<SupportWidget />` já que ele agora estará dentro da sidebar.
 
 ---
 
 ## Arquivos a Modificar
 
-| Arquivo | Linha | Mudança |
-|---------|-------|---------|
-| `src/components/SupportWidget.tsx` | 6 | Alterar número para `5571981939047` |
-| `src/components/mentoria/QuickAccessCards.tsx` | 10 | Alterar número para `5571981939047` |
+| Arquivo | Mudança |
+|---------|---------|
+| `tailwind.config.ts` | Adicionar cor `success` |
+| `src/components/layout/AppSidebar.tsx` | Substituir footer por card de suporte WhatsApp |
+| `src/components/layout/AppLayout.tsx` | Remover `<SupportWidget />` |
 
 ---
 
-## Resultado Esperado
+## Resultado Visual Esperado
 
-1. O widget flutuante no canto inferior direito abrirá WhatsApp com o número correto
-2. O botão "Abrir Chamado" no menu dos alunos também usará o número correto
+O widget ficará exatamente como na imagem de referência:
+- Posicionado no canto inferior esquerdo, dentro da sidebar
+- Card com fundo escuro e borda sutil
+- Título "Precisa de Ajuda?"
+- Subtexto descritivo
+- Botão verde com ícone de WhatsApp e texto "Falar no WhatsApp"
