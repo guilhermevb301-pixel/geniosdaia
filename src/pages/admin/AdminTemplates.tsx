@@ -25,6 +25,13 @@ import {
 import { Plus, Edit, Trash2, ArrowLeft, Upload, Image, FileJson } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
+import { 
+  validateImageFile, 
+  validateJsonFile, 
+  validateJsonContent,
+  ALLOWED_IMAGE_EXTENSIONS,
+  ALLOWED_JSON_EXTENSIONS 
+} from "@/lib/fileValidation";
 
 interface Template {
   id: string;
@@ -70,8 +77,40 @@ export default function AdminTemplates() {
     },
   });
 
-  async function uploadFile(file: File, folder: string): Promise<string> {
-    const fileExt = file.name.split(".").pop();
+  async function uploadImageFile(file: File, folder: string): Promise<string> {
+    // Validate image file
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+      throw new Error(validation.error);
+    }
+
+    const fileExt = file.name.split(".").pop()?.toLowerCase();
+    const fileName = `${folder}/${Date.now()}.${fileExt}`;
+    
+    const { error: uploadError } = await supabase.storage
+      .from("templates")
+      .upload(fileName, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage
+      .from("templates")
+      .getPublicUrl(fileName);
+
+    return data.publicUrl;
+  }
+
+  async function uploadJsonFile(file: File, folder: string): Promise<string> {
+    // Validate JSON file
+    const validation = validateJsonFile(file);
+    if (!validation.valid) {
+      throw new Error(validation.error);
+    }
+
+    // Validate JSON content structure
+    await validateJsonContent(file);
+
+    const fileExt = file.name.split(".").pop()?.toLowerCase();
     const fileName = `${folder}/${Date.now()}.${fileExt}`;
     
     const { error: uploadError } = await supabase.storage
@@ -176,12 +215,12 @@ export default function AdminTemplates() {
 
       // Upload image if new file selected
       if (imageFile) {
-        finalImageUrl = await uploadFile(imageFile, "images");
+        finalImageUrl = await uploadImageFile(imageFile, "images");
       }
 
       // Upload JSON if new file selected
       if (jsonFile) {
-        finalJsonUrl = await uploadFile(jsonFile, "json");
+        finalJsonUrl = await uploadJsonFile(jsonFile, "json");
       }
 
       const templateData = {
@@ -290,11 +329,17 @@ export default function AdminTemplates() {
                     <input
                       ref={imageInputRef}
                       type="file"
-                      accept="image/*"
+                      accept={ALLOWED_IMAGE_EXTENSIONS.join(',')}
                       className="hidden"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) {
+                          const validation = validateImageFile(file);
+                          if (!validation.valid) {
+                            toast({ variant: "destructive", title: "Arquivo inválido", description: validation.error });
+                            e.target.value = '';
+                            return;
+                          }
                           setImageFile(file);
                           setImageUrl(file.name);
                         }
@@ -331,13 +376,26 @@ export default function AdminTemplates() {
                     <input
                       ref={jsonInputRef}
                       type="file"
-                      accept=".json,application/json"
+                      accept={ALLOWED_JSON_EXTENSIONS.join(',')}
                       className="hidden"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          setJsonFile(file);
-                          setJsonUrl(file.name);
+                          const validation = validateJsonFile(file);
+                          if (!validation.valid) {
+                            toast({ variant: "destructive", title: "Arquivo inválido", description: validation.error });
+                            e.target.value = '';
+                            return;
+                          }
+                          // Validate JSON content
+                          try {
+                            await validateJsonContent(file);
+                            setJsonFile(file);
+                            setJsonUrl(file.name);
+                          } catch (err: any) {
+                            toast({ variant: "destructive", title: "JSON inválido", description: err.message });
+                            e.target.value = '';
+                          }
                         }
                       }}
                     />
