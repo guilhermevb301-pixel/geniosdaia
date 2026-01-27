@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Sparkles } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import loginHero from "@/assets/login-hero.png";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -36,21 +37,14 @@ export default function Login() {
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Decorative */}
-      <div className="hidden lg:flex lg:w-1/2 gradient-login relative overflow-hidden">
-        {/* Decorative text */}
-        <div className="absolute inset-0 flex flex-col justify-center items-center p-12 select-none">
-          <div className="space-y-4 text-center">
-            <p className="text-6xl font-bold text-white/10 tracking-widest">AUTOMAÇÃO</p>
-            <p className="text-7xl font-bold text-white/15 tracking-widest">IA</p>
-            <p className="text-5xl font-bold text-white/10 tracking-widest">N8N</p>
-            <p className="text-8xl font-bold text-white/20 tracking-widest">GÊNIOS</p>
-            <p className="text-6xl font-bold text-white/10 tracking-widest">WORKFLOWS</p>
-          </div>
-        </div>
-        
-        {/* Floating elements */}
-        <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-white/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-background">
+        <img 
+          src={loginHero} 
+          alt="Gênios da IA" 
+          className="absolute inset-0 w-full h-full object-cover object-center"
+        />
+        {/* Overlay gradient */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-background/30" />
       </div>
 
       {/* Right Side - Form */}
