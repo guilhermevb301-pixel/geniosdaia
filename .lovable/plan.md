@@ -1,30 +1,28 @@
 
-# Plano: Reorganizar Etapas - Fases como Cards Principais
+# Plano: Remover Seção de Pilares e Simplificar Interface
 
 ## Resumo
 
-Inverter a hierarquia visual: em vez de mostrar Pilares como cards com Fases dentro, mostrar **Fases (4 cards)** como elementos principais, cada uma com o nome do Pilar como badge/subtítulo e suas tarefas.
+Remover completamente a gestão de Pilares como entidade separada. As Fases (stages) serão os elementos principais, cada uma com seu título, objetivo, cor e tarefas. O visual do aluno e do mentor será simplificado sem a exibição de badges de pilares.
 
 ---
 
-## Estrutura Visual Desejada
+## Estrutura Visual Final
 
 ```text
-Etapas
+Etapas (para alunos e mentores)
 +------------------------------------------+------------------------------------------+
-|                                          |                                          |
 | Fase 1: Preparação Técnica               | Fase 3: Estratégia de Vendas             |
-| 🔧 Pilar Técnico                         | 💼 Pilar de Vendas                        |
 | Objetivo: ter o ambiente pronto...       | Objetivo: preparar a base...             |
 |                                          |                                          |
 | ✅ Onboarding e alinhamento              | ☐ Definir estratégia de venda            |
 | ✅ Contratação e configuração de VPS     | ☐ Estruturar presença no Instagram       |
 | ✅ Instalação das ferramentas            | ☐ Roteiro para primeiras reuniões        |
-| ...                                      | ✅ Mapeamento, precificação...           |
+| ✅ Configuração de credenciais           | ✅ Mapeamento, precificação...           |
+| ✅ Visão geral do N8N e instalação       |                                          |
+| ✅ Criação do primeiro agente de IA      |                                          |
 +------------------------------------------+------------------------------------------+
-|                                          |                                          |
 | Fase 2: Construção de Projeto            | Fase 4: Entrega e Escala                 |
-| 🔧 Pilar Técnico                         | 📦 Pilar de Entrega                       |
 | Objetivo: criar um projeto funcional...  | Objetivo: aprender a entregar...         |
 |                                          |                                          |
 | ☐ Escolha de nicho do primeiro projeto   | ☐ Passo a passo: "Cliente fechou..."     |
@@ -37,34 +35,33 @@ Etapas
 
 ## Mudanças Necessárias
 
-### 1. Página MinhaMentoria.tsx
+### 1. MenteeEditor.tsx - Remover Gestão de Pilares
 
-Substituir o grid de `PillarCard` por um grid de `StageCard` (fases):
+| Item | Ação |
+|------|------|
+| Seção "Pilares" (linhas 573-650) | Remover completamente |
+| Dialog de Pilar (linhas 946-1014) | Remover |
+| Estado `isPillarOpen`, `editingPillar`, `pillarForm` | Remover |
+| Funções `handleSavePillar`, `handleDeletePillar` | Remover |
+| Campo `pillar_id` no formulário de Fase | Remover |
+| Badge de pilar nos cards de Fase | Remover |
 
-| Item | Mudança |
-|------|---------|
-| Componente | Usar `stages` em vez de `pillars` |
-| Grid | 2 colunas (md:grid-cols-2) para 4 fases |
-| Visual | Cada card mostra: Título da Fase, Badge do Pilar, Objetivo, Tarefas |
+### 2. StageCard.tsx - Remover Badge do Pilar
 
-### 2. Criar Novo Componente StageCard
+| Item | Ação |
+|------|------|
+| Import e uso do Badge para Pilar | Remover |
+| Lógica `PillarIcon` | Remover |
+| Seção "Pillar Badge" no header | Remover |
+| Props type `pillar` | Simplificar |
 
-Componente que exibe uma Fase com:
-- Título da Fase (ex: "Fase 1: Preparação Técnica")
-- Badge com ícone e nome do Pilar vinculado
-- Objetivo em destaque (cor do pilar)
-- Lista de tarefas com checkboxes
+### 3. MinhaMentoria.tsx
 
-### 3. Atualizar MenteeEditor.tsx
+A página já está correta, apenas usa `stages`. Nenhuma mudança necessária.
 
-- Remover seção de "Pilares" como cards principais
-- Manter Pilares apenas como opções de dropdown ao criar/editar Fases
-- Foco na gestão de Fases e suas Tarefas
-- Interface simplificada: Fases como lista principal, cada uma com suas tarefas
+### 4. useMenteeData.ts
 
-### 4. Atualizar Hook useMenteeData
-
-Garantir que `stages` inclua informações do Pilar vinculado para exibição.
+Manter a query de pilares no hook por enquanto (pode ser removida em refatoração futura), mas não será mais utilizada na interface.
 
 ---
 
@@ -72,199 +69,142 @@ Garantir que `stages` inclua informações do Pilar vinculado para exibição.
 
 | Arquivo | Mudanças |
 |---------|----------|
-| `src/pages/MinhaMentoria.tsx` | Substituir PillarCard por StageCard, usar stages |
-| `src/components/mentoria/StageCard.tsx` | Atualizar para incluir badge do Pilar |
-| `src/pages/admin/MenteeEditor.tsx` | Remover seção de Pilares como cards, manter como dropdown |
-| `src/hooks/useMenteeData.ts` | Incluir dados do pilar vinculado nos stages |
+| `src/pages/admin/MenteeEditor.tsx` | Remover seção de Pilares, dialog, estados e funções relacionadas |
+| `src/components/mentoria/StageCard.tsx` | Remover badge e referências ao Pilar |
 
 ---
 
 ## Implementação Detalhada
 
-### Parte 1: Atualizar MinhaMentoria.tsx
+### Parte 1: MenteeEditor.tsx
 
+**Remover estados (linhas 111-118):**
 ```tsx
-// Importar StageCard em vez de PillarCard
-import { StageCard } from "@/components/mentoria/StageCard";
-
-// Usar stages em vez de pillars
-const { mentee, meetings, stages, pillars, isLoading, toggleTask } = useMenteeData();
-
-// Na seção Etapas:
-<div className="grid gap-4 md:grid-cols-2">
-  {stages.map((stage) => {
-    const linkedPillar = pillars.find(p => p.id === stage.pillar_id);
-    return (
-      <StageCard
-        key={stage.id}
-        stage={stage}
-        pillar={linkedPillar}
-        onToggleTask={handleToggleTask}
-      />
-    );
-  })}
-</div>
+// REMOVER:
+const [isPillarOpen, setIsPillarOpen] = useState(false);
+const [editingPillar, setEditingPillar] = useState<Pillar | null>(null);
+const [pillarForm, setPillarForm] = useState({...});
 ```
 
-### Parte 2: Atualizar StageCard.tsx
-
-Novo design do card de Fase:
-
+**Remover funções CRUD de Pilares (linhas 208-261):**
 ```tsx
-interface StageCardProps {
-  stage: Stage;
-  pillar?: Pillar;
-  onToggleTask: (taskId: string, completed: boolean) => void;
-}
-
-export function StageCard({ stage, pillar, onToggleTask }: StageCardProps) {
-  return (
-    <Card className="bg-card border-border h-full">
-      <CardHeader>
-        {/* Título da Fase */}
-        <h3 className="font-semibold text-base">{stage.title}</h3>
-        
-        {/* Badge do Pilar */}
-        {pillar && (
-          <div className="flex items-center gap-2 mt-1">
-            <IconComponent style={{ color: pillar.icon_color }} />
-            <span className="text-sm text-muted-foreground">{pillar.title}</span>
-          </div>
-        )}
-        
-        {/* Objetivo */}
-        {stage.objective && (
-          <p className="text-xs font-medium" style={{ color: stage.icon_color }}>
-            Objetivo: {stage.objective}
-          </p>
-        )}
-      </CardHeader>
-      
-      <CardContent>
-        {/* Tarefas */}
-        {stage.tasks?.map((task) => (
-          <TaskCheckbox key={task.id} task={task} onToggle={onToggleTask} />
-        ))}
-      </CardContent>
-    </Card>
-  );
-}
+// REMOVER handleSavePillar e handleDeletePillar
 ```
 
-### Parte 3: Simplificar MenteeEditor.tsx
-
-Remover a seção visual de cards de Pilares:
-- Manter CRUD de Pilares (apenas para o dropdown)
-- Foco na lista de Fases como elemento principal
-- Cada Fase mostra: título, objetivo, pilar vinculado (dropdown), tarefas
-
+**Remover seção visual de Pilares (linhas 573-650):**
 ```tsx
-// Remover grid de pillar cards
-// Manter apenas um botão discreto para gerenciar pilares
+// REMOVER Card com título "Pilares" e badges
+```
 
-// Seção principal: Lista de Fases
-<div className="space-y-4">
-  <div className="flex items-center justify-between">
-    <h2>Fases</h2>
-    <div className="flex gap-2">
-      <Button onClick={() => setIsPillarOpen(true)}>
-        Gerenciar Pilares
-      </Button>
-      <Button onClick={() => setIsStageOpen(true)}>
-        + Nova Fase
-      </Button>
-    </div>
-  </div>
-  
-  {/* Lista de fases como cards principais */}
-  <div className="grid gap-4 md:grid-cols-2">
-    {stages.map((stage) => (
-      <Card key={stage.id}>
-        {/* Header da fase com badge do pilar */}
-        {/* Tarefas editáveis */}
-      </Card>
-    ))}
-  </div>
-</div>
+**Simplificar formulário de Fase - remover campo pillar_id:**
+```tsx
+// ANTES:
+const [stageForm, setStageForm] = useState({
+  title: "",
+  objective: "",
+  icon_color: "#F59E0B",
+  pillar_id: "", // REMOVER
+});
+
+// DEPOIS:
+const [stageForm, setStageForm] = useState({
+  title: "",
+  objective: "",
+  icon_color: "#F59E0B",
+});
+```
+
+**Remover badge de pilar dos cards de Fase (linhas 695-699):**
+```tsx
+// REMOVER:
+{linkedPillar && (
+  <Badge variant="outline" className="text-xs">
+    {linkedPillar.title}
+  </Badge>
+)}
+```
+
+**Remover Dialog de Pilar (linhas 946-1014):**
+```tsx
+// REMOVER Dialog completo
+```
+
+**Remover seletor de Pilar no Dialog de Fase (linhas 1041-1058):**
+```tsx
+// REMOVER campo "Pilar (opcional)" do formulário
+```
+
+### Parte 2: StageCard.tsx
+
+**Remover referências ao Pilar:**
+```tsx
+// ANTES:
+const PillarIcon = stage.pillar ? (iconMap[stage.pillar.icon || "folder"] || Folder) : null;
+
+// DEPOIS: Remover esta linha
+
+// REMOVER todo o bloco "Pillar Badge" (linhas 70-88):
+{stage.pillar && PillarIcon && (
+  <Badge ...>
+    ...
+  </Badge>
+)}
 ```
 
 ---
 
 ## Seção Técnica
 
-### Atualização do Hook useMenteeData
-
-Para exibir o nome do pilar em cada fase, precisamos buscar os dados do pilar. A query atual já faz isso, mas precisamos garantir que os stages incluam a referência:
+### Imports a Remover no MenteeEditor
 
 ```typescript
-// Buscar stages com informações do pilar
-const { data: stages = [] } = useQuery({
-  queryKey: ["stages", activeMenteeId],
-  queryFn: async () => {
-    const { data: stagesData, error } = await supabase
-      .from("mentorship_stages")
-      .select(`
-        *,
-        tasks:mentorship_tasks(*),
-        notes:mentorship_notes(*),
-        pillar:mentorship_pillars(id, title, icon, icon_color)
-      `)
-      .eq("mentee_id", activeMenteeId)
-      .order("order_index", { ascending: true });
+// Remover do import do useMenteeData:
+import { ..., type Pillar } from "@/hooks/useMenteeData";
+// Fica:
+import { ..., type Stage, type Task, type Note, type Meeting } from "@/hooks/useMenteeData";
+```
 
-    return stagesData;
-  },
+### invalidateAll - Remover referência a pillars
+
+```typescript
+// ANTES:
+const invalidateAll = () => {
+  queryClient.invalidateQueries({ queryKey: ["meetings", menteeId] });
+  queryClient.invalidateQueries({ queryKey: ["stages", menteeId] });
+  queryClient.invalidateQueries({ queryKey: ["pillars", menteeId] }); // REMOVER
+  queryClient.invalidateQueries({ queryKey: ["menteeProfile", menteeId] });
+};
+```
+
+### handleSaveStage - Remover pillar_id
+
+```typescript
+// ANTES:
+const { error } = await supabase.from("mentorship_stages").insert({
+  mentee_id: menteeId,
+  title: stageForm.title,
+  objective: stageForm.objective || null,
+  icon_color: stageForm.icon_color,
+  pillar_id: stageForm.pillar_id || null, // REMOVER
+  order_index: maxOrder,
+});
+
+// DEPOIS:
+const { error } = await supabase.from("mentorship_stages").insert({
+  mentee_id: menteeId,
+  title: stageForm.title,
+  objective: stageForm.objective || null,
+  icon_color: stageForm.icon_color,
+  order_index: maxOrder,
 });
 ```
-
-### Interface Stage Atualizada
-
-```typescript
-export interface Stage {
-  id: string;
-  mentee_id: string;
-  pillar_id: string | null;
-  title: string;
-  objective: string | null;
-  icon: string;
-  icon_color: string;
-  order_index: number;
-  created_at: string;
-  tasks?: Task[];
-  notes?: Note[];
-  pillar?: {
-    id: string;
-    title: string;
-    icon: string;
-    icon_color: string;
-  };
-}
-```
-
----
-
-## Fluxo do Mentor no Editor
-
-1. Criar Pilares (opcional, via botão "Gerenciar Pilares")
-2. Criar Fases - cada fase pode ser vinculada a um Pilar
-3. Adicionar Tarefas dentro de cada Fase
-4. Layout visual: grid de 2 colunas com as 4 fases
-
----
-
-## Fluxo do Aluno
-
-1. Ver página /minha-mentoria
-2. Seção "Etapas" mostra 4 cards (Fase 1, 2, 3, 4)
-3. Cada card mostra: título, badge do pilar, objetivo, tarefas
-4. Aluno marca tarefas como concluídas com checkbox
 
 ---
 
 ## Resultado Esperado
 
-1. Etapas exibidas como grid de Fases (não mais Pilares)
-2. Cada Fase mostra o Pilar vinculado como badge/subtítulo
-3. Layout 2x2 para 4 fases
-4. Tarefas editáveis por mentores, marcáveis por alunos
-5. Interface do MenteeEditor simplificada com foco em Fases
+1. Interface do mentor sem seção de "Pilares" - apenas "Fases" editáveis
+2. Cards de fase sem badge de pilar, apenas título + objetivo + tarefas
+3. Dialog de nova fase simplificado: título, objetivo e cor
+4. Visualização do aluno igual ao do mentor: grid 2x2 com fases e tarefas
+5. Código mais limpo e manutenível
