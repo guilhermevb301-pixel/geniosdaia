@@ -4,12 +4,12 @@ import { MenteeHeader } from "@/components/mentoria/MenteeHeader";
 import { QuickAccessCards } from "@/components/mentoria/QuickAccessCards";
 import { MeetingsTable } from "@/components/mentoria/MeetingsTable";
 import { PillarCard } from "@/components/mentoria/PillarCard";
-import { TodoList } from "@/components/mentoria/TodoList";
 import { useMenteeData } from "@/hooks/useMenteeData";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card } from "@/components/ui/card";
 
 export default function MinhaMentoria() {
-  const { mentee, meetings, pillars, todos, isLoading, toggleTask, toggleTodo, createTodo, deleteTodo } = useMenteeData();
+  const { mentee, meetings, pillars, isLoading, toggleTask } = useMenteeData();
 
   if (isLoading) {
     return (
@@ -56,24 +56,13 @@ export default function MinhaMentoria() {
         {/* Quick Access Cards */}
         <QuickAccessCards communityUrl={mentee.community_url} />
 
-        {/* To-do List */}
-        <TodoList 
-          todos={todos} 
-          onToggle={(id, completed) => toggleTodo.mutate({ todoId: id, completed })}
-          onCreate={(content) => createTodo.mutate({ content })}
-          onDelete={(id) => deleteTodo.mutate(id)}
-        />
-
-        {/* Meetings Table */}
-        <MeetingsTable meetings={meetings} menteeName={mentee.display_name} />
-
-        {/* Pillars Section (Notion-style) */}
-        {pillars.length > 0 && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Layers className="h-5 w-5 text-primary" />
-              <h2 className="text-lg font-semibold">Etapas</h2>
-            </div>
+        {/* Etapas Section - Pillars with Phases and Tasks */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Layers className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold">Etapas</h2>
+          </div>
+          {pillars.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-3">
               {pillars.map((pillar) => (
                 <PillarCard
@@ -83,8 +72,17 @@ export default function MinhaMentoria() {
                 />
               ))}
             </div>
-          </div>
-        )}
+          ) : (
+            <Card className="bg-card/50 border-border p-6 text-center">
+              <p className="text-muted-foreground">
+                Nenhuma etapa foi configurada ainda pelo seu mentor.
+              </p>
+            </Card>
+          )}
+        </div>
+
+        {/* Meetings Table */}
+        <MeetingsTable meetings={meetings} menteeName={mentee.display_name} />
       </div>
     </AppLayout>
   );

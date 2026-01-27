@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 
 export function SupportWidget() {
   const whatsappNumber = "5511999999999"; // Substituir pelo número real
-  const whatsappMessage = encodeURIComponent("Olá! Preciso de ajuda com a plataforma Gêneos da IA.");
+  const whatsappMessage = encodeURIComponent("Olá! Preciso de ajuda com a plataforma Gênios da IA.");
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
   return (

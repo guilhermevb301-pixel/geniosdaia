@@ -43,7 +43,7 @@ export default function Login() {
             <p className="text-6xl font-bold text-white/10 tracking-widest">AUTOMAÇÃO</p>
             <p className="text-7xl font-bold text-white/15 tracking-widest">IA</p>
             <p className="text-5xl font-bold text-white/10 tracking-widest">N8N</p>
-            <p className="text-8xl font-bold text-white/20 tracking-widest">GÊNEOS</p>
+            <p className="text-8xl font-bold text-white/20 tracking-widest">GÊNIOS</p>
             <p className="text-6xl font-bold text-white/10 tracking-widest">WORKFLOWS</p>
           </div>
         </div>
@@ -61,7 +61,7 @@ export default function Login() {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-primary">
               <Sparkles className="h-6 w-6 text-primary-foreground" />
             </div>
-            <span className="text-xl font-semibold text-foreground">Gêneos da IA</span>
+            <span className="text-xl font-semibold text-foreground">Gênios da IA</span>
           </div>
 
           {/* Header */}
