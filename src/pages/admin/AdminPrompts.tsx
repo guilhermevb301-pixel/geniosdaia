@@ -4,8 +4,7 @@ import { Plus, Pencil, Trash2, Video, Image, Bot, X, Upload } from "lucide-react
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FocalPointSelector } from "@/components/prompts/FocalPointSelector";
 
 type PromptCategory = "video" | "image" | "agent";
 
@@ -483,37 +483,15 @@ export default function AdminPrompts() {
                 )}
               </div>
 
-              {/* Focal Point Selector */}
+              {/* Focal Point Selector with Drag */}
               {thumbnailPreview && (
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground">Ponto Focal</Label>
-                  <div className="grid grid-cols-3 gap-1 w-28">
-                    {[
-                      { label: '↖', value: 'top left' },
-                      { label: '↑', value: 'top center' },
-                      { label: '↗', value: 'top right' },
-                      { label: '←', value: 'center left' },
-                      { label: '•', value: 'center' },
-                      { label: '→', value: 'center right' },
-                      { label: '↙', value: 'bottom left' },
-                      { label: '↓', value: 'bottom center' },
-                      { label: '↘', value: 'bottom right' },
-                    ].map((opt) => (
-                      <Button
-                        key={opt.value}
-                        type="button"
-                        variant={thumbnailFocus === opt.value ? 'default' : 'outline'}
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setThumbnailFocus(opt.value);
-                        }}
-                      >
-                        {opt.label}
-                      </Button>
-                    ))}
-                  </div>
+                  <FocalPointSelector
+                    imageUrl={thumbnailPreview}
+                    value={thumbnailFocus}
+                    onChange={setThumbnailFocus}
+                  />
                 </div>
               )}
             </div>
