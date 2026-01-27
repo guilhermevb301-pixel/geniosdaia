@@ -397,6 +397,41 @@ export type Database = {
         }
         Relationships: []
       }
+      prompt_variations: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          image_url: string | null
+          order_index: number | null
+          prompt_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          order_index?: number | null
+          prompt_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          order_index?: number | null
+          prompt_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_variations_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "prompts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prompts: {
         Row: {
           category: string
