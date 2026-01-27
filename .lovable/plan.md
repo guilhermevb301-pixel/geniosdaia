@@ -1,67 +1,186 @@
 
-# Plano: Remover Seção de Pilares e Simplificar Interface
+# Plano: Etapas e Tarefas Padrão para Novos Mentorados
 
 ## Resumo
 
-Remover completamente a gestão de Pilares como entidade separada. As Fases (stages) serão os elementos principais, cada uma com seu título, objetivo, cor e tarefas. O visual do aluno e do mentor será simplificado sem a exibição de badges de pilares.
+Quando um novo mentorado for criado (promoção de usuário para mentee), o sistema automaticamente criará 4 fases padrão com suas respectivas tarefas, seguindo a estrutura fornecida.
 
 ---
 
-## Estrutura Visual Final
+## Estrutura Padrão a Criar
 
 ```text
-Etapas (para alunos e mentores)
-+------------------------------------------+------------------------------------------+
-| Fase 1: Preparação Técnica               | Fase 3: Estratégia de Vendas             |
-| Objetivo: ter o ambiente pronto...       | Objetivo: preparar a base...             |
-|                                          |                                          |
-| ✅ Onboarding e alinhamento              | ☐ Definir estratégia de venda            |
-| ✅ Contratação e configuração de VPS     | ☐ Estruturar presença no Instagram       |
-| ✅ Instalação das ferramentas            | ☐ Roteiro para primeiras reuniões        |
-| ✅ Configuração de credenciais           | ✅ Mapeamento, precificação...           |
-| ✅ Visão geral do N8N e instalação       |                                          |
-| ✅ Criação do primeiro agente de IA      |                                          |
-+------------------------------------------+------------------------------------------+
-| Fase 2: Construção de Projeto            | Fase 4: Entrega e Escala                 |
-| Objetivo: criar um projeto funcional...  | Objetivo: aprender a entregar...         |
-|                                          |                                          |
-| ☐ Escolha de nicho do primeiro projeto   | ☐ Passo a passo: "Cliente fechou..."     |
-| ☐ Definição do objetivo e escopo         | ☐ Modelo validado de organização         |
-| ☐ Montagem do projeto real               | ☐ Ajustes para aumentar capacidade       |
-+------------------------------------------+------------------------------------------+
+Fase 1: Preparação Técnica (Pilar Técnico - Azul #4D96FF)
+├── [x] Onboarding e alinhamento de expectativas
+├── [x] Contratação e configuração de VPS
+├── [x] Instalação das ferramentas
+├── [x] Configuração de credenciais
+├── [x] Visão geral do N8N e instalação de templates
+└── [x] Criação do primeiro agente de IA
+
+Fase 2: Construção de Projeto (Pilar Técnico - Azul #4D96FF)
+├── [ ] Escolha de nicho do primeiro projeto
+├── [ ] Definição do objetivo e escopo
+└── [ ] Montagem do projeto real (passo a passo guiado)
+
+Fase 3: Estratégia de Vendas (Pilar de Vendas - Amarelo #FFD93D)
+├── [ ] Definir estratégia de venda e nicho
+├── [ ] Estruturar presença no Instagram para vendas
+├── [ ] Roteiro para primeiras reuniões
+└── [x] Mapeamento, precificação e criação de proposta comercial
+
+Fase 4: Entrega e Escala (Pilar de Entrega - Verde #6BCB77)
+├── [ ] Passo a passo: "Cliente fechou, e agora?"
+├── [ ] Modelo validado de organização e entrega de projetos
+└── [ ] Ajustes para aumentar a capacidade e eficiência
 ```
 
 ---
 
 ## Mudanças Necessárias
 
-### 1. MenteeEditor.tsx - Remover Gestão de Pilares
+### Arquivo: `src/hooks/useAllUsers.ts`
 
-| Item | Ação |
-|------|------|
-| Seção "Pilares" (linhas 573-650) | Remover completamente |
-| Dialog de Pilar (linhas 946-1014) | Remover |
-| Estado `isPillarOpen`, `editingPillar`, `pillarForm` | Remover |
-| Funções `handleSavePillar`, `handleDeletePillar` | Remover |
-| Campo `pillar_id` no formulário de Fase | Remover |
-| Badge de pilar nos cards de Fase | Remover |
+Após criar o registro do mentee na tabela `mentees`, adicionar a lógica para criar as 4 fases padrão com suas tarefas:
 
-### 2. StageCard.tsx - Remover Badge do Pilar
+1. Inserir as 4 fases na tabela `mentorship_stages`
+2. Para cada fase criada, inserir as tarefas correspondentes na tabela `mentorship_tasks`
 
-| Item | Ação |
-|------|------|
-| Import e uso do Badge para Pilar | Remover |
-| Lógica `PillarIcon` | Remover |
-| Seção "Pillar Badge" no header | Remover |
-| Props type `pillar` | Simplificar |
+---
 
-### 3. MinhaMentoria.tsx
+## Implementação Detalhada
 
-A página já está correta, apenas usa `stages`. Nenhuma mudança necessária.
+### Constante com Template Padrão
 
-### 4. useMenteeData.ts
+```typescript
+const DEFAULT_MENTORSHIP_TEMPLATE = [
+  {
+    title: "Fase 1: Preparação Técnica",
+    objective: "Ter o ambiente pronto para começar a criar e testar.",
+    icon_color: "#4D96FF", // Azul - Pilar Técnico
+    tasks: [
+      { content: "Onboarding e alinhamento de expectativas", completed: false },
+      { content: "Contratação e configuração de VPS", completed: false },
+      { content: "Instalação das ferramentas", completed: false },
+      { content: "Configuração de credenciais", completed: false },
+      { content: "Visão geral do N8N e instalação de templates", completed: false },
+      { content: "Criação do primeiro agente de IA", completed: false },
+    ],
+  },
+  {
+    title: "Fase 2: Construção de Projeto",
+    objective: "Criar um projeto funcional, mesmo que simples, para ganhar experiência prática.",
+    icon_color: "#4D96FF", // Azul - Pilar Técnico
+    tasks: [
+      { content: "Escolha de nicho do primeiro projeto", completed: false },
+      { content: "Definição do objetivo e escopo", completed: false },
+      { content: "Montagem do projeto real (passo a passo guiado)", completed: false },
+    ],
+  },
+  {
+    title: "Fase 3: Estratégia de Vendas",
+    objective: "Preparar a base para conseguir os primeiros clientes.",
+    icon_color: "#FFD93D", // Amarelo - Pilar de Vendas
+    tasks: [
+      { content: "Definir estratégia de venda e nicho", completed: false },
+      { content: "Estruturar presença no Instagram para vendas", completed: false },
+      { content: "Roteiro para primeiras reuniões", completed: false },
+      { content: "Mapeamento, precificação e criação de proposta comercial", completed: false },
+    ],
+  },
+  {
+    title: "Fase 4: Entrega e Escala",
+    objective: "Aprender a entregar bem e preparar o negócio para crescer.",
+    icon_color: "#6BCB77", // Verde - Pilar de Entrega
+    tasks: [
+      { content: "Passo a passo: \"Cliente fechou, e agora?\"", completed: false },
+      { content: "Modelo validado de organização e entrega de projetos", completed: false },
+      { content: "Ajustes para aumentar a capacidade e eficiência", completed: false },
+    ],
+  },
+];
+```
 
-Manter a query de pilares no hook por enquanto (pode ser removida em refatoração futura), mas não será mais utilizada na interface.
+### Função para Criar Template
+
+Após a criação do mentee, adicionar:
+
+```typescript
+// Criar fases e tarefas padrão
+const createDefaultStagesAndTasks = async (menteeId: string) => {
+  for (let i = 0; i < DEFAULT_MENTORSHIP_TEMPLATE.length; i++) {
+    const stage = DEFAULT_MENTORSHIP_TEMPLATE[i];
+    
+    // Inserir fase
+    const { data: stageData, error: stageError } = await supabase
+      .from("mentorship_stages")
+      .insert({
+        mentee_id: menteeId,
+        title: stage.title,
+        objective: stage.objective,
+        icon_color: stage.icon_color,
+        order_index: i,
+      })
+      .select("id")
+      .single();
+    
+    if (stageError || !stageData) {
+      console.error("Error creating stage:", stageError);
+      continue;
+    }
+    
+    // Inserir tarefas da fase
+    const tasksToInsert = stage.tasks.map((task, index) => ({
+      stage_id: stageData.id,
+      content: task.content,
+      completed: task.completed,
+      order_index: index,
+      is_subtask: false,
+    }));
+    
+    await supabase.from("mentorship_tasks").insert(tasksToInsert);
+  }
+};
+```
+
+### Integração no Fluxo de Criação
+
+No `changeRole` mutation, após criar o mentee:
+
+```typescript
+// Dentro do bloco que cria novo mentee
+const { data: newMentee, error } = await supabase
+  .from("mentees")
+  .insert({...})
+  .select("id")
+  .single();
+
+if (error) throw error;
+
+// Criar template padrão de fases e tarefas
+if (newMentee) {
+  await createDefaultStagesAndTasks(newMentee.id);
+}
+```
+
+---
+
+## Seção Técnica
+
+### Fluxo de Execução
+
+1. Mentor seleciona usuário e escolhe promover para "mentee"
+2. Sistema cria registro na tabela `mentees`
+3. Sistema obtém o ID do novo mentee
+4. Sistema insere as 4 fases na tabela `mentorship_stages`
+5. Para cada fase, sistema insere as tarefas na tabela `mentorship_tasks`
+6. Novo mentorado já visualiza todas as etapas configuradas
+
+### Observações
+
+- As tarefas são criadas como **não completadas** (`completed: false`) por padrão
+- O mentor pode editar/excluir/adicionar fases e tarefas posteriormente
+- Se a criação de alguma fase/tarefa falhar, o processo continua para as próximas (resiliência)
 
 ---
 
@@ -69,142 +188,13 @@ Manter a query de pilares no hook por enquanto (pode ser removida em refatoraç�
 
 | Arquivo | Mudanças |
 |---------|----------|
-| `src/pages/admin/MenteeEditor.tsx` | Remover seção de Pilares, dialog, estados e funções relacionadas |
-| `src/components/mentoria/StageCard.tsx` | Remover badge e referências ao Pilar |
-
----
-
-## Implementação Detalhada
-
-### Parte 1: MenteeEditor.tsx
-
-**Remover estados (linhas 111-118):**
-```tsx
-// REMOVER:
-const [isPillarOpen, setIsPillarOpen] = useState(false);
-const [editingPillar, setEditingPillar] = useState<Pillar | null>(null);
-const [pillarForm, setPillarForm] = useState({...});
-```
-
-**Remover funções CRUD de Pilares (linhas 208-261):**
-```tsx
-// REMOVER handleSavePillar e handleDeletePillar
-```
-
-**Remover seção visual de Pilares (linhas 573-650):**
-```tsx
-// REMOVER Card com título "Pilares" e badges
-```
-
-**Simplificar formulário de Fase - remover campo pillar_id:**
-```tsx
-// ANTES:
-const [stageForm, setStageForm] = useState({
-  title: "",
-  objective: "",
-  icon_color: "#F59E0B",
-  pillar_id: "", // REMOVER
-});
-
-// DEPOIS:
-const [stageForm, setStageForm] = useState({
-  title: "",
-  objective: "",
-  icon_color: "#F59E0B",
-});
-```
-
-**Remover badge de pilar dos cards de Fase (linhas 695-699):**
-```tsx
-// REMOVER:
-{linkedPillar && (
-  <Badge variant="outline" className="text-xs">
-    {linkedPillar.title}
-  </Badge>
-)}
-```
-
-**Remover Dialog de Pilar (linhas 946-1014):**
-```tsx
-// REMOVER Dialog completo
-```
-
-**Remover seletor de Pilar no Dialog de Fase (linhas 1041-1058):**
-```tsx
-// REMOVER campo "Pilar (opcional)" do formulário
-```
-
-### Parte 2: StageCard.tsx
-
-**Remover referências ao Pilar:**
-```tsx
-// ANTES:
-const PillarIcon = stage.pillar ? (iconMap[stage.pillar.icon || "folder"] || Folder) : null;
-
-// DEPOIS: Remover esta linha
-
-// REMOVER todo o bloco "Pillar Badge" (linhas 70-88):
-{stage.pillar && PillarIcon && (
-  <Badge ...>
-    ...
-  </Badge>
-)}
-```
-
----
-
-## Seção Técnica
-
-### Imports a Remover no MenteeEditor
-
-```typescript
-// Remover do import do useMenteeData:
-import { ..., type Pillar } from "@/hooks/useMenteeData";
-// Fica:
-import { ..., type Stage, type Task, type Note, type Meeting } from "@/hooks/useMenteeData";
-```
-
-### invalidateAll - Remover referência a pillars
-
-```typescript
-// ANTES:
-const invalidateAll = () => {
-  queryClient.invalidateQueries({ queryKey: ["meetings", menteeId] });
-  queryClient.invalidateQueries({ queryKey: ["stages", menteeId] });
-  queryClient.invalidateQueries({ queryKey: ["pillars", menteeId] }); // REMOVER
-  queryClient.invalidateQueries({ queryKey: ["menteeProfile", menteeId] });
-};
-```
-
-### handleSaveStage - Remover pillar_id
-
-```typescript
-// ANTES:
-const { error } = await supabase.from("mentorship_stages").insert({
-  mentee_id: menteeId,
-  title: stageForm.title,
-  objective: stageForm.objective || null,
-  icon_color: stageForm.icon_color,
-  pillar_id: stageForm.pillar_id || null, // REMOVER
-  order_index: maxOrder,
-});
-
-// DEPOIS:
-const { error } = await supabase.from("mentorship_stages").insert({
-  mentee_id: menteeId,
-  title: stageForm.title,
-  objective: stageForm.objective || null,
-  icon_color: stageForm.icon_color,
-  order_index: maxOrder,
-});
-```
+| `src/hooks/useAllUsers.ts` | Adicionar template padrão e função de criação automática |
 
 ---
 
 ## Resultado Esperado
 
-1. Interface do mentor sem seção de "Pilares" - apenas "Fases" editáveis
-2. Cards de fase sem badge de pilar, apenas título + objetivo + tarefas
-3. Dialog de nova fase simplificado: título, objetivo e cor
-4. Visualização do aluno igual ao do mentor: grid 2x2 com fases e tarefas
-5. Código mais limpo e manutenível
+1. Todo novo mentorado já recebe as 4 fases configuradas automaticamente
+2. Cada fase vem com suas tarefas padrão
+3. Cores diferentes para cada pilar (Técnico=Azul, Vendas=Amarelo, Entrega=Verde)
+4. Mentor pode personalizar após a criação
