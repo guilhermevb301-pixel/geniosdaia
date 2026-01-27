@@ -1,90 +1,44 @@
 
+# Plano: Aumentar Limite de Upload de Imagens para 10MB
 
-# Plano: Corrigir Erro ao Adicionar Imagem nos Prompts
+## Mudança Necessária
 
-## Problema Identificado
-
-Quando você tenta adicionar uma imagem maior que **5MB** no prompt, o sistema está bloqueando corretamente (por segurança), mas existem dois problemas:
-
-1. **Validação tardia**: A imagem só é validada quando você clica em "Criar" ou "Salvar", não no momento que seleciona o arquivo
-2. **Mensagem genérica**: O erro "Arquivo muito grande. Tamanho máximo: 5MB" aparece rapidamente, mas é seguido por "Erro ao criar prompt" que é confuso
+Alterar o limite máximo de tamanho de imagens de **5MB** para **10MB** no arquivo de validação.
 
 ---
 
-## Solução
-
-### 1. Validar imagem imediatamente ao selecionar
-
-Adicionar validação no momento em que o arquivo é selecionado, tanto na thumbnail quanto nas variações, mostrando o erro instantaneamente.
-
-**Arquivos a modificar:**
+## Arquivo a Modificar
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/components/prompts/VariationEditor.tsx` | Adicionar validação ao selecionar imagem |
-
-### Mudanças no VariationEditor.tsx
-
-```typescript
-// Importar a função de validação
-import { validateImageFile, ALLOWED_IMAGE_EXTENSIONS } from "@/lib/fileValidation";
-
-// Na função handleImageChange, validar ANTES de aceitar o arquivo:
-const handleImageChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
-  const file = e.target.files?.[0];
-  if (file) {
-    // Validar o arquivo antes de aceitar
-    const validation = validateImageFile(file);
-    if (!validation.valid) {
-      toast.error(validation.error || "Arquivo inválido");
-      e.target.value = ''; // Limpar o input
-      return;
-    }
-    updateVariation(index, "imageFile", file);
-  }
-};
-```
+| `src/lib/fileValidation.ts` | Alterar `MAX_IMAGE_SIZE` de 5MB para 10MB |
 
 ---
 
-### 2. Melhorar mensagem de erro na mutação
+## Alteração
 
-Modificar o `onError` para exibir a mensagem de erro específica em vez de uma genérica.
-
-**Arquivo:** `src/pages/admin/AdminPrompts.tsx`
+**Linha 27:**
 
 ```typescript
 // Antes
-onError: () => toast.error("Erro ao criar prompt"),
+export const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 
 // Depois
-onError: (error: Error) => toast.error(error.message || "Erro ao criar prompt"),
+export const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 ```
 
 ---
 
-## Observações Importantes
+## Impacto
 
-Se a imagem que você está tentando enviar tem mais de 5MB, você tem duas opções:
+Esta única mudança afetará automaticamente:
 
-1. **Comprimir a imagem** antes de fazer upload (usando ferramentas como TinyPNG, Squoosh, ou redimensionando)
-2. **Aumentar o limite** de 5MB para um valor maior (se necessário)
-
----
-
-## Resumo das Mudanças
-
-| Arquivo | Tipo | Descrição |
-|---------|------|-----------|
-| `src/components/prompts/VariationEditor.tsx` | Modificar | Adicionar validação imediata ao selecionar arquivo |
-| `src/pages/admin/AdminPrompts.tsx` | Modificar | Melhorar mensagens de erro nas mutações |
+- **Thumbnail principal** do prompt
+- **Imagens das variações** 
+- **Qualquer outro upload de imagem** que use a função `validateImageFile()`
 
 ---
 
-## Resultado Esperado
+## Resultado
 
-1. Ao selecionar uma imagem maior que 5MB, você verá imediatamente: **"Arquivo muito grande. Tamanho máximo: 5MB"**
-2. A imagem não será aceita e o campo será limpo
-3. Você poderá tentar novamente com uma imagem menor
-4. Se houver outros erros, a mensagem específica será exibida
-
+Após a alteração, você poderá fazer upload de imagens de até **10MB** em todos os campos de imagem do sistema de prompts.
