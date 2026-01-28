@@ -1,227 +1,179 @@
 
-# Plano: Módulos em Grid Estilo Hotmart
+# Plano: Sidebar Mobile + Cards de Módulo Verticais
 
-## Visão Geral
+## Resumo das Mudanças
 
-Transformar a página de Aulas de um layout com accordion lateral para um layout com **cards em grid** onde cada módulo é um card visual com imagem de capa, similar à Hotmart. O usuário poderá navegar clicando no módulo e depois escolher a aula.
+Vou fazer duas melhorias:
 
----
-
-## Fluxo de Navegação Proposto
-
-```text
-Página de Módulos (Grid)      →      Página de Aulas do Módulo
-┌──────┐ ┌──────┐ ┌──────┐           ┌─────────────────────────┐
-│ Capa │ │ Capa │ │ Capa │           │  Lista de Aulas         │
-│ Mod1 │ │ Mod2 │ │ Mod3 │    →      │  + Video Player         │
-│ 5/10 │ │ 0/8  │ │ 3/3  │           │                         │
-└──────┘ └──────┘ └──────┘           └─────────────────────────┘
-```
+1. **Sidebar fechável no mobile**: Transformar a sidebar fixa em um menu lateral que pode ser aberto/fechado no mobile
+2. **Cards de módulo mais verticais**: Alterar o layout para caber 4-5 cards por linha com formato mais vertical
 
 ---
 
-## Mudanças Necessárias
+## 1. Sidebar Responsiva para Mobile
 
-### 1. Banco de Dados - Adicionar campo de imagem
+### Problema Atual
 
-Adicionar coluna `cover_image_url` na tabela `modules` para armazenar a URL da imagem de capa.
+A sidebar está sempre visível com `w-64` fixo, ocupando muito espaço no mobile e sem opção de fechar.
 
-**SQL:**
-```sql
-ALTER TABLE modules ADD COLUMN cover_image_url text;
-```
-
----
-
-### 2. Novo Componente - ModuleGrid
-
-Criar um novo componente que exibe os módulos em grid com cards visuais.
-
-| Arquivo | Descrição |
-|---------|-----------|
-| `src/components/aulas/ModuleGrid.tsx` | Grid de cards de módulos com imagem de capa |
-
-**Características do card:**
-- Imagem de capa (ou placeholder com gradiente)
-- Título do módulo
-- Barra de progresso visual
-- Indicador de aulas completadas (ex: "5/10 aulas")
-- Clique leva para as aulas do módulo
-
----
-
-### 3. Nova Página - Aulas do Módulo
-
-Criar uma página para exibir as aulas de um módulo específico.
-
-| Arquivo | Descrição |
-|---------|-----------|
-| `src/pages/ModuleLessons.tsx` | Página com player + lista de aulas do módulo |
-
-Esta página terá o layout atual com o player à direita e lista de aulas à esquerda, mas apenas para o módulo selecionado.
-
----
-
-### 4. Atualizar Página de Aulas
-
-Modificar `src/pages/Aulas.tsx` para exibir o grid de módulos.
-
-**De:**
-- Layout split com accordion + player
-
-**Para:**
-- Grid de cards de módulos
-- Barra de progresso geral no topo
-
----
-
-### 5. Atualizar Rotas
-
-Adicionar nova rota para a página de aulas do módulo.
+### Solução
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/App.tsx` | Adicionar rota `/aulas/:moduleId` |
+| `src/components/layout/AppLayout.tsx` | Adicionar lógica de mobile com Sheet |
+| `src/components/layout/AppSidebar.tsx` | Adaptar para funcionar em ambos os modos |
+| `src/components/layout/TopBar.tsx` | Adicionar botão de menu hamburger no mobile |
+
+### Como vai funcionar
+
+**Desktop (acima de 768px):**
+- Sidebar fixa à esquerda (como está hoje)
+
+**Mobile (abaixo de 768px):**
+- Sidebar escondida por padrão
+- Botão de menu (hamburger) na TopBar
+- Ao clicar, abre um Sheet lateral que desliza da esquerda
+- Botão X para fechar
 
 ---
 
-### 6. Admin - Editar Capa dos Módulos
+## 2. Cards de Módulo Mais Verticais
 
-Modificar a página de administração para permitir upload de imagem de capa.
+### Problema Atual
+
+- Grid com 3 colunas no desktop (`lg:grid-cols-3`)
+- Cards com aspecto 16:9 (horizontais)
+
+### Solução
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/pages/admin/AdminModules.tsx` | Adicionar campo de upload de imagem |
+| `src/components/aulas/ModuleGrid.tsx` | Aumentar para 4-5 colunas |
+| `src/components/aulas/ModuleCard.tsx` | Alterar aspecto para 3:4 (vertical) |
 
-**Funcionalidades:**
-- Upload de imagem de capa (usando a validação existente)
-- Preview da imagem atual
-- Botão para remover imagem
-
----
-
-## Layout do Grid
+### Novo Layout do Grid
 
 ```text
-Desktop (lg): 3 colunas
-┌──────┐ ┌──────┐ ┌──────┐
-│      │ │      │ │      │
-└──────┘ └──────┘ └──────┘
+Desktop (xl): 5 colunas
+┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌────┐
+│    │ │    │ │    │ │    │ │    │
+│    │ │    │ │    │ │    │ │    │
+└────┘ └────┘ └────┘ └────┘ └────┘
 
-Tablet (md): 2 colunas
-┌──────┐ ┌──────┐
-│      │ │      │
-└──────┘ └──────┘
+Desktop (lg): 4 colunas
+┌────┐ ┌────┐ ┌────┐ ┌────┐
+│    │ │    │ │    │ │    │
+│    │ │    │ │    │ │    │
+└────┘ └────┘ └────┘ └────┘
 
-Mobile (sm): 1 coluna
-┌──────────┐
-│          │
-└──────────┘
+Tablet (md): 3 colunas
+┌────┐ ┌────┐ ┌────┐
+│    │ │    │ │    │
+└────┘ └────┘ └────┘
+
+Mobile (sm): 2 colunas
+┌────┐ ┌────┐
+│    │ │    │
+└────┘ └────┘
 ```
 
-**Classes Tailwind:**
-```
-grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6
-```
+### Novo Aspecto do Card
+
+| Antes | Depois |
+|-------|--------|
+| 16:9 (horizontal) | 3:4 (vertical) |
+| Imagem larga | Imagem mais alta |
 
 ---
 
-## Design do Card de Módulo
+## Arquivos a Modificar
 
-```text
-┌────────────────────────────┐
-│                            │
-│      [Imagem de Capa]      │
-│      ou Placeholder        │
-│                            │
-├────────────────────────────┤
-│ Módulo 1                   │
-│ Introdução ao n8n          │
-│                            │
-│ ████████░░░░ 5/10 aulas    │
-└────────────────────────────┘
-```
-
-- Aspecto da imagem: 16:9
-- Efeito hover: scale + sombra
-- Badge de "Completo" se 100%
-
----
-
-## Resumo dos Arquivos
-
-| Arquivo | Ação | Descrição |
+| Arquivo | Tipo | Descrição |
 |---------|------|-----------|
-| `supabase/migrations/` | Criar | Adicionar `cover_image_url` à tabela modules |
-| `src/components/aulas/ModuleGrid.tsx` | Criar | Componente de grid de módulos |
-| `src/components/aulas/ModuleCard.tsx` | Criar | Card individual do módulo |
-| `src/pages/ModuleLessons.tsx` | Criar | Página de aulas de um módulo |
-| `src/pages/Aulas.tsx` | Modificar | Exibir grid de módulos |
-| `src/pages/admin/AdminModules.tsx` | Modificar | Adicionar upload de imagem |
-| `src/App.tsx` | Modificar | Adicionar nova rota |
+| `src/components/layout/AppLayout.tsx` | Modificar | Adicionar Sheet para mobile |
+| `src/components/layout/AppSidebar.tsx` | Modificar | Extrair conteúdo para componente reutilizável |
+| `src/components/layout/TopBar.tsx` | Modificar | Adicionar botão hamburger no mobile |
+| `src/components/aulas/ModuleGrid.tsx` | Modificar | Grid 5 colunas no xl, 4 no lg |
+| `src/components/aulas/ModuleCard.tsx` | Modificar | Aspecto 3:4 (vertical) |
 
 ---
 
 ## Seção Técnica
 
-### Estrutura de Dados Atualizada
+### AppLayout.tsx - Nova estrutura
 
 ```typescript
-interface Module {
-  id: string;
-  title: string;
-  description: string | null;
-  cover_image_url: string | null; // NOVO
-  order_index: number;
-  lessons: Lesson[];
-  completedCount: number;
-  totalCount: number;
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+
+export function AppLayout({ children }: AppLayoutProps) {
+  const isMobile = useIsMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Desktop: sidebar fixa */}
+      {!isMobile && <AppSidebar />}
+      
+      {/* Mobile: Sheet lateral */}
+      {isMobile && (
+        <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+          <SheetContent side="left" className="p-0 w-64">
+            <SidebarContent onNavigate={() => setSidebarOpen(false)} />
+          </SheetContent>
+        </Sheet>
+      )}
+
+      <div className={cn(!isMobile && "pl-64")}>
+        <TopBar onMenuClick={() => setSidebarOpen(true)} showMenu={isMobile} />
+        <main className="p-6">{children}</main>
+      </div>
+    </div>
+  );
 }
 ```
 
-### Upload de Imagem (AdminModules)
-
-Reutilizar a função `validateImageFile` do `src/lib/fileValidation.ts` para validar uploads:
+### TopBar.tsx - Botão hamburger
 
 ```typescript
-import { validateImageFile, ALLOWED_IMAGE_EXTENSIONS } from "@/lib/fileValidation";
-
-async function uploadCoverImage(file: File): Promise<string> {
-  const validation = validateImageFile(file);
-  if (!validation.valid) throw new Error(validation.error);
-  
-  const fileName = `covers/${Date.now()}.${file.name.split('.').pop()}`;
-  const { error } = await supabase.storage.from('modules').upload(fileName, file);
-  if (error) throw error;
-  
-  return supabase.storage.from('modules').getPublicUrl(fileName).data.publicUrl;
+interface TopBarProps {
+  onMenuClick?: () => void;
+  showMenu?: boolean;
 }
+
+// No início do header:
+{showMenu && (
+  <Button variant="ghost" size="icon" onClick={onMenuClick}>
+    <Menu className="h-5 w-5" />
+  </Button>
+)}
 ```
 
-### Navegação
+### ModuleGrid.tsx - Novo grid
 
 ```typescript
-// Em ModuleCard.tsx
-<Link to={`/aulas/${module.id}`}>
-  <Card className="hover:scale-[1.02] transition-transform cursor-pointer">
-    ...
-  </Card>
-</Link>
+// Antes
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+// Depois
+<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
 ```
 
-### Rota
+### ModuleCard.tsx - Aspecto vertical
 
 ```typescript
-// Em App.tsx
-<Route path="/aulas/:moduleId" element={<ProtectedRoute><ModuleLessons /></ProtectedRoute>} />
+// Antes
+<AspectRatio ratio={16 / 9}>
+
+// Depois
+<AspectRatio ratio={3 / 4}>
 ```
 
 ---
 
 ## Resultado Esperado
 
-1. **Página de Aulas** mostra grid de módulos com capas visuais
-2. **Clicar em um módulo** leva para as aulas daquele módulo
-3. **Admin pode editar** nome e imagem de capa de cada módulo
-4. **Responsivo** - funciona bem em mobile, tablet e desktop
-5. **Progresso visual** - cada card mostra o progresso do usuário
+1. **No mobile**: Botão de menu hamburger na TopBar que abre/fecha a sidebar
+2. **Cards verticais**: Formato de capa de livro/curso (3:4)
+3. **Mais cards por linha**: 5 no desktop grande, 4 no desktop, 3 no tablet, 2 no mobile
+4. **Gap menor**: Espaçamento reduzido para caber mais cards
