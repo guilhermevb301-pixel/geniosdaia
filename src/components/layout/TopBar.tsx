@@ -1,4 +1,4 @@
-import { Bell, Search, User, LogOut, BookOpen } from "lucide-react";
+import { Bell, Search, User, LogOut, BookOpen, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -11,7 +11,12 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
-export function TopBar() {
+interface TopBarProps {
+  onMenuClick?: () => void;
+  showMenu?: boolean;
+}
+
+export function TopBar({ onMenuClick, showMenu }: TopBarProps) {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -21,9 +26,14 @@ export function TopBar() {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background/80 backdrop-blur-sm px-6">
-      {/* Search */}
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background/80 backdrop-blur-sm px-4 md:px-6">
+      {/* Mobile Menu Button + Search */}
       <div className="flex items-center gap-2 flex-1 max-w-md">
+        {showMenu && (
+          <Button variant="ghost" size="icon" onClick={onMenuClick}>
+            <Menu className="h-5 w-5" />
+          </Button>
+        )}
         <div className="relative w-full">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
