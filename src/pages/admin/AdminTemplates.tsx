@@ -22,15 +22,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Edit, Trash2, ArrowLeft, Upload, Image, FileJson } from "lucide-react";
+import { Plus, Edit, Trash2, ArrowLeft, Upload, Image, FileJson, FileArchive } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { 
   validateImageFile, 
   validateJsonFile, 
   validateJsonContent,
+  validateZipFile,
   ALLOWED_IMAGE_EXTENSIONS,
-  ALLOWED_JSON_EXTENSIONS 
+  ALLOWED_JSON_EXTENSIONS,
+  ALLOWED_ZIP_EXTENSIONS 
 } from "@/lib/fileValidation";
 
 interface Template {
@@ -39,6 +41,7 @@ interface Template {
   description: string | null;
   image_url: string | null;
   json_url: string | null;
+  zip_url: string | null;
   tags: string[];
   downloads_count: number;
   author_name: string | null;
@@ -54,6 +57,7 @@ export default function AdminTemplates() {
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const jsonInputRef = useRef<HTMLInputElement>(null);
+  const zipInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -62,8 +66,10 @@ export default function AdminTemplates() {
   const [authorName, setAuthorName] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [jsonUrl, setJsonUrl] = useState("");
+  const [zipUrl, setZipUrl] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [jsonFile, setJsonFile] = useState<File | null>(null);
+  const [zipFile, setZipFile] = useState<File | null>(null);
 
   const { data: templates, isLoading } = useQuery({
     queryKey: ["templates"],
@@ -109,6 +115,29 @@ export default function AdminTemplates() {
 
     // Validate JSON content structure
     await validateJsonContent(file);
+
+    const fileExt = file.name.split(".").pop()?.toLowerCase();
+    const fileName = `${folder}/${Date.now()}.${fileExt}`;
+    
+    const { error: uploadError } = await supabase.storage
+      .from("templates")
+      .upload(fileName, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage
+      .from("templates")
+      .getPublicUrl(fileName);
+
+    return data.publicUrl;
+  }
+
+  async function uploadZipFile(file: File, folder: string): Promise<string> {
+    // Validate ZIP file
+    const validation = validateZipFile(file);
+    if (!validation.valid) {
+      throw new Error(validation.error);
+    }
 
     const fileExt = file.name.split(".").pop()?.toLowerCase();
     const fileName = `${folder}/${Date.now()}.${fileExt}`;
@@ -190,8 +219,10 @@ export default function AdminTemplates() {
     setAuthorName("");
     setImageUrl("");
     setJsonUrl("");
+    setZipUrl("");
     setImageFile(null);
     setJsonFile(null);
+    setZipFile(null);
   }
 
   function handleEdit(template: Template) {
@@ -202,6 +233,7 @@ export default function AdminTemplates() {
     setAuthorName(template.author_name || "");
     setImageUrl(template.image_url || "");
     setJsonUrl(template.json_url || "");
+    setZipUrl(template.zip_url || "");
     setDialogOpen(true);
   }
 
@@ -212,6 +244,7 @@ export default function AdminTemplates() {
     try {
       let finalImageUrl = imageUrl;
       let finalJsonUrl = jsonUrl;
+      let finalZipUrl = zipUrl;
 
       // Upload image if new file selected
       if (imageFile) {
@@ -223,11 +256,17 @@ export default function AdminTemplates() {
         finalJsonUrl = await uploadJsonFile(jsonFile, "json");
       }
 
+      // Upload ZIP if new file selected
+      if (zipFile) {
+        finalZipUrl = await uploadZipFile(zipFile, "zip");
+      }
+
       const templateData = {
         title,
         description: description || null,
         image_url: finalImageUrl || null,
         json_url: finalJsonUrl || null,
+        zip_url: finalZipUrl || null,
         tags: tags.split(",").map(t => t.trim()).filter(Boolean),
         author_name: authorName || null,
       };
@@ -414,6 +453,53 @@ export default function AdminTemplates() {
                   )}
                 </div>
 
+                {/* ZIP Upload */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <FileArchive className="h-4 w-4" />
+                    Arquivo ZIP
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={zipUrl}
+                      onChange={(e) => setZipUrl(e.target.value)}
+                      placeholder="URL do ZIP ou faça upload"
+                      className="flex-1"
+                    />
+                    <input
+                      ref={zipInputRef}
+                      type="file"
+                      accept={ALLOWED_ZIP_EXTENSIONS.join(',')}
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const validation = validateZipFile(file);
+                          if (!validation.valid) {
+                            toast({ variant: "destructive", title: "Arquivo inválido", description: validation.error });
+                            e.target.value = '';
+                            return;
+                          }
+                          setZipFile(file);
+                          setZipUrl(file.name);
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => zipInputRef.current?.click()}
+                    >
+                      <Upload className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {zipFile && (
+                    <p className="text-sm text-muted-foreground">
+                      Arquivo selecionado: {zipFile.name}
+                    </p>
+                  )}
+                </div>
+
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={resetForm}>
                     Cancelar
@@ -448,6 +534,7 @@ export default function AdminTemplates() {
                     <TableHead>Autor</TableHead>
                     <TableHead>Downloads</TableHead>
                     <TableHead>JSON</TableHead>
+                    <TableHead>ZIP</TableHead>
                     <TableHead className="w-24">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -481,6 +568,21 @@ export default function AdminTemplates() {
                             className="text-primary hover:underline flex items-center gap-1"
                           >
                             <FileJson className="h-4 w-4" />
+                            Ver
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {template.zip_url ? (
+                          <a
+                            href={template.zip_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline flex items-center gap-1"
+                          >
+                            <FileArchive className="h-4 w-4" />
                             Ver
                           </a>
                         ) : (
