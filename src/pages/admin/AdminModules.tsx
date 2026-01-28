@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -14,22 +14,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Plus, Edit, Trash2, GripVertical, ArrowLeft } from "lucide-react";
+import { Plus, Edit, Trash2, ArrowLeft, Upload, X, Image } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
+import { validateImageFile, ALLOWED_IMAGE_EXTENSIONS } from "@/lib/fileValidation";
 
 interface Module {
   id: string;
   title: string;
   description: string | null;
+  cover_image_url: string | null;
   order_index: number;
   created_at: string;
 }
@@ -41,6 +35,8 @@ export default function AdminModules() {
   const [editingModule, setEditingModule] = useState<Module | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const { data: modules, isLoading } = useQuery({
     queryKey: ["modules"],
@@ -55,7 +51,7 @@ export default function AdminModules() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (newModule: { title: string; description: string; order_index: number }) => {
+    mutationFn: async (newModule: { title: string; description: string; cover_image_url: string | null; order_index: number }) => {
       const { data, error } = await supabase
         .from("modules")
         .insert(newModule)
@@ -75,10 +71,10 @@ export default function AdminModules() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, title, description }: { id: string; title: string; description: string }) => {
+    mutationFn: async ({ id, title, description, cover_image_url }: { id: string; title: string; description: string; cover_image_url: string | null }) => {
       const { data, error } = await supabase
         .from("modules")
-        .update({ title, description })
+        .update({ title, description, cover_image_url })
         .eq("id", id)
         .select()
         .single();
@@ -109,27 +105,61 @@ export default function AdminModules() {
     },
   });
 
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+      toast({ variant: "destructive", title: "Erro", description: validation.error });
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const fileName = `covers/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+      const { error: uploadError } = await supabase.storage
+        .from("modules")
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("modules")
+        .getPublicUrl(fileName);
+
+      setCoverImageUrl(publicUrl);
+      toast({ title: "Imagem enviada com sucesso!" });
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "Erro ao enviar imagem", description: error.message });
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
   function resetForm() {
     setDialogOpen(false);
     setEditingModule(null);
     setTitle("");
     setDescription("");
+    setCoverImageUrl(null);
   }
 
   function handleEdit(module: Module) {
     setEditingModule(module);
     setTitle(module.title);
     setDescription(module.description || "");
+    setCoverImageUrl(module.cover_image_url);
     setDialogOpen(true);
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (editingModule) {
-      updateMutation.mutate({ id: editingModule.id, title, description });
+      updateMutation.mutate({ id: editingModule.id, title, description, cover_image_url: coverImageUrl });
     } else {
       const nextOrder = modules ? modules.length : 0;
-      createMutation.mutate({ title, description, order_index: nextOrder });
+      createMutation.mutate({ title, description, cover_image_url: coverImageUrl, order_index: nextOrder });
     }
   }
 
@@ -151,12 +181,12 @@ export default function AdminModules() {
 
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button onClick={() => { setEditingModule(null); setTitle(""); setDescription(""); }}>
+              <Button onClick={() => { setEditingModule(null); setTitle(""); setDescription(""); setCoverImageUrl(null); }}>
                 <Plus className="mr-2 h-4 w-4" />
                 Novo Módulo
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-lg">
               <DialogHeader>
                 <DialogTitle>{editingModule ? "Editar Módulo" : "Novo Módulo"}</DialogTitle>
               </DialogHeader>
@@ -180,11 +210,60 @@ export default function AdminModules() {
                     placeholder="Descrição do módulo (opcional)"
                   />
                 </div>
+                
+                {/* Cover Image Upload */}
+                <div className="space-y-2">
+                  <Label>Imagem de Capa</Label>
+                  {coverImageUrl ? (
+                    <div className="relative">
+                      <img
+                        src={coverImageUrl}
+                        alt="Capa do módulo"
+                        className="w-full h-40 object-cover rounded-lg border"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 h-8 w-8"
+                        onClick={() => setCoverImageUrl(null)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        {isUploading ? (
+                          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                        ) : (
+                          <>
+                            <Image className="h-10 w-10 text-muted-foreground mb-2" />
+                            <p className="text-sm text-muted-foreground">
+                              Clique para enviar uma imagem
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {ALLOWED_IMAGE_EXTENSIONS.join(", ").toUpperCase()} (máx. 10MB)
+                            </p>
+                          </>
+                        )}
+                      </div>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept={ALLOWED_IMAGE_EXTENSIONS.map(ext => `.${ext}`).join(",")}
+                        onChange={handleImageUpload}
+                        disabled={isUploading}
+                      />
+                    </label>
+                  )}
+                </div>
+
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={resetForm}>
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
+                  <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending || isUploading}>
                     {editingModule ? "Salvar" : "Criar"}
                   </Button>
                 </div>
@@ -203,49 +282,55 @@ export default function AdminModules() {
                 <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
               </div>
             ) : modules && modules.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">#</TableHead>
-                    <TableHead>Título</TableHead>
-                    <TableHead>Descrição</TableHead>
-                    <TableHead className="w-24">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {modules.map((module, index) => (
-                    <TableRow key={module.id}>
-                      <TableCell className="font-medium">{index + 1}</TableCell>
-                      <TableCell className="font-medium">{module.title}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {module.description || "-"}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEdit(module)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              if (confirm("Tem certeza que deseja excluir este módulo? Todas as aulas serão excluídas também.")) {
-                                deleteMutation.mutate(module.id);
-                              }
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {modules.map((module, index) => (
+                  <Card key={module.id} className="overflow-hidden">
+                    <div className="aspect-video bg-muted relative">
+                      {module.cover_image_url ? (
+                        <img
+                          src={module.cover_image_url}
+                          alt={module.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-full bg-gradient-to-br from-primary/20 to-primary/5">
+                          <Image className="h-10 w-10 text-muted-foreground" />
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                      )}
+                      <div className="absolute top-2 left-2 bg-background/80 px-2 py-1 rounded text-xs font-medium">
+                        Módulo {index + 1}
+                      </div>
+                    </div>
+                    <CardContent className="p-4">
+                      <h3 className="font-semibold line-clamp-1">{module.title}</h3>
+                      <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                        {module.description || "Sem descrição"}
+                      </p>
+                      <div className="flex items-center gap-2 mt-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEdit(module)}
+                        >
+                          <Edit className="h-4 w-4 mr-1" />
+                          Editar
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (confirm("Tem certeza que deseja excluir este módulo? Todas as aulas serão excluídas também.")) {
+                              deleteMutation.mutate(module.id);
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 Nenhum módulo criado ainda. Clique em "Novo Módulo" para começar.

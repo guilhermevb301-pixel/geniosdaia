@@ -1,0 +1,231 @@
+import { useState } from "react";
+import { useParams, Link } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { VideoPlayer } from "@/components/aulas/VideoPlayer";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { ArrowLeft, CheckCircle2, Circle, PlayCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface Lesson {
+  id: string;
+  title: string;
+  duration: string;
+  completed: boolean;
+  videoUrl?: string;
+  description?: string;
+  downloadUrl?: string;
+}
+
+export default function ModuleLessons() {
+  const { moduleId } = useParams<{ moduleId: string }>();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+
+  // Fetch module info
+  const { data: module } = useQuery({
+    queryKey: ["module", moduleId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("modules")
+        .select("*")
+        .eq("id", moduleId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!moduleId,
+  });
+
+  // Fetch lessons for this module
+  const { data: lessonsData } = useQuery({
+    queryKey: ["lessons", moduleId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("lessons")
+        .select("*")
+        .eq("module_id", moduleId)
+        .order("order_index");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!moduleId,
+  });
+
+  // Fetch user progress
+  const { data: progressData } = useQuery({
+    queryKey: ["lesson_progress", user?.id, moduleId],
+    queryFn: async () => {
+      if (!user || !lessonsData) return [];
+      const lessonIds = lessonsData.map((l) => l.id);
+      const { data, error } = await supabase
+        .from("lesson_progress")
+        .select("*")
+        .eq("user_id", user.id)
+        .in("lesson_id", lessonIds);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user && !!lessonsData,
+  });
+
+  // Mark lesson complete mutation
+  const markCompleteMutation = useMutation({
+    mutationFn: async (lessonId: string) => {
+      if (!user) throw new Error("Usuário não autenticado");
+      
+      const { data, error } = await supabase
+        .from("lesson_progress")
+        .upsert({
+          user_id: user.id,
+          lesson_id: lessonId,
+          completed: true,
+          completed_at: new Date().toISOString(),
+        }, { onConflict: "user_id,lesson_id" })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lesson_progress"] });
+    },
+  });
+
+  // Convert YouTube URL to embed URL
+  function getYouTubeEmbedUrl(url: string | null | undefined): string | undefined {
+    if (!url) return undefined;
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&?\s]+)/,
+    ];
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match) {
+        return `https://www.youtube.com/embed/${match[1]}`;
+      }
+    }
+    return url;
+  }
+
+  // Build lessons with progress
+  const lessons: Lesson[] = (lessonsData || []).map((lesson) => {
+    const progress = progressData?.find((p) => p.lesson_id === lesson.id);
+    return {
+      id: lesson.id,
+      title: lesson.title,
+      duration: lesson.duration || "",
+      completed: progress?.completed || false,
+      videoUrl: getYouTubeEmbedUrl(lesson.youtube_url),
+      description: lesson.description || undefined,
+      downloadUrl: lesson.download_url || undefined,
+    };
+  });
+
+  const handleSelectLesson = (lesson: Lesson) => {
+    setSelectedLesson(lesson);
+  };
+
+  const handleMarkComplete = () => {
+    if (selectedLesson) {
+      markCompleteMutation.mutate(selectedLesson.id);
+      setSelectedLesson({ ...selectedLesson, completed: true });
+    }
+  };
+
+  // Calculate progress
+  const completedLessons = lessons.filter((l) => l.completed).length;
+  const totalLessons = lessons.length;
+
+  if (!module) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-[60vh]">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  return (
+    <AppLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center gap-4">
+          <Link to="/aulas">
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-2xl font-semibold">{module.title}</h1>
+            <p className="text-sm text-muted-foreground">
+              {completedLessons}/{totalLessons} aulas completadas
+            </p>
+          </div>
+        </div>
+
+        {/* Split Layout */}
+        <div className="grid gap-6 lg:grid-cols-[350px_1fr]">
+          {/* Left Column - Lesson List */}
+          <Card>
+            <CardContent className="p-0">
+              <ScrollArea className="h-[calc(100vh-250px)]">
+                <div className="p-2">
+                  {lessons.map((lesson, index) => (
+                    <button
+                      key={lesson.id}
+                      onClick={() => handleSelectLesson(lesson)}
+                      className={cn(
+                        "w-full flex items-center gap-3 p-3 rounded-lg text-left transition-colors",
+                        selectedLesson?.id === lesson.id
+                          ? "bg-primary/10 text-primary"
+                          : "hover:bg-muted"
+                      )}
+                    >
+                      <div className="flex-shrink-0">
+                        {lesson.completed ? (
+                          <CheckCircle2 className="h-5 w-5 text-primary" />
+                        ) : selectedLesson?.id === lesson.id ? (
+                          <PlayCircle className="h-5 w-5 text-primary" />
+                        ) : (
+                          <Circle className="h-5 w-5 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={cn(
+                          "font-medium truncate",
+                          lesson.completed && "text-muted-foreground"
+                        )}>
+                          {index + 1}. {lesson.title}
+                        </p>
+                        {lesson.duration && (
+                          <p className="text-xs text-muted-foreground">
+                            {lesson.duration}
+                          </p>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+
+          {/* Right Column - Video Player */}
+          <div>
+            <VideoPlayer
+              lesson={selectedLesson}
+              onMarkComplete={handleMarkComplete}
+            />
+          </div>
+        </div>
+      </div>
+    </AppLayout>
+  );
+}
