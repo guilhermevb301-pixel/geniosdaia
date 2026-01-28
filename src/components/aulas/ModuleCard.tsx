@@ -31,7 +31,7 @@ export function ModuleCard({
     <Link to={`/aulas/${id}`}>
       <Card className="group overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer h-full">
         <div className="relative">
-          <AspectRatio ratio={16 / 9}>
+          <AspectRatio ratio={3 / 4}>
             {coverImageUrl ? (
               <img
                 src={coverImageUrl}
