@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Aulas from "./pages/Aulas";
+import ModuleLessons from "./pages/ModuleLessons";
 import Templates from "./pages/Templates";
 import Mentoria from "./pages/Mentoria";
 import MinhaMentoria from "./pages/MinhaMentoria";
@@ -54,6 +55,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Aulas />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/aulas/:moduleId"
+              element={
+                <ProtectedRoute>
+                  <ModuleLessons />
                 </ProtectedRoute>
               }
             />
