@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Download, Heart, MessageCircle, Sparkles } from "lucide-react";
+import { Search, Download, Heart, MessageCircle, Sparkles, FileArchive } from "lucide-react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Link } from "react-router-dom";
 
@@ -16,6 +16,7 @@ interface Template {
   description: string | null;
   image_url: string | null;
   json_url: string | null;
+  zip_url: string | null;
   tags: string[];
   downloads_count: number;
   author_name: string | null;
@@ -56,10 +57,11 @@ export default function Templates() {
     },
   });
 
-  const handleDownload = (template: Template) => {
-    if (template.json_url) {
+  const handleDownload = (template: Template, type: 'json' | 'zip') => {
+    const url = type === 'json' ? template.json_url : template.zip_url;
+    if (url) {
       incrementDownloadMutation.mutate(template.id);
-      window.open(template.json_url, "_blank");
+      window.open(url, "_blank");
     }
   };
 
@@ -179,23 +181,33 @@ export default function Templates() {
                     </div>
                   )}
 
-                  {/* Actions */}
-                  <div className="flex items-center justify-between pt-2">
-                    <span className="text-sm text-muted-foreground">
-                      {template.downloads_count} downloads
-                    </span>
-                    <div className="flex gap-2">
-                      {template.json_url && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleDownload(template)}
-                        >
-                          <Download className="mr-2 h-4 w-4" />
-                          Baixar JSON
-                        </Button>
-                      )}
-                    </div>
-                  </div>
+                                  {/* Actions */}
+                                  <div className="flex items-center justify-between pt-2">
+                                    <span className="text-sm text-muted-foreground">
+                                      {template.downloads_count} downloads
+                                    </span>
+                                    <div className="flex gap-2">
+                                      {template.json_url && (
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handleDownload(template, 'json')}
+                                        >
+                                          <Download className="mr-2 h-4 w-4" />
+                                          JSON
+                                        </Button>
+                                      )}
+                                      {template.zip_url && (
+                                        <Button
+                                          size="sm"
+                                          onClick={() => handleDownload(template, 'zip')}
+                                        >
+                                          <FileArchive className="mr-2 h-4 w-4" />
+                                          ZIP
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
                 </CardContent>
               </Card>
             ))}

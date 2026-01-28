@@ -492,6 +492,7 @@ export type Database = {
           tags: string[] | null
           title: string
           updated_at: string
+          zip_url: string | null
         }
         Insert: {
           author_name?: string | null
@@ -504,6 +505,7 @@ export type Database = {
           tags?: string[] | null
           title: string
           updated_at?: string
+          zip_url?: string | null
         }
         Update: {
           author_name?: string | null
@@ -516,6 +518,7 @@ export type Database = {
           tags?: string[] | null
           title?: string
           updated_at?: string
+          zip_url?: string | null
         }
         Relationships: []
       }
