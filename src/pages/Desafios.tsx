@@ -87,6 +87,20 @@ function CountdownTimer({ endDate }: { endDate: string }) {
   );
 }
 
+// Helper function for dynamic avatar colors
+function getAvatarColor(userId: string): string {
+  const colors = [
+    "bg-pink-500",
+    "bg-green-500",
+    "bg-orange-500",
+    "bg-blue-500",
+    "bg-purple-500",
+    "bg-cyan-500",
+  ];
+  const index = userId.charCodeAt(0) % colors.length;
+  return colors[index];
+}
+
 function PositionBadge({ position }: { position: number }) {
   if (position > 3) return null;
   
@@ -97,7 +111,7 @@ function PositionBadge({ position }: { position: number }) {
   };
   
   return (
-    <div className={cn("absolute -top-2 -left-2 px-2 py-1 rounded-md font-bold text-xs flex items-center gap-1 z-10", styles[position])}>
+    <div className={cn("absolute top-3 left-3 px-2 py-1 rounded-md font-bold text-xs flex items-center gap-1 z-10", styles[position])}>
       {position === 1 && <Crown className="h-3 w-3" />}
       {position}º
     </div>
@@ -245,13 +259,13 @@ function SubmissionCard({
 
   return (
     <Card className={cn(
-      "relative overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1",
+      "relative overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 bg-card border-border",
       position <= 3 && "ring-1 ring-primary/20"
     )}>
       <PositionBadge position={position} />
       
       {/* Preview Placeholder */}
-      <div className="bg-muted/50 h-32 flex items-center justify-center">
+      <div className="bg-muted h-32 flex items-center justify-center">
         {submission.image_url ? (
           <img src={submission.image_url} alt={submission.title} className="w-full h-full object-cover" />
         ) : (
@@ -263,7 +277,7 @@ function SubmissionCard({
         {/* Author Info */}
         <div className="flex items-center gap-2 mb-2">
           <Avatar className="h-8 w-8">
-            <AvatarFallback className="bg-primary/10 text-primary text-xs">
+            <AvatarFallback className={cn("text-white text-xs font-semibold", getAvatarColor(submission.user_id))}>
               {submission.title.substring(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
@@ -279,12 +293,12 @@ function SubmissionCard({
         {/* Footer: Vote + Date */}
         <div className="flex items-center justify-between">
           <Button 
-            variant={hasVoted ? "default" : "outline"}
+            variant="ghost"
             size="sm" 
             onClick={() => onVote(submission.id)}
             className={cn(
-              "gap-1 transition-all",
-              hasVoted && "bg-primary/20 hover:bg-primary/30 text-primary border-primary/30"
+              "gap-1 transition-all bg-muted hover:bg-muted/80",
+              hasVoted && "bg-primary/20 hover:bg-primary/30 text-primary"
             )}
           >
             <ChevronUp className={cn("h-4 w-4", hasVoted && "animate-pulse")} />
@@ -315,10 +329,16 @@ function RankingRow({
     3: "bg-amber-700 text-amber-100",
   };
 
+  const rowBgStyles: Record<number, string> = {
+    1: "bg-amber-500/10 border-l-4 border-l-amber-500",
+    2: "bg-gray-500/10 border-l-4 border-l-gray-400",
+    3: "bg-amber-700/10 border-l-4 border-l-amber-700",
+  };
+
   return (
     <div className={cn(
       "flex items-center gap-4 p-4 rounded-lg transition-colors",
-      position <= 3 ? "bg-muted/50" : "hover:bg-muted/30"
+      position <= 3 ? rowBgStyles[position] : "hover:bg-muted/30"
     )}>
       {/* Position */}
       <div className={cn(
@@ -331,7 +351,7 @@ function RankingRow({
 
       {/* Avatar */}
       <Avatar className="h-10 w-10">
-        <AvatarFallback className="bg-primary/10 text-primary">
+        <AvatarFallback className={cn("text-white font-semibold", getAvatarColor(submission.user_id))}>
           {submission.title.substring(0, 2).toUpperCase()}
         </AvatarFallback>
       </Avatar>
@@ -712,22 +732,28 @@ export default function Desafios() {
 
           {/* Tab: Submissions Only */}
           <TabsContent value="submissions">
-            <CommunitySubmissions 
-              submissions={sortedSubmissions}
-              onVote={handleVote}
-              sortBy={sortBy}
-              onSortChange={setSortBy}
-            />
+            <div>
+              <CommunitySubmissions 
+                submissions={sortedSubmissions}
+                onVote={handleVote}
+                sortBy={sortBy}
+                onSortChange={setSortBy}
+              />
+            </div>
           </TabsContent>
 
           {/* Tab: Ranking Only */}
           <TabsContent value="ranking">
-            <ChallengeRanking submissions={sortedSubmissions} />
+            <div>
+              <ChallengeRanking submissions={sortedSubmissions} />
+            </div>
           </TabsContent>
 
           {/* Tab: History Only */}
           <TabsContent value="history">
-            <PastChallenges challenges={pastChallenges} />
+            <div>
+              <PastChallenges challenges={pastChallenges} />
+            </div>
           </TabsContent>
         </Tabs>
       </div>
