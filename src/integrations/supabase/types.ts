@@ -567,6 +567,27 @@ export type Database = {
           },
         ]
       }
+      module_sections: {
+        Row: {
+          created_at: string | null
+          id: string
+          order_index: number
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          order_index?: number
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          order_index?: number
+          title?: string
+        }
+        Relationships: []
+      }
       modules: {
         Row: {
           cover_image_url: string | null
@@ -574,6 +595,7 @@ export type Database = {
           description: string | null
           id: string
           order_index: number
+          section_id: string | null
           title: string
           updated_at: string
         }
@@ -583,6 +605,7 @@ export type Database = {
           description?: string | null
           id?: string
           order_index?: number
+          section_id?: string | null
           title: string
           updated_at?: string
         }
@@ -592,10 +615,19 @@ export type Database = {
           description?: string | null
           id?: string
           order_index?: number
+          section_id?: string | null
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "modules_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "module_sections"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       prompt_variations: {
         Row: {

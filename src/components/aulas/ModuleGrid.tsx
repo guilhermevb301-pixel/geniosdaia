@@ -6,6 +6,7 @@ interface Module {
   description: string | null;
   cover_image_url: string | null;
   order_index: number;
+  section_id?: string | null;
   completedLessons: number;
   totalLessons: number;
 }
