@@ -1,413 +1,332 @@
 
-# Plano: Sistema Completo de Gamificacao, Desafios, Certificados e Notas
+# Plano: Redesign da Arena dos Genios
 
 ## Visao Geral
 
-Implementacao de 4 grandes funcionalidades que vao transformar a plataforma em uma experiencia de aprendizado gamificada e interativa.
+Vou redesenhar completamente a pagina de Desafios para seguir o estilo visual premium mostrado na imagem de referencia, com navegacao por abas, cards de submissao ricos com avatares e niveis, ranking interativo e secao de historico.
 
 ---
 
-## 1. SISTEMA DE GAMIFICACAO (XP, Niveis e Streaks)
-
-### 1.1 Novas Tabelas no Banco de Dados
-
-| Tabela | Descricao |
-|--------|-----------|
-| `user_xp` | Armazena XP total, nivel atual e streak do usuario |
-| `xp_transactions` | Historico de todas as transacoes de XP |
-| `user_badges` | Badges conquistadas por cada usuario |
-| `badges` | Catalogo de badges disponiveis |
-| `user_streaks` | Registro diario de acessos para calcular streak |
-
-```sql
--- Tabela principal de XP do usuario
-CREATE TABLE user_xp (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
-  total_xp integer DEFAULT 0,
-  current_level integer DEFAULT 1,
-  current_streak integer DEFAULT 0,
-  longest_streak integer DEFAULT 0,
-  last_activity_date date,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
-
--- Transacoes de XP
-CREATE TABLE xp_transactions (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  amount integer NOT NULL,
-  action_type text NOT NULL, -- 'lesson_completed', 'module_completed', 'prompt_copied', 'event_attended', 'challenge_completed', 'streak_bonus'
-  reference_id uuid, -- ID da aula/modulo/evento relacionado
-  created_at timestamptz DEFAULT now()
-);
-
--- Catalogo de badges
-CREATE TABLE badges (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  description text NOT NULL,
-  icon text NOT NULL,
-  criteria_type text NOT NULL, -- 'lessons_completed', 'streak_days', 'prompts_copied', 'modules_completed', 'challenges_won'
-  criteria_value integer NOT NULL,
-  created_at timestamptz DEFAULT now()
-);
-
--- Badges conquistadas
-CREATE TABLE user_badges (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  badge_id uuid REFERENCES badges(id) ON DELETE CASCADE NOT NULL,
-  earned_at timestamptz DEFAULT now(),
-  UNIQUE(user_id, badge_id)
-);
-
--- Registro de streaks
-CREATE TABLE user_streaks (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  activity_date date NOT NULL,
-  created_at timestamptz DEFAULT now(),
-  UNIQUE(user_id, activity_date)
-);
-```
-
-### 1.2 Logica de XP e Niveis
-
-| Acao | XP |
-|------|-----|
-| Aula assistida | +10 XP |
-| Modulo concluido | +25 XP |
-| Prompt copiado | +5 XP |
-| Evento ao vivo | +50 XP |
-| Desafio semanal completo | +100 XP |
-| Bonus de streak diario | +5 XP |
-
-| Nivel | Nome | XP Minimo |
-|-------|------|-----------|
-| 1 | Iniciante | 0 |
-| 2 | Aprendiz | 101 |
-| 3 | Praticante | 301 |
-| 4 | Automatizador | 601 |
-| 5 | Especialista | 1001 |
-| 6 | Mestre | 2001 |
-| 7 | Genio da IA | 5001 |
-
-### 1.3 Componentes de Interface
-
-**TopBar.tsx (atualizar)**
-- Badge de nivel ao lado do perfil
-- Pequena barra de progresso XP
-- Icone de fogo com contador de streak
-
-**Dashboard (novo componente: EvolutionCard.tsx)**
-- Card "Sua Evolucao" com:
-  - XP total em numero grande
-  - Nivel atual + nome
-  - Barra de progresso para proximo nivel
-  - Streak atual com icone de fogo
-  - Grid de badges (coloridas vs cinza)
-
----
-
-## 2. DESAFIOS SEMANAIS (Arena dos Genios)
-
-### 2.1 Novas Tabelas
-
-```sql
--- Desafios
-CREATE TABLE challenges (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  title text NOT NULL,
-  description text NOT NULL,
-  rules text,
-  xp_reward integer DEFAULT 100,
-  badge_reward_id uuid REFERENCES badges(id),
-  start_date timestamptz NOT NULL,
-  end_date timestamptz NOT NULL,
-  status text DEFAULT 'active', -- 'upcoming', 'active', 'ended'
-  created_at timestamptz DEFAULT now()
-);
-
--- Submissoes
-CREATE TABLE challenge_submissions (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  challenge_id uuid REFERENCES challenges(id) ON DELETE CASCADE NOT NULL,
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  title text NOT NULL,
-  description text,
-  image_url text,
-  file_url text,
-  link_url text,
-  votes_count integer DEFAULT 0,
-  is_winner boolean DEFAULT false,
-  created_at timestamptz DEFAULT now(),
-  UNIQUE(challenge_id, user_id)
-);
-
--- Votos
-CREATE TABLE challenge_votes (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  submission_id uuid REFERENCES challenge_submissions(id) ON DELETE CASCADE NOT NULL,
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  created_at timestamptz DEFAULT now(),
-  UNIQUE(submission_id, user_id)
-);
-```
-
-### 2.2 Novos Arquivos
-
-| Arquivo | Descricao |
-|---------|-----------|
-| `src/pages/Desafios.tsx` | Pagina principal de desafios |
-| `src/components/challenges/ActiveChallenge.tsx` | Card do desafio ativo |
-| `src/components/challenges/SubmissionGrid.tsx` | Grid de submissoes |
-| `src/components/challenges/SubmissionCard.tsx` | Card individual de submissao |
-| `src/components/challenges/RankingTable.tsx` | Top 10 mais votados |
-| `src/components/challenges/PastChallenges.tsx` | Desafios anteriores |
-| `src/components/challenges/SubmitModal.tsx` | Modal de submissao |
-| `src/components/dashboard/WeeklyChallengeCard.tsx` | Card no dashboard |
-
-### 2.3 Sidebar
-
-- Novo item: "Desafios" com icone Trophy
-- Posicao: apos "Eventos"
-
----
-
-## 3. SISTEMA DE CERTIFICADOS
-
-### 3.1 Novas Tabelas
-
-```sql
--- Certificados emitidos
-CREATE TABLE certificates (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  module_id uuid REFERENCES modules(id) ON DELETE CASCADE NOT NULL,
-  certificate_code text UNIQUE NOT NULL, -- Codigo unico para verificacao
-  user_name text NOT NULL,
-  module_title text NOT NULL,
-  module_duration text,
-  issued_at timestamptz DEFAULT now(),
-  UNIQUE(user_id, module_id)
-);
-```
-
-### 3.2 Novos Arquivos
-
-| Arquivo | Descricao |
-|---------|-----------|
-| `src/pages/Certificados.tsx` | Pagina "Meus Certificados" |
-| `src/pages/VerifyCertificate.tsx` | Pagina publica de verificacao |
-| `src/components/certificates/CertificateCard.tsx` | Card de certificado |
-| `src/components/certificates/CertificateModal.tsx` | Modal com certificado grande |
-| `src/components/certificates/CelebrationModal.tsx` | Modal de celebracao com confetti |
-| `src/components/certificates/CertificateTemplate.tsx` | Template visual do certificado |
-
-### 3.3 Logica de Emissao
-
-- Ao marcar a ultima aula de um modulo como concluida:
-  1. Verificar se todas as aulas do modulo estao concluidas
-  2. Se sim, criar registro na tabela `certificates`
-  3. Gerar codigo unico de verificacao
-  4. Exibir modal de celebracao com confetti
-  5. Adicionar XP bonus (+25)
-
-### 3.4 Pagina Publica de Verificacao
-
-- Rota: `/certificado/:code`
-- Mostra: "Certificado Valido" ou "Nao Encontrado"
-- Dados: nome do aluno, modulo, data
-
----
-
-## 4. NOTAS E FAVORITOS PESSOAIS
-
-### 4.1 Novas Tabelas
-
-```sql
--- Notas pessoais
-CREATE TABLE user_notes (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  lesson_id uuid REFERENCES lessons(id) ON DELETE CASCADE,
-  prompt_id uuid REFERENCES prompts(id) ON DELETE CASCADE,
-  content text NOT NULL,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
-
--- Favoritos
-CREATE TABLE user_favorites (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  lesson_id uuid REFERENCES lessons(id) ON DELETE CASCADE,
-  prompt_id uuid REFERENCES prompts(id) ON DELETE CASCADE,
-  note text, -- Nota pessoal opcional
-  created_at timestamptz DEFAULT now(),
-  CONSTRAINT valid_favorite CHECK (
-    (lesson_id IS NOT NULL AND prompt_id IS NULL) OR
-    (lesson_id IS NULL AND prompt_id IS NOT NULL)
-  )
-);
-```
-
-### 4.2 Novos Arquivos
-
-| Arquivo | Descricao |
-|---------|-----------|
-| `src/pages/MeuCaderno.tsx` | Pagina "Meu Caderno" com abas |
-| `src/components/notebook/NotesTab.tsx` | Aba de notas |
-| `src/components/notebook/FavoritesTab.tsx` | Aba de favoritos |
-| `src/components/notebook/NoteCard.tsx` | Card de nota individual |
-| `src/components/notes/NotesSidebar.tsx` | Painel lateral de notas nas aulas |
-| `src/components/notes/FavoriteButton.tsx` | Botao de favoritar reutilizavel |
-
-### 4.3 Modificacoes Existentes
-
-**ModuleLessons.tsx**
-- Adicionar botao de favoritar no header da aula
-- Adicionar botao "Minhas Notas" que abre painel lateral
-- Painel com editor de texto simples (auto-save)
-
-**Prompts.tsx / PromptCard.tsx**
-- Adicionar botao de favoritar em cada prompt
-- Ao favoritar, opcao de adicionar nota
-
----
-
-## Arquivos a Criar (Total: 20+)
-
-### Hooks
-| Arquivo | Descricao |
-|---------|-----------|
-| `src/hooks/useUserXP.ts` | Hook para gerenciar XP do usuario |
-| `src/hooks/useUserStreak.ts` | Hook para gerenciar streak |
-| `src/hooks/useUserBadges.ts` | Hook para badges |
-| `src/hooks/useChallenges.ts` | Hook para desafios |
-| `src/hooks/useCertificates.ts` | Hook para certificados |
-| `src/hooks/useUserNotes.ts` | Hook para notas |
-| `src/hooks/useUserFavorites.ts` | Hook para favoritos |
-
-### Paginas
-| Arquivo | Descricao |
-|---------|-----------|
-| `src/pages/Desafios.tsx` | Arena dos Genios |
-| `src/pages/Certificados.tsx` | Meus Certificados |
-| `src/pages/MeuCaderno.tsx` | Notas e Favoritos |
-| `src/pages/VerifyCertificate.tsx` | Verificacao publica |
-
-### Componentes Dashboard
-| Arquivo | Descricao |
-|---------|-----------|
-| `src/components/dashboard/EvolutionCard.tsx` | Card de evolucao XP |
-| `src/components/dashboard/WeeklyChallengeCard.tsx` | Card desafio semanal |
-
-### Componentes Gamificacao
-| Arquivo | Descricao |
-|---------|-----------|
-| `src/components/gamification/LevelBadge.tsx` | Badge de nivel |
-| `src/components/gamification/XPBar.tsx` | Barra de XP |
-| `src/components/gamification/StreakCounter.tsx` | Contador de streak |
-| `src/components/gamification/BadgeGrid.tsx` | Grid de badges |
-
-### Componentes Desafios
-| Arquivo | Descricao |
-|---------|-----------|
-| `src/components/challenges/ActiveChallenge.tsx` | Desafio ativo |
-| `src/components/challenges/SubmissionGrid.tsx` | Grid de submissoes |
-| `src/components/challenges/SubmissionCard.tsx` | Card de submissao |
-| `src/components/challenges/SubmitModal.tsx` | Modal submissao |
-| `src/components/challenges/RankingTable.tsx` | Ranking |
-
-### Componentes Certificados
-| Arquivo | Descricao |
-|---------|-----------|
-| `src/components/certificates/CertificateCard.tsx` | Card certificado |
-| `src/components/certificates/CertificateModal.tsx` | Modal certificado |
-| `src/components/certificates/CelebrationModal.tsx` | Celebracao |
-
-### Componentes Notas
-| Arquivo | Descricao |
-|---------|-----------|
-| `src/components/notes/NotesSidebar.tsx` | Painel lateral |
-| `src/components/notes/FavoriteButton.tsx` | Botao favoritar |
-| `src/components/notebook/NotesTab.tsx` | Aba notas |
-| `src/components/notebook/FavoritesTab.tsx` | Aba favoritos |
-
----
-
-## Arquivos a Modificar
-
-| Arquivo | Modificacao |
-|---------|-------------|
-| `src/components/layout/TopBar.tsx` | Adicionar nivel, XP bar, streak |
-| `src/components/layout/SidebarContent.tsx` | Novos itens: Desafios, Certificados, Meu Caderno |
-| `src/pages/Dashboard.tsx` | Adicionar EvolutionCard e WeeklyChallengeCard |
-| `src/pages/ModuleLessons.tsx` | Botao favoritar, painel notas, logica certificado |
-| `src/pages/Prompts.tsx` | Botao favoritar nos prompts |
-| `src/components/prompts/PromptCard.tsx` | Botao favoritar |
-| `src/App.tsx` | Novas rotas |
-
----
-
-## Fluxo de XP e Gamificacao
+## Estrutura Visual do Novo Design
 
 ```text
-Usuario acessa plataforma
-        |
-        v
-[Registra acesso do dia] --> Atualiza streak
-        |
-        v
-Usuario completa aula --> +10 XP
-        |
-        v
-[Verifica se modulo completo]
-        |
-    [SIM] --> +25 XP + Gera Certificado + Modal Celebracao
-        |
-        v
-[Verifica badges desbloqueadas]
-        |
-        v
-[Atualiza nivel se necessario]
++------------------------------------------------------------------+
+|  [Trophy] Arena dos Genios                                        |
+|  Participe de desafios semanais, mostre suas habilidades...      |
+|                                                                   |
+|  [Desafio Ativo] [Submissoes] [Ranking] [Historico]   <- TABS    |
++------------------------------------------------------------------+
+|                                                                   |
+|  +------------------------------------------------------------+  |
+|  |  [Badge] DESAFIO DA SEMANA                                 |  |
+|  |                                                            |  |
+|  |  Crie um Agente de IA para Atendimento ao Cliente         |  |
+|  |  Descricao do desafio...                                   |  |
+|  |                                                            |  |
+|  |  TEMPO RESTANTE    PARTICIPANTES    DIFICULDADE           |  |
+|  |  03 | 14 | 27 | 45   47 inscritos   [***] Intermediario   |  |
+|  |  DIAS HORAS MIN SEG                                        |  |
+|  |                                                            |  |
+|  |  [Gift] Premio: +500 XP + Badge "Mestre" + Destaque       |  |
+|  |                                                            |  |
+|  |  [Submeter Meu Projeto]  [Ver Regras Completas]           |  |
+|  +------------------------------------------------------------+  |
+|                                    Gradiente roxo/azul           |
++------------------------------------------------------------------+
+|                                                                   |
+|  [Grid] Submissoes da Comunidade           [Mais Votados v]      |
+|  +------------------+  +------------------+  +------------------+ |
+|  | [1o] Badge ouro  |  | [2o] Badge prata |  | [3o] Badge bronze| |
+|  | [Placeholder]    |  | [Placeholder]    |  | [Placeholder]    | |
+|  | Avatar | Nome    |  | Avatar | Nome    |  | Avatar | Nome    | |
+|  | Nivel X          |  | Nivel X          |  | Nivel X          | |
+|  | Titulo projeto   |  | Titulo projeto   |  | Titulo projeto   | |
+|  | [Upvote 127]  2d |  | [Upvote 98]   3d |  | [Upvote 76]   4d | |
+|  +------------------+  +------------------+  +------------------+ |
++------------------------------------------------------------------+
+|                                                                   |
+|  [Crown] Ranking do Desafio                                      |
+|  +------------------------------------------------------------+  |
+|  | [1] Avatar Maria Silva - Nivel 6 Mestre         127 votos  |  |
+|  | [2] Avatar Joao Pedro - Nivel 5 Especialista     98 votos  |  |
+|  | [3] Avatar Ana Costa - Nivel 4 Automatizador     76 votos  |  |
+|  | [4] Avatar Lucas Mendes - Nivel 3 Praticante     54 votos  |  |
+|  | [5] Avatar Carla Souza - Nivel 4 Automatizador   43 votos  |  |
+|  +------------------------------------------------------------+  |
++------------------------------------------------------------------+
+|                                                                   |
+|  [History] Desafios Anteriores                                   |
+|  +-------------------+  +-------------------+                    |
+|  | [Img] Semana 12   |  | [Img] Semana 11   |                    |
+|  | Crie Campanha IA  |  | Automatize Fluxo  |                    |
+|  | [Trophy] Pedro A. |  | [Trophy] Juliana  |                    |
+|  +-------------------+  +-------------------+                    |
++------------------------------------------------------------------+
 ```
 
 ---
 
-## RLS Policies (Seguranca)
+## Componentes a Criar/Modificar
 
-Todas as tabelas terao RLS habilitado:
-- Usuarios so podem ver/editar seus proprios dados
-- Desafios e badges sao leitura publica
-- Votos: um voto por usuario por submissao
-- Certificados: verificacao publica por codigo
-
----
-
-## Estimativa de Implementacao
-
-| Etapa | Componentes |
-|-------|-------------|
-| 1. Migracoes DB | 8 tabelas + RLS + indexes |
-| 2. Hooks | 7 hooks customizados |
-| 3. Gamificacao | TopBar + EvolutionCard + Badges |
-| 4. Desafios | Pagina + 5 componentes |
-| 5. Certificados | Pagina + 3 componentes + verificacao |
-| 6. Notas/Favoritos | Pagina + 4 componentes + modificacoes |
-| 7. Integracao | Rotas + Sidebar + Dashboard |
+### Arquivo Principal
+| Arquivo | Acao |
+|---------|------|
+| `src/pages/Desafios.tsx` | Reescrever completamente |
 
 ---
 
-## Resultado Final
+## Detalhes de Implementacao
 
-1. **Header Premium** - Nivel, XP e streak visiveis
-2. **Dashboard Gamificado** - Card de evolucao + desafio semanal
-3. **Arena de Desafios** - Competicao semanal com votacao
-4. **Certificados Verificaveis** - PDF + QR code + LinkedIn
-5. **Caderno Pessoal** - Notas e favoritos organizados
-6. **Sistema de Badges** - 9+ badges desbloqueaveis
-7. **Streak System** - Incentivo a consistencia
+### 1. Header com Navegacao por Abas
+
+- Titulo "Arena dos Genios" com icone de trofeu dourado
+- Subtitulo descritivo
+- Tabs: Desafio Ativo | Submissoes | Ranking | Historico
+- Primeira aba (Desafio Ativo) selecionada por padrao com destaque amarelo/laranja
+
+### 2. Card do Desafio Ativo (Hero Section)
+
+Design Premium com:
+- Gradiente de fundo roxo/azul (`from-primary via-blue-600 to-indigo-800`)
+- Badge "DESAFIO DA SEMANA" no topo esquerdo (verde com texto branco)
+- Titulo grande em branco
+- Descricao em branco/translucido
+- Secao de metricas em linha:
+  - TEMPO RESTANTE: 4 blocos escuros com numeros grandes (dias/horas/min/seg)
+  - PARTICIPANTES: Numero + "inscritos"
+  - DIFICULDADE: Estrelas (1-3) + label (Iniciante/Intermediario/Avancado)
+- Card de premio com icone de presente: XP + Badge + Destaque
+- Dois botoes:
+  - "Submeter Meu Projeto" (primario, amarelo)
+  - "Ver Regras Completas" (outline)
+
+### 3. Grid de Submissoes da Comunidade
+
+Cards visuais com:
+- Badge de posicao no canto superior esquerdo:
+  - 1o lugar: Fundo dourado, coroa
+  - 2o lugar: Fundo prata
+  - 3o lugar: Fundo bronze
+- Area de preview/placeholder (icone de robo)
+- Footer do card:
+  - Avatar circular + Nome + Nivel (ex: "Nivel 6 - Mestre")
+  - Titulo do projeto
+  - Botao de upvote (seta para cima + contador)
+  - Data relativa ("ha 2 dias")
+- Dropdown "Mais Votados" no header da secao
+
+### 4. Ranking do Desafio
+
+Lista vertical estilizada:
+- Cada linha com:
+  - Numero da posicao (1-5) com cores especiais para top 3
+    - 1o: Fundo amarelo
+    - 2o: Fundo cinza claro
+    - 3o: Fundo bronze
+  - Avatar do usuario
+  - Nome + Nivel
+  - Contador de votos (numero grande + "votos" pequeno)
+- Top 3 com destaque visual
+- Linhas alternadas com fundo sutil
+
+### 5. Desafios Anteriores
+
+Grid 2x2 de cards historicos:
+- Thumbnail placeholder a esquerda
+- Badge "Semana X" no topo
+- Titulo do desafio
+- Icone de trofeu + "Vencedor: Nome"
+
+### 6. Modal de Submissao Melhorado
+
+- Area de upload drag-and-drop com borda tracejada
+- Icone de upload centralizado
+- Texto "Arraste seu arquivo ou clique para selecionar"
+- Campos:
+  - Titulo do Projeto (obrigatorio)
+  - Descricao (textarea)
+  - Link (opcional)
+- Botao "Enviar Submissao"
+
+---
+
+## Cores e Estilos
+
+| Elemento | Cor/Estilo |
+|----------|------------|
+| Badge posicao 1o | `bg-amber-500 text-amber-950` |
+| Badge posicao 2o | `bg-gray-400 text-gray-900` |
+| Badge posicao 3o | `bg-amber-700 text-amber-100` |
+| Tab ativa | `bg-amber-500 text-amber-950` |
+| Hero gradient | `bg-gradient-to-br from-primary via-blue-600 to-indigo-800` |
+| Badge desafio | `bg-green-600 text-white` |
+| Botao submeter | `bg-accent text-accent-foreground` |
+| Upvote button | `bg-primary/20 hover:bg-primary/40` |
+
+---
+
+## Dados Necessarios
+
+Para tornar a interface funcional, precisamos:
+
+1. **Contador de participantes**: Query para contar submissoes no desafio ativo
+2. **Avatar e nivel dos usuarios**: Join com user_xp e profiles (se existir)
+3. **Data relativa**: Funcao para formatar "ha X dias"
+
+### Atualizacao do Hook useChallenges
+
+Adicionar fetch de submissoes com dados do usuario:
+```typescript
+// Buscar submissoes com dados do autor
+const fetchSubmissionsWithUsers = async (challengeId: string) => {
+  const { data, error } = await supabase
+    .from("challenge_submissions")
+    .select(`
+      *,
+      user_xp!inner(total_xp, current_level)
+    `)
+    .eq("challenge_id", challengeId)
+    .order("votes_count", { ascending: false });
+  
+  // Processar e retornar com nivel calculado
+};
+```
+
+---
+
+## Fluxo de Navegacao
+
+```text
+Usuario entra em /desafios
+        |
+        v
+[Carrega desafio ativo + submissoes]
+        |
+        v
+Tab "Desafio Ativo" selecionada por padrao
+        |
+        +--> Clicar em "Submissoes" --> Mostra apenas grid de submissoes
+        |
+        +--> Clicar em "Ranking" --> Mostra apenas ranking
+        |
+        +--> Clicar em "Historico" --> Mostra desafios passados
+        |
+        +--> Clicar "Submeter Meu Projeto" --> Abre modal
+        |
+        +--> Clicar em upvote --> Atualiza contagem
+```
+
+---
+
+## Responsividade
+
+| Breakpoint | Grid Submissoes | Ranking |
+|------------|-----------------|---------|
+| Mobile     | 1 coluna        | Lista simples |
+| Tablet     | 2 colunas       | Lista com avatares |
+| Desktop    | 3 colunas       | Lista completa |
+
+---
+
+## Animacoes
+
+- Tabs: Transicao suave ao mudar de aba
+- Upvote: Scale up sutil ao clicar
+- Cards: Hover com sombra e leve elevacao
+- Countdown: Numeros pulsando a cada segundo
+- Modal: Fade in/slide up ao abrir
+
+---
+
+## Secao Tecnica
+
+### Estrutura de Componentes Internos
+
+```tsx
+// Estrutura principal
+export default function Desafios() {
+  return (
+    <AppLayout>
+      <PageHeader />
+      <Tabs defaultValue="active">
+        <TabsList />
+        <TabsContent value="active">
+          <ActiveChallengeHero />
+          <CommunitySubmissions />
+          <ChallengeRanking />
+          <PastChallenges />
+        </TabsContent>
+        <TabsContent value="submissions">
+          <CommunitySubmissions />
+        </TabsContent>
+        <TabsContent value="ranking">
+          <ChallengeRanking />
+        </TabsContent>
+        <TabsContent value="history">
+          <PastChallenges />
+        </TabsContent>
+      </Tabs>
+    </AppLayout>
+  );
+}
+```
+
+### Componentes Internos
+
+| Componente | Responsabilidade |
+|------------|------------------|
+| `PageHeader` | Titulo + subtitulo |
+| `ActiveChallengeHero` | Card do desafio ativo com countdown |
+| `CommunitySubmissions` | Grid de cards de submissoes |
+| `SubmissionCard` | Card individual com avatar, nivel, votos |
+| `ChallengeRanking` | Lista do top 5 |
+| `RankingRow` | Linha individual do ranking |
+| `PastChallenges` | Grid de desafios anteriores |
+| `PastChallengeCard` | Card historico com vencedor |
+| `SubmitModal` | Modal de envio de projeto |
+
+### Funcao de Data Relativa
+
+```typescript
+function formatRelativeDate(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) return "Hoje";
+  if (diffDays === 1) return "Ha 1 dia";
+  return `Ha ${diffDays} dias`;
+}
+```
+
+### Badges de Posicao
+
+```tsx
+function PositionBadge({ position }: { position: number }) {
+  const styles = {
+    1: "bg-amber-500 text-amber-950",
+    2: "bg-gray-400 text-gray-900",
+    3: "bg-amber-700 text-amber-100",
+  };
+  
+  return (
+    <div className={cn("px-2 py-1 rounded-md font-bold", styles[position])}>
+      {position === 1 && <Crown className="h-3 w-3 inline mr-1" />}
+      {position}o
+    </div>
+  );
+}
+```
+
+---
+
+## Resultado Esperado
+
+1. **Visual Premium**: Design escuro com destaques amarelos/dourados
+2. **Navegacao Intuitiva**: Tabs para alternar entre secoes
+3. **Cards Ricos**: Avatares, niveis e badges de posicao
+4. **Ranking Visual**: Top 3 com cores especiais
+5. **Countdown Animado**: Timer em tempo real
+6. **Interatividade**: Upvotes com feedback visual
+7. **Historico Organizado**: Desafios passados com vencedores
