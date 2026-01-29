@@ -13,7 +13,10 @@ import {
   FileText,
   GraduationCap,
   Layers,
-  Lightbulb
+  Lightbulb,
+  Trophy,
+  Award,
+  NotebookPen
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -30,6 +33,7 @@ const tools = [
   { label: "Templates", href: "/templates", icon: Zap },
   { label: "Banco de Prompts", href: "/prompts", icon: Lightbulb },
   { label: "Eventos", href: "/eventos", icon: Calendar },
+  { label: "Desafios", href: "/desafios", icon: Trophy },
 ];
 
 interface SidebarContentProps {
@@ -112,6 +116,38 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
             {item.label}
           </Link>
         ))}
+
+        {/* Spacer */}
+        <div className="my-4 border-t border-sidebar-border" />
+
+        {/* Personal Section */}
+        <Link
+          to="/certificados"
+          onClick={handleClick}
+          className={cn(
+            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
+            isActive("/certificados")
+              ? "bg-accent text-accent-foreground"
+              : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
+          )}
+        >
+          <Award className="h-5 w-5" />
+          Certificados
+        </Link>
+
+        <Link
+          to="/meu-caderno"
+          onClick={handleClick}
+          className={cn(
+            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
+            isActive("/meu-caderno")
+              ? "bg-accent text-accent-foreground"
+              : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
+          )}
+        >
+          <NotebookPen className="h-5 w-5" />
+          Meu Caderno
+        </Link>
 
         {/* Mentoria - Apply (visible for all) */}
         <Link

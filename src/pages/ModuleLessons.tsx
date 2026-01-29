@@ -10,6 +10,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowLeft, CheckCircle2, Circle, PlayCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { FavoriteButton } from "@/components/notes/FavoriteButton";
+import { NotesSidebar } from "@/components/notes/NotesSidebar";
+import { CelebrationModal } from "@/components/certificates/CelebrationModal";
+import { useCertificates } from "@/hooks/useCertificates";
+import { useUserXP } from "@/hooks/useUserXP";
+import { XP_REWARDS } from "@/lib/gamification";
 
 interface Lesson {
   id: string;
@@ -26,6 +32,11 @@ export default function ModuleLessons() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [newCertificateCode, setNewCertificateCode] = useState("");
+  
+  const { issueCertificate, hasCertificate } = useCertificates();
+  const { addXP } = useUserXP();
 
   // Fetch module info
   const { data: module } = useQuery({
@@ -91,10 +102,43 @@ export default function ModuleLessons() {
         .single();
       
       if (error) throw error;
+      
+      // Add XP for lesson completion
+      addXP({ amount: XP_REWARDS.LESSON_COMPLETED, actionType: "lesson_completed", referenceId: lessonId });
+      
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lesson_progress"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["lesson_progress"] });
+      
+      // Check if module is now complete
+      if (moduleId && module && !hasCertificate(moduleId)) {
+        const updatedProgress = await supabase
+          .from("lesson_progress")
+          .select("*")
+          .eq("user_id", user!.id)
+          .in("lesson_id", lessonsData!.map((l) => l.id));
+        
+        const completedCount = updatedProgress.data?.filter((p) => p.completed).length || 0;
+        
+        if (completedCount === lessonsData!.length) {
+          // All lessons complete - issue certificate
+          issueCertificate({
+            moduleId,
+            userName: user!.email?.split("@")[0] || "Aluno",
+            moduleTitle: module.title,
+            moduleDuration: module.description || undefined,
+          }, {
+            onSuccess: (result: { certificate_code?: string; alreadyExists?: boolean }) => {
+              if (result && !result.alreadyExists && result.certificate_code) {
+                setNewCertificateCode(result.certificate_code);
+                setShowCelebration(true);
+                addXP({ amount: XP_REWARDS.MODULE_COMPLETED, actionType: "module_completed", referenceId: moduleId });
+              }
+            }
+          });
+        }
+      }
     },
   });
 
@@ -156,18 +200,28 @@ export default function ModuleLessons() {
     <AppLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-4">
-          <Link to="/aulas">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-semibold">{module.title}</h1>
-            <p className="text-sm text-muted-foreground">
-              {completedLessons}/{totalLessons} aulas completadas
-            </p>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Link to="/aulas">
+              <Button variant="ghost" size="icon">
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-2xl font-semibold">{module.title}</h1>
+              <p className="text-sm text-muted-foreground">
+                {completedLessons}/{totalLessons} aulas completadas
+              </p>
+            </div>
           </div>
+          
+          {/* Favorite & Notes buttons */}
+          {selectedLesson && (
+            <div className="flex items-center gap-2">
+              <FavoriteButton lessonId={selectedLesson.id} size="sm" />
+              <NotesSidebar lessonId={selectedLesson.id} lessonTitle={selectedLesson.title} />
+            </div>
+          )}
         </div>
 
         {/* Split Layout */}
@@ -226,6 +280,14 @@ export default function ModuleLessons() {
           </div>
         </div>
       </div>
+
+      {/* Celebration Modal */}
+      <CelebrationModal
+        open={showCelebration}
+        onClose={() => setShowCelebration(false)}
+        moduleName={module.title}
+        certificateCode={newCertificateCode}
+      />
     </AppLayout>
   );
 }

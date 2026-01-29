@@ -10,6 +10,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { LevelBadge } from "@/components/gamification/LevelBadge";
+import { XPBar } from "@/components/gamification/XPBar";
+import { StreakCounter } from "@/components/gamification/StreakCounter";
+import { useUserXP } from "@/hooks/useUserXP";
+import { useUserStreak } from "@/hooks/useUserStreak";
 
 interface TopBarProps {
   onMenuClick?: () => void;
@@ -19,6 +24,8 @@ interface TopBarProps {
 export function TopBar({ onMenuClick, showMenu }: TopBarProps) {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { levelInfo, isLoading: isLoadingXP } = useUserXP();
+  const { currentStreak, isLoading: isLoadingStreak } = useUserStreak();
 
   const handleSignOut = async () => {
     await signOut();
@@ -46,6 +53,30 @@ export function TopBar({ onMenuClick, showMenu }: TopBarProps) {
 
       {/* Actions */}
       <div className="flex items-center gap-3">
+        {/* Gamification Stats - Hidden on small screens */}
+        <div className="hidden lg:flex items-center gap-4">
+          {/* Level Badge with XP Progress */}
+          {!isLoadingXP && (
+            <div className="flex items-center gap-2">
+              <LevelBadge level={levelInfo.level} name={levelInfo.name} size="sm" />
+              <div className="w-20">
+                <XPBar 
+                  currentXP={levelInfo.xpInLevel} 
+                  xpForNextLevel={levelInfo.xpForNextLevel} 
+                  progress={levelInfo.progress}
+                  size="sm"
+                  showLabel={false}
+                />
+              </div>
+            </div>
+          )}
+          
+          {/* Streak Counter */}
+          {!isLoadingStreak && (
+            <StreakCounter streak={currentStreak} size="sm" />
+          )}
+        </div>
+
         {/* Área de Membros Button */}
         <Button asChild variant="accent" size="sm">
           <Link to="/aulas">

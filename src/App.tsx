@@ -18,6 +18,10 @@ import Mentoria from "./pages/Mentoria";
 import MinhaMentoria from "./pages/MinhaMentoria";
 import Eventos from "./pages/Eventos";
 import Prompts from "./pages/Prompts";
+import Desafios from "./pages/Desafios";
+import Certificados from "./pages/Certificados";
+import VerifyCertificate from "./pages/VerifyCertificate";
+import MeuCaderno from "./pages/MeuCaderno";
 import AdminModules from "./pages/admin/AdminModules";
 import AdminLessons from "./pages/admin/AdminLessons";
 import AdminTemplates from "./pages/admin/AdminTemplates";
@@ -40,6 +44,7 @@ const App = () => (
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/certificado/:code" element={<VerifyCertificate />} />
             
             {/* Protected routes */}
             <Route
@@ -95,6 +100,30 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Prompts />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/desafios"
+              element={
+                <ProtectedRoute>
+                  <Desafios />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/certificados"
+              element={
+                <ProtectedRoute>
+                  <Certificados />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/meu-caderno"
+              element={
+                <ProtectedRoute>
+                  <MeuCaderno />
                 </ProtectedRoute>
               }
             />
