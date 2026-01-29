@@ -29,6 +29,17 @@ export interface ChallengeSubmission {
   created_at: string;
 }
 
+export interface CreateChallengeData {
+  title: string;
+  description: string;
+  rules?: string | null;
+  start_date: string;
+  end_date: string;
+  xp_reward: number;
+  badge_reward_id?: string | null;
+  status: string;
+}
+
 export function useChallenges() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -78,6 +89,59 @@ export function useChallenges() {
     if (error) throw error;
     return data as ChallengeSubmission[];
   };
+
+  // Create challenge
+  const createMutation = useMutation({
+    mutationFn: async (data: CreateChallengeData) => {
+      const { data: result, error } = await supabase
+        .from("challenges")
+        .insert(data)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["challenges"] });
+      queryClient.invalidateQueries({ queryKey: ["activeChallenge"] });
+    },
+  });
+
+  // Update challenge
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<CreateChallengeData> }) => {
+      const { data: result, error } = await supabase
+        .from("challenges")
+        .update(data)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["challenges"] });
+      queryClient.invalidateQueries({ queryKey: ["activeChallenge"] });
+    },
+  });
+
+  // Delete challenge
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("challenges")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["challenges"] });
+      queryClient.invalidateQueries({ queryKey: ["activeChallenge"] });
+    },
+  });
 
   // Submit to challenge
   const submitMutation = useMutation({
@@ -177,6 +241,14 @@ export function useChallenges() {
     pastChallenges: allChallenges?.filter((c) => c.status === "ended") || [],
     isLoading: isLoadingActive || isLoadingAll,
     fetchSubmissions,
+    // CRUD operations
+    createChallenge: createMutation.mutateAsync,
+    isCreating: createMutation.isPending,
+    updateChallenge: updateMutation.mutateAsync,
+    isUpdating: updateMutation.isPending,
+    deleteChallenge: deleteMutation.mutateAsync,
+    isDeleting: deleteMutation.isPending,
+    // Submissions
     submit: submitMutation.mutate,
     isSubmitting: submitMutation.isPending,
     vote: voteMutation.mutate,

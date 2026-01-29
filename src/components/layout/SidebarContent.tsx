@@ -293,6 +293,19 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                     <GraduationCap className="h-4 w-4" />
                     Mentorados
                   </Link>
+                  <Link
+                    to="/admin/challenges"
+                    onClick={handleClick}
+                    className={cn(
+                      "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                      isActive("/admin/challenges")
+                        ? "text-primary bg-primary/10"
+                        : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
+                    )}
+                  >
+                    <Trophy className="h-4 w-4" />
+                    Desafios
+                  </Link>
                 </div>
               </CollapsibleContent>
             </Collapsible>
