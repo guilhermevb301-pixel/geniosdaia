@@ -19,6 +19,17 @@ export const LEVELS = [
   { level: 7, name: "Gênio da IA", minXP: 5001, maxXP: Infinity },
 ] as const;
 
+// Quick lookup for level names by level number
+export const LEVEL_NAMES: Record<number, string> = {
+  1: "Iniciante",
+  2: "Aprendiz",
+  3: "Praticante",
+  4: "Automatizador",
+  5: "Especialista",
+  6: "Mestre",
+  7: "Gênio da IA",
+};
+
 export function getLevelInfo(xp: number) {
   const level = LEVELS.find((l) => xp >= l.minXP && xp <= l.maxXP) || LEVELS[0];
   const nextLevel = LEVELS.find((l) => l.level === level.level + 1);
