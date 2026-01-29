@@ -391,12 +391,12 @@ export default function AdminModules() {
                   {/* Section Select */}
                   <div className="space-y-2">
                     <Label>Seção</Label>
-                    <Select value={sectionId} onValueChange={setSectionId}>
+                    <Select value={sectionId || "none"} onValueChange={(val) => setSectionId(val === "none" ? "" : val)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Sem seção" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Sem seção</SelectItem>
+                        <SelectItem value="none">Sem seção</SelectItem>
                         {sections?.map((section) => (
                           <SelectItem key={section.id} value={section.id}>
                             {section.title}
