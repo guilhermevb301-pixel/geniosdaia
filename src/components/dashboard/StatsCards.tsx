@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, Download, MessageSquare, Layers } from "lucide-react";
+import { BookOpen, Download, MessageSquare, Calendar } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
@@ -61,54 +61,61 @@ export function StatsCards() {
       label: "Aulas Concluídas",
       value: completedLessons,
       icon: BookOpen,
+      color: "text-primary",
+      bgColor: "bg-primary/10",
       isLoading: loadingLessons,
     },
     {
       label: "Downloads de Templates",
       value: totalDownloads,
       icon: Download,
+      color: "text-accent",
+      bgColor: "bg-accent/10",
       isLoading: loadingDownloads,
     },
     {
       label: "Prompts Disponíveis",
       value: totalPrompts,
       icon: MessageSquare,
+      color: "text-blue-500",
+      bgColor: "bg-blue-500/10",
       isLoading: loadingPrompts,
     },
     {
       label: "Módulos no Curso",
       value: totalModules,
-      icon: Layers,
+      icon: Calendar,
+      color: "text-green-500",
+      bgColor: "bg-green-500/10",
       isLoading: loadingModules,
     },
   ];
 
   return (
-    <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
       {stats.map((stat) => (
         <Card
           key={stat.label}
-          className="group relative overflow-hidden bg-card border-border hover:border-primary/40 transition-all duration-300 hover-scale card-glow"
+          className="bg-card border-border hover:border-primary/30 transition-all duration-300 hover:scale-[1.02] group"
         >
-          {/* Subtle glow overlay on hover */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          
-          <CardContent className="relative p-5 md:p-6">
+          <CardContent className="p-4 md:p-5">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 {stat.isLoading ? (
-                  <Skeleton className="h-10 w-20 mb-2" />
+                  <Skeleton className="h-8 w-16 mb-1" />
                 ) : (
-                  <p className="text-3xl md:text-4xl font-bold tabular-nums text-gradient">
+                  <p className="text-2xl md:text-3xl font-bold tabular-nums">
                     {stat.value?.toLocaleString("pt-BR")}
                   </p>
                 )}
-                <p className="text-sm text-muted-foreground mt-2">
+                <p className="text-xs md:text-sm text-muted-foreground mt-1">
                   {stat.label}
                 </p>
               </div>
-              <div className="h-12 w-12 md:h-14 md:w-14 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-all duration-300 group-hover:glow-sm">
-                <stat.icon className="h-6 w-6 md:h-7 md:w-7 text-primary transition-all duration-300" />
+              <div
+                className={`h-10 w-10 md:h-12 md:w-12 rounded-xl ${stat.bgColor} flex items-center justify-center group-hover:scale-110 transition-transform`}
+              >
+                <stat.icon className={`h-5 w-5 md:h-6 md:w-6 ${stat.color}`} />
               </div>
             </div>
           </CardContent>

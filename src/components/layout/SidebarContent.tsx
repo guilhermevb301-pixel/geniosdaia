@@ -54,7 +54,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
     <div className="flex h-full flex-col bg-sidebar">
       {/* Logo */}
       <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-6">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl gradient-primary glow-primary">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-primary">
           <Sparkles className="h-5 w-5 text-primary-foreground" />
         </div>
         <div className="flex flex-col">
@@ -70,16 +70,13 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           to="/"
           onClick={handleClick}
           className={cn(
-            "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 mb-1",
+            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
             isActive("/")
-              ? "bg-primary/15 text-primary sidebar-active"
-              : "text-muted-foreground hover:bg-secondary hover:text-sidebar-foreground"
+              ? "bg-accent text-accent-foreground"
+              : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
           )}
         >
-          <Layout className={cn(
-            "h-5 w-5 transition-all duration-200",
-            isActive("/") ? "text-primary" : "group-hover:text-primary"
-          )} />
+          <Layout className="h-5 w-5" />
           Dashboard
         </Link>
 
@@ -88,16 +85,13 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           to="/aulas"
           onClick={handleClick}
           className={cn(
-            "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 mb-1",
+            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
             isActive("/aulas")
-              ? "bg-primary/15 text-primary sidebar-active"
-              : "text-muted-foreground hover:bg-secondary hover:text-sidebar-foreground"
+              ? "bg-accent text-accent-foreground"
+              : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
           )}
         >
-          <BookOpen className={cn(
-            "h-5 w-5 transition-all duration-200",
-            isActive("/aulas") ? "text-primary" : "group-hover:text-primary"
-          )} />
+          <BookOpen className="h-5 w-5" />
           Aulas
         </Link>
 
@@ -108,16 +102,13 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
             to={item.href}
             onClick={handleClick}
             className={cn(
-              "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 mb-1",
+              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
               isActive(item.href)
-                ? "bg-primary/15 text-primary sidebar-active"
-                : "text-muted-foreground hover:bg-secondary hover:text-sidebar-foreground"
+                ? "bg-accent text-accent-foreground"
+                : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
             )}
           >
-            <item.icon className={cn(
-              "h-5 w-5 transition-all duration-200",
-              isActive(item.href) ? "text-primary" : "group-hover:text-primary"
-            )} />
+            <item.icon className="h-5 w-5" />
             {item.label}
           </Link>
         ))}
@@ -127,16 +118,13 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           to="/mentoria"
           onClick={handleClick}
           className={cn(
-            "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 mb-1",
+            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
             isActive("/mentoria")
-              ? "bg-primary/15 text-primary sidebar-active"
-              : "text-muted-foreground hover:bg-secondary hover:text-sidebar-foreground"
+              ? "bg-accent text-accent-foreground"
+              : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
           )}
         >
-          <MessageSquare className={cn(
-            "h-5 w-5 transition-all duration-200",
-            isActive("/mentoria") ? "text-primary" : "group-hover:text-primary"
-          )} />
+          <MessageSquare className="h-5 w-5" />
           Aplicar Mentoria
         </Link>
 
@@ -146,16 +134,13 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
             to="/minha-mentoria"
             onClick={handleClick}
             className={cn(
-              "group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 mb-1",
+              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
               isActive("/minha-mentoria")
-                ? "bg-primary/15 text-primary sidebar-active"
-                : "text-muted-foreground hover:bg-secondary hover:text-sidebar-foreground"
+                ? "bg-accent text-accent-foreground"
+                : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
             )}
           >
-            <GraduationCap className={cn(
-              "h-5 w-5 transition-all duration-200",
-              isActive("/minha-mentoria") ? "text-primary" : "group-hover:text-primary"
-            )} />
+            <GraduationCap className="h-5 w-5" />
             Minha Mentoria
           </Link>
         )}
@@ -167,22 +152,19 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
               <CollapsibleTrigger className="w-full">
                 <div
                   className={cn(
-                    "flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                    "flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                     isAdminSection
-                      ? "bg-primary/15 text-primary"
-                      : "text-muted-foreground hover:bg-secondary hover:text-sidebar-foreground"
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
                   )}
                 >
                   <div className="flex items-center gap-3">
-                    <Settings className={cn(
-                      "h-5 w-5 transition-all duration-200",
-                      isAdminSection ? "text-primary" : ""
-                    )} />
+                    <Settings className="h-5 w-5" />
                     <span>Gerenciar</span>
                   </div>
                   <ChevronDown
                     className={cn(
-                      "h-4 w-4 transition-transform duration-200",
+                      "h-4 w-4 transition-transform",
                       adminOpen && "rotate-180"
                     )}
                   />
@@ -197,64 +179,52 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                         to="/admin/modules"
                         onClick={handleClick}
                         className={cn(
-                          "group flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-all duration-200",
+                          "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                           isActive("/admin/modules")
                             ? "text-primary bg-primary/10"
-                            : "text-muted-foreground hover:text-sidebar-foreground hover:bg-secondary"
+                            : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
                         )}
                       >
-                        <Layers className={cn(
-                          "h-4 w-4 transition-all duration-200",
-                          isActive("/admin/modules") ? "text-primary" : "group-hover:text-primary"
-                        )} />
+                        <Layers className="h-4 w-4" />
                         Módulos
                       </Link>
                       <Link
                         to="/admin/lessons"
                         onClick={handleClick}
                         className={cn(
-                          "group flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-all duration-200",
+                          "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                           isActive("/admin/lessons")
                             ? "text-primary bg-primary/10"
-                            : "text-muted-foreground hover:text-sidebar-foreground hover:bg-secondary"
+                            : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
                         )}
                       >
-                        <BookOpen className={cn(
-                          "h-4 w-4 transition-all duration-200",
-                          isActive("/admin/lessons") ? "text-primary" : "group-hover:text-primary"
-                        )} />
+                        <BookOpen className="h-4 w-4" />
                         Aulas
                       </Link>
                       <Link
                         to="/admin/prompts"
                         onClick={handleClick}
                         className={cn(
-                          "group flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-all duration-200",
+                          "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                           isActive("/admin/prompts")
                             ? "text-primary bg-primary/10"
-                            : "text-muted-foreground hover:text-sidebar-foreground hover:bg-secondary"
+                            : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
                         )}
                       >
-                        <Lightbulb className={cn(
-                          "h-4 w-4 transition-all duration-200",
-                          isActive("/admin/prompts") ? "text-primary" : "group-hover:text-primary"
-                        )} />
+                        <Lightbulb className="h-4 w-4" />
                         Prompts
                       </Link>
                       <Link
                         to="/admin/templates"
                         onClick={handleClick}
                         className={cn(
-                          "group flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-all duration-200",
+                          "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                           isActive("/admin/templates")
                             ? "text-primary bg-primary/10"
-                            : "text-muted-foreground hover:text-sidebar-foreground hover:bg-secondary"
+                            : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
                         )}
                       >
-                        <FileText className={cn(
-                          "h-4 w-4 transition-all duration-200",
-                          isActive("/admin/templates") ? "text-primary" : "group-hover:text-primary"
-                        )} />
+                        <FileText className="h-4 w-4" />
                         Templates
                       </Link>
                     </>
@@ -265,32 +235,26 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                     to="/admin/users"
                     onClick={handleClick}
                     className={cn(
-                      "group flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-all duration-200",
+                      "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                       isActive("/admin/users")
                         ? "text-primary bg-primary/10"
-                        : "text-muted-foreground hover:text-sidebar-foreground hover:bg-secondary"
+                        : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
                     )}
                   >
-                    <Users className={cn(
-                      "h-4 w-4 transition-all duration-200",
-                      isActive("/admin/users") ? "text-primary" : "group-hover:text-primary"
-                    )} />
+                    <Users className="h-4 w-4" />
                     Usuários
                   </Link>
                   <Link
                     to="/admin/mentees"
                     onClick={handleClick}
                     className={cn(
-                      "group flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-all duration-200",
+                      "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                       isActive("/admin/mentees")
                         ? "text-primary bg-primary/10"
-                        : "text-muted-foreground hover:text-sidebar-foreground hover:bg-secondary"
+                        : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
                     )}
                   >
-                    <GraduationCap className={cn(
-                      "h-4 w-4 transition-all duration-200",
-                      isActive("/admin/mentees") ? "text-primary" : "group-hover:text-primary"
-                    )} />
+                    <GraduationCap className="h-4 w-4" />
                     Mentorados
                   </Link>
                 </div>
@@ -302,7 +266,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
 
       {/* Footer - Support Widget */}
       <div className="border-t border-sidebar-border p-3">
-        <div className="rounded-xl glass-purple p-4 space-y-3">
+        <div className="rounded-lg border border-border bg-card p-4 space-y-3">
           <div>
             <h4 className="font-medium text-sm text-foreground">Precisa de Ajuda?</h4>
             <p className="text-xs text-muted-foreground mt-1">
@@ -314,7 +278,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
             target="_blank"
             rel="noopener noreferrer"
             onClick={handleClick}
-            className="flex items-center justify-center gap-2 w-full rounded-lg bg-success hover:bg-success/90 text-success-foreground py-2.5 text-sm font-medium transition-all duration-200 hover-scale"
+            className="flex items-center justify-center gap-2 w-full rounded-lg bg-success hover:bg-success/90 text-success-foreground py-2.5 text-sm font-medium transition-colors"
           >
             <MessageCircle className="h-4 w-4" />
             Falar no WhatsApp

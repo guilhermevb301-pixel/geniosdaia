@@ -21,14 +21,14 @@ interface Prompt {
 function getMedalIcon(position: number) {
   switch (position) {
     case 0:
-      return <Trophy className="h-4 w-4 text-warning" />;
+      return <Trophy className="h-4 w-4 text-yellow-500" />;
     case 1:
-      return <Medal className="h-4 w-4 text-muted-foreground" />;
+      return <Medal className="h-4 w-4 text-gray-400" />;
     case 2:
-      return <Medal className="h-4 w-4 text-chart-4" />;
+      return <Medal className="h-4 w-4 text-amber-700" />;
     default:
       return (
-        <span className="h-4 w-4 flex items-center justify-center text-xs text-muted-foreground font-medium">
+        <span className="h-4 w-4 flex items-center justify-center text-xs text-muted-foreground">
           {position + 1}
         </span>
       );
@@ -38,13 +38,13 @@ function getMedalIcon(position: number) {
 function getMedalBg(position: number) {
   switch (position) {
     case 0:
-      return "bg-warning/10 border-warning/20 hover:border-warning/40";
+      return "bg-yellow-500/10 border-yellow-500/20";
     case 1:
-      return "bg-muted/50 border-border hover:border-muted-foreground/30";
+      return "bg-gray-400/10 border-gray-400/20";
     case 2:
-      return "bg-chart-4/10 border-chart-4/20 hover:border-chart-4/40";
+      return "bg-amber-700/10 border-amber-700/20";
     default:
-      return "bg-secondary border-border hover:border-primary/30";
+      return "bg-muted border-border";
   }
 }
 
@@ -74,18 +74,16 @@ export function RankingLists() {
   });
 
   return (
-    <div className="grid gap-6 md:grid-cols-2">
+    <div className="grid gap-4 md:grid-cols-2">
       {/* Top Templates */}
-      <Card className="bg-card border-border card-glow">
-        <CardHeader className="flex flex-row items-center justify-between pb-3">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-accent/10 flex items-center justify-center">
-              <Sparkles className="h-4 w-4 text-accent" />
-            </div>
+      <Card className="bg-card border-border">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-base font-medium flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-accent" />
             Top Templates
           </CardTitle>
-          <Button variant="ghost" size="sm" asChild className="text-primary hover:text-primary">
-            <Link to="/templates">
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/templates" className="text-xs">
               Ver todos
               <ArrowRight className="ml-1 h-3 w-3" />
             </Link>
@@ -94,28 +92,28 @@ export function RankingLists() {
         <CardContent className="space-y-2">
           {loadingTemplates ? (
             Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-14 rounded-xl" />
+              <Skeleton key={i} className="h-12 rounded-lg" />
             ))
           ) : topTemplates && topTemplates.length > 0 ? (
             topTemplates.map((template, idx) => (
               <Link
                 key={template.id}
                 to="/templates"
-                className={`flex items-center gap-3 p-3.5 rounded-xl border transition-all duration-200 hover-scale ${getMedalBg(idx)}`}
+                className={`flex items-center gap-3 p-3 rounded-lg border transition-all hover:scale-[1.01] ${getMedalBg(idx)}`}
               >
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-background/50">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-background/50">
                   {getMedalIcon(idx)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{template.title}</p>
                 </div>
-                <span className="text-xs text-muted-foreground tabular-nums bg-background/50 px-2 py-1 rounded-md">
-                  {template.downloads_count.toLocaleString("pt-BR")}
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {template.downloads_count.toLocaleString("pt-BR")} downloads
                 </span>
               </Link>
             ))
           ) : (
-            <div className="py-10 text-center">
+            <div className="py-8 text-center">
               <p className="text-sm text-muted-foreground">
                 Nenhum template disponível ainda
               </p>
@@ -125,16 +123,14 @@ export function RankingLists() {
       </Card>
 
       {/* Recent Prompts */}
-      <Card className="bg-card border-border card-glow">
-        <CardHeader className="flex flex-row items-center justify-between pb-3">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <MessageSquare className="h-4 w-4 text-primary" />
-            </div>
+      <Card className="bg-card border-border">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-base font-medium flex items-center gap-2">
+            <MessageSquare className="h-4 w-4 text-blue-500" />
             Prompts Recentes
           </CardTitle>
-          <Button variant="ghost" size="sm" asChild className="text-primary hover:text-primary">
-            <Link to="/prompts">
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/prompts" className="text-xs">
               Ver todos
               <ArrowRight className="ml-1 h-3 w-3" />
             </Link>
@@ -143,28 +139,28 @@ export function RankingLists() {
         <CardContent className="space-y-2">
           {loadingPrompts ? (
             Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-14 rounded-xl" />
+              <Skeleton key={i} className="h-12 rounded-lg" />
             ))
           ) : recentPrompts && recentPrompts.length > 0 ? (
             recentPrompts.map((prompt, idx) => (
               <Link
                 key={prompt.id}
                 to="/prompts"
-                className={`flex items-center gap-3 p-3.5 rounded-xl border transition-all duration-200 hover-scale ${getMedalBg(idx)}`}
+                className={`flex items-center gap-3 p-3 rounded-lg border transition-all hover:scale-[1.01] ${getMedalBg(idx)}`}
               >
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-background/50">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-background/50">
                   {getMedalIcon(idx)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{prompt.title}</p>
                 </div>
-                <span className="rounded-lg bg-primary/10 px-2.5 py-1 text-xs text-primary font-medium">
+                <span className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                   {prompt.category}
                 </span>
               </Link>
             ))
           ) : (
-            <div className="py-10 text-center">
+            <div className="py-8 text-center">
               <p className="text-sm text-muted-foreground">
                 Nenhum prompt disponível ainda
               </p>
