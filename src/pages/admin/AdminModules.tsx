@@ -14,10 +14,18 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Edit, Trash2, ArrowLeft, Upload, X, Image } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Plus, Edit, Trash2, ArrowLeft, X, Image, FolderOpen, Layers } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { validateImageFile, ALLOWED_IMAGE_EXTENSIONS } from "@/lib/fileValidation";
+import { Badge } from "@/components/ui/badge";
 
 interface Module {
   id: string;
@@ -25,19 +33,49 @@ interface Module {
   description: string | null;
   cover_image_url: string | null;
   order_index: number;
+  section_id: string | null;
+  created_at: string;
+}
+
+interface ModuleSection {
+  id: string;
+  title: string;
+  order_index: number;
   created_at: string;
 }
 
 export default function AdminModules() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Module dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingModule, setEditingModule] = useState<Module | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
+  const [sectionId, setSectionId] = useState<string>("");
   const [isUploading, setIsUploading] = useState(false);
 
+  // Section dialog state
+  const [sectionDialogOpen, setSectionDialogOpen] = useState(false);
+  const [editingSection, setEditingSection] = useState<ModuleSection | null>(null);
+  const [sectionTitle, setSectionTitle] = useState("");
+
+  // Fetch sections
+  const { data: sections } = useQuery({
+    queryKey: ["module_sections"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("module_sections")
+        .select("*")
+        .order("order_index");
+      if (error) throw error;
+      return data as ModuleSection[];
+    },
+  });
+
+  // Fetch modules
   const { data: modules, isLoading } = useQuery({
     queryKey: ["modules"],
     queryFn: async () => {
@@ -50,8 +88,66 @@ export default function AdminModules() {
     },
   });
 
+  // Section mutations
+  const createSectionMutation = useMutation({
+    mutationFn: async (newSection: { title: string; order_index: number }) => {
+      const { data, error } = await supabase
+        .from("module_sections")
+        .insert(newSection)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["module_sections"] });
+      toast({ title: "Seção criada com sucesso!" });
+      resetSectionForm();
+    },
+    onError: (error) => {
+      toast({ variant: "destructive", title: "Erro ao criar seção", description: error.message });
+    },
+  });
+
+  const updateSectionMutation = useMutation({
+    mutationFn: async ({ id, title }: { id: string; title: string }) => {
+      const { data, error } = await supabase
+        .from("module_sections")
+        .update({ title })
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["module_sections"] });
+      toast({ title: "Seção atualizada com sucesso!" });
+      resetSectionForm();
+    },
+    onError: (error) => {
+      toast({ variant: "destructive", title: "Erro ao atualizar seção", description: error.message });
+    },
+  });
+
+  const deleteSectionMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("module_sections").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["module_sections"] });
+      queryClient.invalidateQueries({ queryKey: ["modules"] });
+      toast({ title: "Seção excluída com sucesso!" });
+    },
+    onError: (error) => {
+      toast({ variant: "destructive", title: "Erro ao excluir seção", description: error.message });
+    },
+  });
+
+  // Module mutations
   const createMutation = useMutation({
-    mutationFn: async (newModule: { title: string; description: string; cover_image_url: string | null; order_index: number }) => {
+    mutationFn: async (newModule: { title: string; description: string; cover_image_url: string | null; order_index: number; section_id: string | null }) => {
       const { data, error } = await supabase
         .from("modules")
         .insert(newModule)
@@ -71,10 +167,10 @@ export default function AdminModules() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, title, description, cover_image_url }: { id: string; title: string; description: string; cover_image_url: string | null }) => {
+    mutationFn: async ({ id, title, description, cover_image_url, section_id }: { id: string; title: string; description: string; cover_image_url: string | null; section_id: string | null }) => {
       const { data, error } = await supabase
         .from("modules")
-        .update({ title, description, cover_image_url })
+        .update({ title, description, cover_image_url, section_id })
         .eq("id", id)
         .select()
         .single();
@@ -143,6 +239,13 @@ export default function AdminModules() {
     setTitle("");
     setDescription("");
     setCoverImageUrl(null);
+    setSectionId("");
+  }
+
+  function resetSectionForm() {
+    setSectionDialogOpen(false);
+    setEditingSection(null);
+    setSectionTitle("");
   }
 
   function handleEdit(module: Module) {
@@ -150,17 +253,54 @@ export default function AdminModules() {
     setTitle(module.title);
     setDescription(module.description || "");
     setCoverImageUrl(module.cover_image_url);
+    setSectionId(module.section_id || "");
     setDialogOpen(true);
+  }
+
+  function handleEditSection(section: ModuleSection) {
+    setEditingSection(section);
+    setSectionTitle(section.title);
+    setSectionDialogOpen(true);
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const finalSectionId = sectionId === "" ? null : sectionId;
+    
     if (editingModule) {
-      updateMutation.mutate({ id: editingModule.id, title, description, cover_image_url: coverImageUrl });
+      updateMutation.mutate({ 
+        id: editingModule.id, 
+        title, 
+        description, 
+        cover_image_url: coverImageUrl,
+        section_id: finalSectionId 
+      });
     } else {
       const nextOrder = modules ? modules.length : 0;
-      createMutation.mutate({ title, description, cover_image_url: coverImageUrl, order_index: nextOrder });
+      createMutation.mutate({ 
+        title, 
+        description, 
+        cover_image_url: coverImageUrl, 
+        order_index: nextOrder,
+        section_id: finalSectionId 
+      });
     }
+  }
+
+  function handleSectionSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (editingSection) {
+      updateSectionMutation.mutate({ id: editingSection.id, title: sectionTitle });
+    } else {
+      const nextOrder = sections ? sections.length : 0;
+      createSectionMutation.mutate({ title: sectionTitle, order_index: nextOrder });
+    }
+  }
+
+  function getSectionName(sectionId: string | null): string {
+    if (!sectionId) return "Sem seção";
+    const section = sections?.find((s) => s.id === sectionId);
+    return section?.title || "Sem seção";
   }
 
   return (
@@ -179,102 +319,214 @@ export default function AdminModules() {
             </div>
           </div>
 
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => { setEditingModule(null); setTitle(""); setDescription(""); setCoverImageUrl(null); }}>
-                <Plus className="mr-2 h-4 w-4" />
-                Novo Módulo
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-lg">
-              <DialogHeader>
-                <DialogTitle>{editingModule ? "Editar Módulo" : "Novo Módulo"}</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="title">Título</Label>
-                  <Input
-                    id="title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Ex: Módulo 1 - Introdução ao n8n"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description">Descrição</Label>
-                  <Textarea
-                    id="description"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Descrição do módulo (opcional)"
-                  />
-                </div>
-                
-                {/* Cover Image Upload */}
-                <div className="space-y-2">
-                  <Label>Imagem de Capa</Label>
-                  {coverImageUrl ? (
-                    <div className="relative">
-                      <img
-                        src={coverImageUrl}
-                        alt="Capa do módulo"
-                        className="w-full h-40 object-cover rounded-lg border"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-2 right-2 h-8 w-8"
-                        onClick={() => setCoverImageUrl(null)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        {isUploading ? (
-                          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-                        ) : (
-                          <>
-                            <Image className="h-10 w-10 text-muted-foreground mb-2" />
-                            <p className="text-sm text-muted-foreground">
-                              Clique para enviar uma imagem
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {ALLOWED_IMAGE_EXTENSIONS.join(", ").toUpperCase()} (máx. 10MB)
-                            </p>
-                          </>
-                        )}
-                      </div>
-                      <input
-                        type="file"
-                        className="hidden"
-                        accept={ALLOWED_IMAGE_EXTENSIONS.map(ext => `.${ext}`).join(",")}
-                        onChange={handleImageUpload}
-                        disabled={isUploading}
-                      />
-                    </label>
-                  )}
-                </div>
+          <div className="flex gap-2">
+            {/* Section Dialog */}
+            <Dialog open={sectionDialogOpen} onOpenChange={setSectionDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" onClick={() => { setEditingSection(null); setSectionTitle(""); }}>
+                  <Layers className="mr-2 h-4 w-4" />
+                  Nova Seção
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>{editingSection ? "Editar Seção" : "Nova Seção"}</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSectionSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="sectionTitle">Título da Seção</Label>
+                    <Input
+                      id="sectionTitle"
+                      value={sectionTitle}
+                      onChange={(e) => setSectionTitle(e.target.value)}
+                      placeholder="Ex: Cursos - Fundamentos"
+                      required
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={resetSectionForm}>
+                      Cancelar
+                    </Button>
+                    <Button type="submit" disabled={createSectionMutation.isPending || updateSectionMutation.isPending}>
+                      {editingSection ? "Salvar" : "Criar"}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
 
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={resetForm}>
-                    Cancelar
-                  </Button>
-                  <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending || isUploading}>
-                    {editingModule ? "Salvar" : "Criar"}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+            {/* Module Dialog */}
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={() => { setEditingModule(null); setTitle(""); setDescription(""); setCoverImageUrl(null); setSectionId(""); }}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Novo Módulo
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>{editingModule ? "Editar Módulo" : "Novo Módulo"}</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="title">Título</Label>
+                    <Input
+                      id="title"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="Ex: Módulo 1 - Introdução ao n8n"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Descrição</Label>
+                    <Textarea
+                      id="description"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Descrição do módulo (opcional)"
+                    />
+                  </div>
+
+                  {/* Section Select */}
+                  <div className="space-y-2">
+                    <Label>Seção</Label>
+                    <Select value={sectionId} onValueChange={setSectionId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sem seção" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Sem seção</SelectItem>
+                        {sections?.map((section) => (
+                          <SelectItem key={section.id} value={section.id}>
+                            {section.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Cover Image Upload */}
+                  <div className="space-y-2">
+                    <Label>Imagem de Capa</Label>
+                    {coverImageUrl ? (
+                      <div className="relative">
+                        <img
+                          src={coverImageUrl}
+                          alt="Capa do módulo"
+                          className="w-full h-40 object-cover rounded-lg border"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2 h-8 w-8"
+                          onClick={() => setCoverImageUrl(null)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                          {isUploading ? (
+                            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                          ) : (
+                            <>
+                              <Image className="h-10 w-10 text-muted-foreground mb-2" />
+                              <p className="text-sm text-muted-foreground">
+                                Clique para enviar uma imagem
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {ALLOWED_IMAGE_EXTENSIONS.join(", ").toUpperCase()} (máx. 10MB)
+                              </p>
+                            </>
+                          )}
+                        </div>
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept={ALLOWED_IMAGE_EXTENSIONS.map(ext => `.${ext}`).join(",")}
+                          onChange={handleImageUpload}
+                          disabled={isUploading}
+                        />
+                      </label>
+                    )}
+                  </div>
+
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={resetForm}>
+                      Cancelar
+                    </Button>
+                    <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending || isUploading}>
+                      {editingModule ? "Salvar" : "Criar"}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
+        {/* Sections List */}
+        {sections && sections.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Layers className="h-5 w-5" />
+                Seções ({sections.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {sections.map((section, index) => (
+                  <div
+                    key={section.id}
+                    className="flex items-center justify-between p-3 rounded-lg border bg-card"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-medium text-muted-foreground">
+                        {index + 1}.
+                      </span>
+                      <span className="font-medium">{section.title}</span>
+                      <Badge variant="secondary" className="text-xs">
+                        {modules?.filter((m) => m.section_id === section.id).length || 0} módulos
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditSection(section)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          if (confirm("Tem certeza que deseja excluir esta seção? Os módulos não serão excluídos, apenas desvinculados.")) {
+                            deleteSectionMutation.mutate(section.id);
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Modules List */}
         <Card>
           <CardHeader>
-            <CardTitle>Módulos ({modules?.length || 0})</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <FolderOpen className="h-5 w-5" />
+              Módulos ({modules?.length || 0})
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -306,6 +558,11 @@ export default function AdminModules() {
                       <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
                         {module.description || "Sem descrição"}
                       </p>
+                      <div className="mt-2">
+                        <Badge variant="outline" className="text-xs">
+                          {getSectionName(module.section_id)}
+                        </Badge>
+                      </div>
                       <div className="flex items-center gap-2 mt-4">
                         <Button
                           variant="outline"
