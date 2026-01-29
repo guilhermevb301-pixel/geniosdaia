@@ -1,179 +1,244 @@
 
-# Plano: Sidebar Mobile + Cards de Módulo Verticais
+# Plano: Dashboard Premium Estilo Pressel + Melhorias "Absurdas"
 
-## Resumo das Mudanças
+## Visao Geral
 
-Vou fazer duas melhorias:
-
-1. **Sidebar fechável no mobile**: Transformar a sidebar fixa em um menu lateral que pode ser aberto/fechado no mobile
-2. **Cards de módulo mais verticais**: Alterar o layout para caber 4-5 cards por linha com formato mais vertical
+Vou transformar o Dashboard inspirando-me no Pressel App (imagem de referencia) e adicionar elementos premium que vao deixar a plataforma muito mais atraente e profissional.
 
 ---
 
-## 1. Sidebar Responsiva para Mobile
-
-### Problema Atual
-
-A sidebar está sempre visível com `w-64` fixo, ocupando muito espaço no mobile e sem opção de fechar.
-
-### Solução
-
-| Arquivo | Mudança |
-|---------|---------|
-| `src/components/layout/AppLayout.tsx` | Adicionar lógica de mobile com Sheet |
-| `src/components/layout/AppSidebar.tsx` | Adaptar para funcionar em ambos os modos |
-| `src/components/layout/TopBar.tsx` | Adicionar botão de menu hamburger no mobile |
-
-### Como vai funcionar
-
-**Desktop (acima de 768px):**
-- Sidebar fixa à esquerda (como está hoje)
-
-**Mobile (abaixo de 768px):**
-- Sidebar escondida por padrão
-- Botão de menu (hamburger) na TopBar
-- Ao clicar, abre um Sheet lateral que desliza da esquerda
-- Botão X para fechar
-
----
-
-## 2. Cards de Módulo Mais Verticais
-
-### Problema Atual
-
-- Grid com 3 colunas no desktop (`lg:grid-cols-3`)
-- Cards com aspecto 16:9 (horizontais)
-
-### Solução
-
-| Arquivo | Mudança |
-|---------|---------|
-| `src/components/aulas/ModuleGrid.tsx` | Aumentar para 4-5 colunas |
-| `src/components/aulas/ModuleCard.tsx` | Alterar aspecto para 3:4 (vertical) |
-
-### Novo Layout do Grid
+## Estrutura do Novo Dashboard
 
 ```text
-Desktop (xl): 5 colunas
-┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌────┐
-│    │ │    │ │    │ │    │ │    │
-│    │ │    │ │    │ │    │ │    │
-└────┘ └────┘ └────┘ └────┘ └────┘
-
-Desktop (lg): 4 colunas
-┌────┐ ┌────┐ ┌────┐ ┌────┐
-│    │ │    │ │    │ │    │
-│    │ │    │ │    │ │    │
-└────┘ └────┘ └────┘ └────┘
-
-Tablet (md): 3 colunas
-┌────┐ ┌────┐ ┌────┐
-│    │ │    │ │    │
-└────┘ └────┘ └────┘
-
-Mobile (sm): 2 colunas
-┌────┐ ┌────┐
-│    │ │    │
-└────┘ └────┘
++----------------------------------------------------------+
+|                                                          |
+|  "Quem automatiza, domina o tempo."                     |
+|  Frase motivacional GRANDE no topo                       |
+|                                                          |
++----------------------------------------------------------+
+|                                                          |
+|  [CAROUSEL DE BANNERS]                                   |
+|  <- Banner 1: Convite comunidade | Banner 2: Evento ->   |
+|                                                          |
++----------------------------------------------------------+
+|  Dashboard Global           [ 7 dias ] [ 30 dias ] [ Tudo ]|
+|  Estatisticas da plataforma                              |
++------------------------+------------------------+---------+
+| AULAS ASSISTIDAS       | TEMPLATES BAIXADOS     | PROMPTS |
+| 47                     | 156                    | 23      |
+| Total acumulado        | Mais popular: X        | Usados  |
++------------------------+------------------------+---------+
+|                                                          |
+|  Continuar de onde parou (com thumbnails + progresso)    |
+|                                                          |
++----------------------------------------------------------+
+|  Top Templates          |  Top Prompts          |        |
+|  1. Template X - 392    |  1. Logo 3D - 50      |        |
+|  2. Template Y - 179    |  2. Prompt Z - 28     |        |
++----------------------------------------------------------+
 ```
-
-### Novo Aspecto do Card
-
-| Antes | Depois |
-|-------|--------|
-| 16:9 (horizontal) | 3:4 (vertical) |
-| Imagem larga | Imagem mais alta |
 
 ---
 
-## Arquivos a Modificar
+## 1. Banner Hero com Frase Motivacional
 
-| Arquivo | Tipo | Descrição |
+Elemento GRANDE no topo do dashboard com:
+- Frase motivacional impactante
+- Gradiente animado sutil no fundo
+- Saudacao personalizada com nome do usuario
+
+**Frases que podem rotacionar:**
+- "Quem automatiza, domina o tempo."
+- "A automacao e o superpoder do seculo XXI."
+- "Menos cliques, mais resultados."
+- "Automatize o chato, foque no que importa."
+
+---
+
+## 2. Carousel de Banners (Estilo Pressel)
+
+Carrossel horizontal com navegacao por setas:
+- Banner 1: Convite para comunidade
+- Banner 2: Proximo evento ao vivo
+- Banner 3: Novo template disponivel
+- CTA buttons em cada banner
+
+Usando o componente Carousel ja existente no projeto.
+
+---
+
+## 3. Cards de Estatisticas Globais
+
+4 cards em linha com:
+- Icone colorido
+- Numero grande
+- Label descritiva
+- Tooltip de info (opcional)
+
+| Card | Dados |
+|------|-------|
+| Aulas Assistidas | Total de aulas que o usuario completou |
+| Templates Baixados | Contagem real do banco |
+| Prompts Usados | Quantidade de prompts visualizados |
+| Proximo Evento | Data/hora do proximo evento (ou "Em breve") |
+
+---
+
+## 4. Secao "Continuar de Onde Parou"
+
+Cards horizontais mostrando:
+- Thumbnail do modulo (cover_image_url)
+- Titulo da aula atual
+- Barra de progresso do modulo
+- Botao "Continuar"
+
+---
+
+## 5. Secoes de Ranking (Estilo Pressel)
+
+Duas colunas lado a lado:
+
+**Top Templates:**
+- Lista com icone de medalha (ouro, prata, bronze)
+- Nome do template + contagem de downloads
+
+**Top Prompts:**
+- Lista com icone de medalha
+- Nome do prompt + contagem de views
+
+---
+
+## Melhorias "Absurdas" Adicionais
+
+Para deixar a plataforma ainda mais diferenciada:
+
+| Melhoria | Descricao |
+|----------|-----------|
+| Confetti ao completar aula | Animacao de celebracao ao marcar aula como concluida |
+| Streak de dias | Contador de dias seguidos acessando a plataforma |
+| Badges/Conquistas | Sistema de conquistas por marcos atingidos |
+| Sound effects sutis | Sons de clique e sucesso (opcional, desligavel) |
+| Modo Foco | Timer Pomodoro integrado para estudar |
+| Atalhos de teclado | Navegacao rapida com teclado |
+| Tema customizavel | Cores de destaque personalizaveis |
+
+---
+
+## Arquivos a Criar/Modificar
+
+| Arquivo | Acao | Descricao |
 |---------|------|-----------|
-| `src/components/layout/AppLayout.tsx` | Modificar | Adicionar Sheet para mobile |
-| `src/components/layout/AppSidebar.tsx` | Modificar | Extrair conteúdo para componente reutilizável |
-| `src/components/layout/TopBar.tsx` | Modificar | Adicionar botão hamburger no mobile |
-| `src/components/aulas/ModuleGrid.tsx` | Modificar | Grid 5 colunas no xl, 4 no lg |
-| `src/components/aulas/ModuleCard.tsx` | Modificar | Aspecto 3:4 (vertical) |
+| `src/components/dashboard/HeroBanner.tsx` | Criar | Banner hero com frase motivacional |
+| `src/components/dashboard/AnnouncementCarousel.tsx` | Criar | Carrossel de banners promocionais |
+| `src/components/dashboard/StatsCards.tsx` | Criar | Cards de estatisticas globais |
+| `src/components/dashboard/ContinueLearning.tsx` | Criar | Secao de aulas em progresso |
+| `src/components/dashboard/RankingLists.tsx` | Criar | Listas de top templates/prompts |
+| `src/pages/Dashboard.tsx` | Modificar | Integrar todos os novos componentes |
 
 ---
 
-## Seção Técnica
+## Design Visual
 
-### AppLayout.tsx - Nova estrutura
+### Paleta de Cores (ja existente)
+- Primary: Roxo (#8B5CF6)
+- Accent: Dourado (#FFD93D)
+- Background: Dark (#111318)
+- Cards: (#1A1D24)
+
+### Frase Motivacional
+```text
+font-size: 2.5rem (40px)
+font-weight: 700
+line-height: 1.2
+text-gradient ou cor accent
+```
+
+### Cards de Stats
+```text
+border-radius: 12px
+padding: 20px
+icone com fundo colorido (primary/10, accent/10, etc)
+hover: scale(1.02) + sombra
+```
+
+---
+
+## Secao Tecnica
+
+### Buscar Estatisticas Reais
 
 ```typescript
-import { useIsMobile } from "@/hooks/use-mobile";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+// Total de aulas completadas pelo usuario
+const { data: completedCount } = useQuery({
+  queryKey: ["completedLessons", user?.id],
+  queryFn: async () => {
+    const { count } = await supabase
+      .from("lesson_progress")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user?.id)
+      .eq("completed", true);
+    return count || 0;
+  },
+});
 
-export function AppLayout({ children }: AppLayoutProps) {
-  const isMobile = useIsMobile();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+// Total de downloads de templates
+const { data: totalDownloads } = useQuery({
+  queryKey: ["totalDownloads"],
+  queryFn: async () => {
+    const { data } = await supabase
+      .from("templates")
+      .select("downloads_count");
+    return data?.reduce((acc, t) => acc + t.downloads_count, 0) || 0;
+  },
+});
+```
 
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Desktop: sidebar fixa */}
-      {!isMobile && <AppSidebar />}
-      
-      {/* Mobile: Sheet lateral */}
-      {isMobile && (
-        <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-          <SheetContent side="left" className="p-0 w-64">
-            <SidebarContent onNavigate={() => setSidebarOpen(false)} />
-          </SheetContent>
-        </Sheet>
-      )}
+### Carousel de Banners
 
-      <div className={cn(!isMobile && "pl-64")}>
-        <TopBar onMenuClick={() => setSidebarOpen(true)} showMenu={isMobile} />
-        <main className="p-6">{children}</main>
+```typescript
+<Carousel className="w-full" opts={{ loop: true }}>
+  <CarouselContent>
+    <CarouselItem>
+      <div className="relative h-48 rounded-xl overflow-hidden bg-gradient-to-r from-primary to-blue-600">
+        <div className="absolute inset-0 p-6 flex flex-col justify-center">
+          <h3 className="text-2xl font-bold text-white">Junte-se a Comunidade</h3>
+          <p className="text-white/80 mt-2">Conecte-se com outros automatizadores</p>
+          <Button className="mt-4 w-fit">Acessar Comunidade</Button>
+        </div>
       </div>
-    </div>
-  );
-}
+    </CarouselItem>
+  </CarouselContent>
+  <CarouselPrevious />
+  <CarouselNext />
+</Carousel>
 ```
 
-### TopBar.tsx - Botão hamburger
+### Frase Motivacional Rotacionando
 
 ```typescript
-interface TopBarProps {
-  onMenuClick?: () => void;
-  showMenu?: boolean;
-}
+const phrases = [
+  "Quem automatiza, domina o tempo.",
+  "A automacao e o superpoder do seculo XXI.",
+  "Menos cliques, mais resultados.",
+];
 
-// No início do header:
-{showMenu && (
-  <Button variant="ghost" size="icon" onClick={onMenuClick}>
-    <Menu className="h-5 w-5" />
-  </Button>
-)}
-```
+const [phraseIndex, setPhraseIndex] = useState(0);
 
-### ModuleGrid.tsx - Novo grid
-
-```typescript
-// Antes
-<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-
-// Depois
-<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-```
-
-### ModuleCard.tsx - Aspecto vertical
-
-```typescript
-// Antes
-<AspectRatio ratio={16 / 9}>
-
-// Depois
-<AspectRatio ratio={3 / 4}>
+useEffect(() => {
+  const interval = setInterval(() => {
+    setPhraseIndex((prev) => (prev + 1) % phrases.length);
+  }, 10000); // Muda a cada 10 segundos
+  return () => clearInterval(interval);
+}, []);
 ```
 
 ---
 
 ## Resultado Esperado
 
-1. **No mobile**: Botão de menu hamburger na TopBar que abre/fecha a sidebar
-2. **Cards verticais**: Formato de capa de livro/curso (3:4)
-3. **Mais cards por linha**: 5 no desktop grande, 4 no desktop, 3 no tablet, 2 no mobile
-4. **Gap menor**: Espaçamento reduzido para caber mais cards
+1. **Hero impactante** - Frase motivacional grande que inspira o usuario
+2. **Banners promocionais** - Carrossel estilo Pressel com CTAs
+3. **Estatisticas visuais** - Cards com dados reais da plataforma
+4. **Continuidade de aprendizado** - Thumbnails dos modulos em progresso
+5. **Gamificacao visual** - Rankings com medalhas de ouro/prata/bronze
+6. **UX Premium** - Animacoes sutis, hover effects, transicoes suaves
