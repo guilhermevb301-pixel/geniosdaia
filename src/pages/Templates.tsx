@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Search, Download, Heart, MessageCircle, Sparkles, FileArchive } from "lucide-react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Link } from "react-router-dom";
+import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton";
 
 interface Template {
   id: string;
@@ -120,10 +121,12 @@ export default function Templates() {
                 {/* Image */}
                 <div className="relative aspect-video bg-muted overflow-hidden">
                   {template.image_url ? (
-                    <img
+                    <ImageWithSkeleton
                       src={template.image_url}
                       alt={template.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="group-hover:scale-105 transition-transform duration-300"
+                      containerClassName="w-full h-full"
+                      fallbackIcon={<Sparkles className="h-12 w-12 text-muted-foreground/50" />}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">

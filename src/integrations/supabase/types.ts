@@ -211,6 +211,39 @@ export type Database = {
           },
         ]
       }
+      custom_gpts: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          gpt_url: string
+          icon_url: string | null
+          id: string
+          is_active: boolean | null
+          order_index: number | null
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          gpt_url: string
+          icon_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          order_index?: number | null
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          gpt_url?: string
+          icon_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          order_index?: number | null
+          title?: string
+        }
+        Relationships: []
+      }
       lesson_progress: {
         Row: {
           completed: boolean
