@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Copy, Video, Image, Bot, ChevronLeft, ChevronRight } from "lucide-react";
+import { Copy, Video, Image, Bot, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -62,6 +62,29 @@ export function PromptCard({ prompt }: PromptCardProps) {
       toast.success("Prompt copiado!");
     } catch {
       toast.error("Erro ao copiar prompt");
+    }
+  };
+
+  const handleDownloadVideo = async (url: string) => {
+    try {
+      toast.info("Iniciando download...");
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      
+      const filename = url.split('/').pop() || 'video.mp4';
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+      
+      toast.success("Download concluído!");
+    } catch (error) {
+      console.error("Erro ao baixar vídeo:", error);
+      toast.error("Erro ao baixar vídeo");
     }
   };
 
@@ -230,13 +253,22 @@ export function PromptCard({ prompt }: PromptCardProps) {
 
               {/* Vídeo de exemplo */}
               {prompt.example_video_url && (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <h4 className="text-sm font-medium text-muted-foreground">Vídeo de exemplo</h4>
                   <video
                     src={prompt.example_video_url}
                     controls
                     className="w-full rounded-lg"
                   />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDownloadVideo(prompt.example_video_url!)}
+                    className="w-full"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Baixar vídeo
+                  </Button>
                 </div>
               )}
 
