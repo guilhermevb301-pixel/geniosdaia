@@ -2,21 +2,24 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useChallenges, ChallengeSubmission } from "@/hooks/useChallenges";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { useDailyChallenges } from "@/hooks/useDailyChallenges";
+import { useUserXP } from "@/hooks/useUserXP";
 import { useAuth } from "@/contexts/AuthContext";
-import { Trophy, Clock, Users, ChevronUp, Upload, Gift, Star, Crown, History, Bot, FileText } from "lucide-react";
+import { Trophy, Clock, Users, ChevronUp, Gift, Star, Crown, History, Bot, FileText, Sparkles, Target } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { LEVEL_NAMES } from "@/lib/gamification";
+import { SubmitChallengeModal } from "@/components/challenges/SubmitChallengeModal";
+import { PersonalizedChallengeCard } from "@/components/challenges/PersonalizedChallengeCard";
 
 // ============= Utility Functions =============
 
@@ -53,6 +56,24 @@ function getWeekNumber(dateString: string): number {
   return Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
 }
 
+function getDifficultyLevel(difficulty: string): number {
+  switch (difficulty) {
+    case "iniciante": return 1;
+    case "intermediario": return 2;
+    case "avancado": return 3;
+    default: return 2;
+  }
+}
+
+function getDifficultyLabel(difficulty: string): string {
+  switch (difficulty) {
+    case "iniciante": return "Iniciante";
+    case "intermediario": return "Intermediário";
+    case "avancado": return "Avançado";
+    default: return "Intermediário";
+  }
+}
+
 // ============= Sub-Components =============
 
 function CountdownTimer({ endDate }: { endDate: string }) {
@@ -87,7 +108,6 @@ function CountdownTimer({ endDate }: { endDate: string }) {
   );
 }
 
-// Helper function for dynamic avatar colors
 function getAvatarColor(userId: string): string {
   const colors = [
     "bg-pink-500",
@@ -137,112 +157,6 @@ function DifficultyStars({ level = 2 }: { level?: number }) {
   );
 }
 
-function SubmitModal({ challengeId, onSuccess }: { challengeId: string; onSuccess: () => void }) {
-  const { submit, isSubmitting } = useChallenges();
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [linkUrl, setLinkUrl] = useState("");
-  const [open, setOpen] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-
-  const handleSubmit = () => {
-    if (!title.trim()) {
-      toast({ title: "Erro", description: "Adicione um título para seu projeto", variant: "destructive" });
-      return;
-    }
-
-    submit({ 
-      challengeId, 
-      title, 
-      description, 
-      linkUrl: linkUrl || undefined 
-    }, {
-      onSuccess: () => {
-        toast({ title: "Sucesso!", description: "Seu projeto foi submetido com sucesso!" });
-        setOpen(false);
-        setTitle("");
-        setDescription("");
-        setLinkUrl("");
-        onSuccess();
-      },
-      onError: (error: Error) => {
-        toast({ title: "Erro", description: error.message, variant: "destructive" });
-      }
-    });
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="accent" size="lg" className="gap-2 font-semibold">
-          <Upload className="h-4 w-4" />
-          Submeter Meu Projeto
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5 text-primary" />
-            Submeter Projeto
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 pt-4">
-          {/* Drag & Drop Area */}
-          <div 
-            className={cn(
-              "border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer",
-              isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/30 hover:border-primary/50"
-            )}
-            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-            onDragLeave={() => setIsDragging(false)}
-            onDrop={(e) => { e.preventDefault(); setIsDragging(false); }}
-          >
-            <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
-            <p className="text-sm text-muted-foreground">
-              Arraste seu arquivo ou clique para selecionar
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              (Em breve)
-            </p>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium">Título do Projeto *</label>
-            <Input 
-              value={title} 
-              onChange={(e) => setTitle(e.target.value)} 
-              placeholder="Nome do seu projeto"
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Descrição</label>
-            <Textarea 
-              value={description} 
-              onChange={(e) => setDescription(e.target.value)} 
-              placeholder="Descreva seu projeto..."
-              rows={3}
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium">Link (opcional)</label>
-            <Input 
-              value={linkUrl} 
-              onChange={(e) => setLinkUrl(e.target.value)} 
-              placeholder="https://..."
-              className="mt-1"
-            />
-          </div>
-          <Button onClick={handleSubmit} disabled={isSubmitting} className="w-full" variant="accent">
-            {isSubmitting ? "Enviando..." : "Enviar Submissão"}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 function SubmissionCard({ 
   submission, 
   position,
@@ -254,7 +168,7 @@ function SubmissionCard({
   onVote: (id: string) => void;
   hasVoted: boolean;
 }) {
-  const level = 3; // Mock level - would come from user_xp join
+  const level = 3;
   const levelName = LEVEL_NAMES[level] || "Aprendiz";
 
   return (
@@ -264,7 +178,6 @@ function SubmissionCard({
     )}>
       <PositionBadge position={position} />
       
-      {/* Preview Placeholder */}
       <div className="bg-muted h-32 flex items-center justify-center">
         {submission.image_url ? (
           <img src={submission.image_url} alt={submission.title} className="w-full h-full object-cover" />
@@ -274,7 +187,6 @@ function SubmissionCard({
       </div>
       
       <CardContent className="p-4">
-        {/* Author Info */}
         <div className="flex items-center gap-2 mb-2">
           <Avatar className="h-8 w-8">
             <AvatarFallback className={cn("text-white text-xs font-semibold", getAvatarColor(submission.user_id))}>
@@ -287,10 +199,14 @@ function SubmissionCard({
           </div>
         </div>
 
-        {/* Project Title */}
-        <h4 className="font-semibold text-sm mb-3 line-clamp-1">{submission.title}</h4>
+        <h4 className="font-semibold text-sm mb-1 line-clamp-1">{submission.title}</h4>
+        
+        {submission.track && (
+          <Badge variant="secondary" className="text-xs mb-3">
+            {submission.track}
+          </Badge>
+        )}
 
-        {/* Footer: Vote + Date */}
         <div className="flex items-center justify-between">
           <Button 
             variant="ghost"
@@ -320,7 +236,7 @@ function RankingRow({
   submission: ChallengeSubmission;
   position: number;
 }) {
-  const level = Math.min(position + 2, 6); // Mock level
+  const level = Math.min(position + 2, 6);
   const levelName = LEVEL_NAMES[level] || "Aprendiz";
 
   const positionStyles: Record<number, string> = {
@@ -340,7 +256,6 @@ function RankingRow({
       "flex items-center gap-4 p-4 rounded-lg transition-colors",
       position <= 3 ? rowBgStyles[position] : "hover:bg-muted/30"
     )}>
-      {/* Position */}
       <div className={cn(
         "w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm",
         position <= 3 ? positionStyles[position] : "bg-muted text-muted-foreground"
@@ -349,20 +264,17 @@ function RankingRow({
         {position > 1 && position}
       </div>
 
-      {/* Avatar */}
       <Avatar className="h-10 w-10">
         <AvatarFallback className={cn("text-white font-semibold", getAvatarColor(submission.user_id))}>
           {submission.title.substring(0, 2).toUpperCase()}
         </AvatarFallback>
       </Avatar>
 
-      {/* Info */}
       <div className="flex-1 min-w-0">
         <p className="font-medium truncate">{submission.title}</p>
         <p className="text-sm text-muted-foreground">Nível {level} - {levelName}</p>
       </div>
 
-      {/* Votes */}
       <div className="text-right">
         <p className="text-xl font-bold text-primary">{submission.votes_count}</p>
         <p className="text-xs text-muted-foreground">votos</p>
@@ -381,7 +293,6 @@ function PastChallengeCard({
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow">
       <div className="flex">
-        {/* Thumbnail */}
         <div className="w-24 bg-muted flex-shrink-0 flex items-center justify-center">
           <Bot className="h-8 w-8 text-muted-foreground/50" />
         </div>
@@ -393,7 +304,7 @@ function PastChallengeCard({
           <h4 className="font-medium text-sm line-clamp-1">{challenge.title}</h4>
           <div className="flex items-center gap-1 mt-2 text-xs text-accent">
             <Trophy className="h-3 w-3" />
-            <span>Vencedor: Participante</span>
+            <span>Ver detalhes</span>
           </div>
         </CardContent>
       </div>
@@ -406,39 +317,37 @@ function PastChallengeCard({
 function ActiveChallengeHero({ 
   challenge, 
   submissionsCount,
-  onSubmitSuccess 
+  onSubmitSuccess,
+  userTrack
 }: { 
-  challenge: { id: string; title: string; description: string; rules: string | null; xp_reward: number; end_date: string };
+  challenge: { id: string; title: string; description: string; rules: string | null; xp_reward: number; end_date: string; difficulty?: string; reward_badge?: string | null; reward_highlight?: boolean };
   submissionsCount: number;
   onSubmitSuccess: () => void;
+  userTrack: string;
 }) {
   const [showRules, setShowRules] = useState(false);
+  const difficulty = challenge.difficulty || "intermediario";
+  const difficultyLevel = getDifficultyLevel(difficulty);
 
   return (
     <Card className="relative overflow-hidden border-0">
-      {/* Gradient Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary via-blue-600 to-indigo-800" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.1),transparent_50%)]" />
       
       <CardContent className="relative p-6 sm:p-8 text-white">
-        {/* Badge */}
         <Badge className="bg-success hover:bg-success text-success-foreground border-0 mb-4">
           DESAFIO DA SEMANA
         </Badge>
 
-        {/* Title & Description */}
         <h2 className="text-2xl sm:text-3xl font-bold mb-3">{challenge.title}</h2>
         <p className="text-foreground/80 mb-6 max-w-2xl">{challenge.description}</p>
 
-        {/* Metrics Row */}
         <div className="flex flex-wrap gap-6 sm:gap-10 mb-6">
-          {/* Countdown */}
           <div>
             <p className="text-xs text-white/60 mb-2 uppercase tracking-wide">Tempo Restante</p>
             <CountdownTimer endDate={challenge.end_date} />
           </div>
 
-          {/* Participants */}
           <div className="text-center">
             <p className="text-xs text-white/60 mb-2 uppercase tracking-wide">Participantes</p>
             <div className="flex items-center gap-2">
@@ -448,24 +357,27 @@ function ActiveChallengeHero({
             </div>
           </div>
 
-          {/* Difficulty */}
           <div>
             <p className="text-xs text-white/60 mb-2 uppercase tracking-wide">Dificuldade</p>
-            <DifficultyStars level={2} />
+            <DifficultyStars level={difficultyLevel} />
           </div>
         </div>
 
-        {/* Reward Card */}
         <div className="bg-background/10 backdrop-blur rounded-lg p-4 mb-6 inline-flex items-center gap-3">
           <Gift className="h-6 w-6 text-accent" />
           <span className="font-medium">
-            Prêmio: <span className="text-accent">+{challenge.xp_reward} XP</span> + Badge "Mestre" + Destaque
+            Prêmio: <span className="text-accent">+{challenge.xp_reward} XP</span>
+            {challenge.reward_badge && <> + Badge "{challenge.reward_badge}"</>}
+            {challenge.reward_highlight && <> + Destaque</>}
           </span>
         </div>
 
-        {/* Actions */}
         <div className="flex flex-wrap gap-3">
-          <SubmitModal challengeId={challenge.id} onSuccess={onSubmitSuccess} />
+          <SubmitChallengeModal 
+            challengeId={challenge.id} 
+            defaultTrack={userTrack as "agentes" | "videos" | "fotos" | "crescimento" | "propostas"}
+            onSuccess={onSubmitSuccess} 
+          />
           {challenge.rules && (
             <Button 
               variant="outline" 
@@ -479,15 +391,62 @@ function ActiveChallengeHero({
           )}
         </div>
 
-        {/* Rules Expandable */}
         {showRules && challenge.rules && (
-          <div className="mt-6 p-4 bg-background/10 backdrop-blur rounded-lg">
-            <h4 className="font-medium mb-2">Regras do Desafio</h4>
-            <p className="text-sm text-foreground/80 whitespace-pre-line">{challenge.rules}</p>
-          </div>
+          <Dialog open={showRules} onOpenChange={setShowRules}>
+            <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Regras do Desafio</DialogTitle>
+              </DialogHeader>
+              <div className="prose prose-sm dark:prose-invert">
+                <p className="whitespace-pre-line">{challenge.rules}</p>
+              </div>
+            </DialogContent>
+          </Dialog>
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function PersonalizedChallengesSection({ userTrack, userLevel }: { userTrack: string; userLevel: number }) {
+  const { personalizedChallenge, bonusChallenge, isLoading } = useDailyChallenges(
+    userTrack as "agentes" | "videos" | "fotos" | "crescimento" | "propostas",
+    userLevel
+  );
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-48 w-full" />
+        <Skeleton className="h-48 w-full" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Personalized Daily Challenge */}
+      {personalizedChallenge && (
+        <div className="space-y-3">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Target className="h-5 w-5 text-primary" />
+            Seu Desafio Personalizado (Hoje)
+          </h3>
+          <PersonalizedChallengeCard challenge={personalizedChallenge} />
+        </div>
+      )}
+
+      {/* Weekly Bonus Challenge */}
+      {bonusChallenge && (
+        <div className="space-y-3">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-amber-500" />
+            Bônus da Semana: Propostas que Vendem
+          </h3>
+          <PersonalizedChallengeCard challenge={bonusChallenge} isBonus />
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -495,28 +454,15 @@ function CommunitySubmissions({
   submissions, 
   onVote,
   sortBy,
-  onSortChange
+  onSortChange,
+  userVotes
 }: { 
   submissions: ChallengeSubmission[];
   onVote: (id: string) => void;
   sortBy: string;
   onSortChange: (value: string) => void;
+  userVotes: string[];
 }) {
-  const [votedIds, setVotedIds] = useState<Set<string>>(new Set());
-
-  const handleVote = (id: string) => {
-    setVotedIds(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
-      return newSet;
-    });
-    onVote(id);
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -542,8 +488,8 @@ function CommunitySubmissions({
               key={submission.id} 
               submission={submission}
               position={index + 1}
-              onVote={handleVote}
-              hasVoted={votedIds.has(submission.id)}
+              onVote={onVote}
+              hasVoted={userVotes.includes(submission.id)}
             />
           ))}
         </div>
@@ -558,13 +504,13 @@ function CommunitySubmissions({
 }
 
 function ChallengeRanking({ submissions }: { submissions: ChallengeSubmission[] }) {
-  const topSubmissions = submissions.slice(0, 5);
+  const topSubmissions = submissions.slice(0, 10);
 
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold flex items-center gap-2">
         <Crown className="h-5 w-5 text-amber-500" />
-        Ranking do Desafio
+        Ranking do Desafio (Top 10)
       </h3>
 
       {topSubmissions.length > 0 ? (
@@ -624,13 +570,23 @@ function PastChallenges({ challenges }: { challenges: { id: string; title: strin
 
 export default function Desafios() {
   const { user } = useAuth();
-  const { activeChallenge, pastChallenges, isLoading, fetchSubmissions, vote } = useChallenges();
+  const { activeChallenge, pastChallenges, isLoading, fetchSubmissions, fetchUserVotes, vote } = useChallenges();
+  const { mainTrack } = useUserProfile();
+  const { userXP } = useUserXP();
   const [sortBy, setSortBy] = useState("votes");
+
+  const userLevel = userXP?.current_level || 1;
 
   const { data: submissions = [], refetch: refetchSubmissions } = useQuery({
     queryKey: ["challengeSubmissions", activeChallenge?.id],
     queryFn: () => activeChallenge ? fetchSubmissions(activeChallenge.id) : [],
     enabled: !!activeChallenge,
+  });
+
+  const { data: userVotes = [], refetch: refetchVotes } = useQuery({
+    queryKey: ["userVotes", activeChallenge?.id, user?.id],
+    queryFn: () => activeChallenge ? fetchUserVotes(activeChallenge.id) : [],
+    enabled: !!activeChallenge && !!user,
   });
 
   const sortedSubmissions = [...submissions].sort((a, b) => {
@@ -640,11 +596,14 @@ export default function Desafios() {
 
   const handleVote = async (submissionId: string) => {
     if (!user) {
-      toast({ title: "Erro", description: "Faça login para votar", variant: "destructive" });
+      toast.error("Faça login para votar");
       return;
     }
     vote(submissionId, {
-      onSuccess: () => refetchSubmissions(),
+      onSuccess: () => {
+        refetchSubmissions();
+        refetchVotes();
+      },
     });
   };
 
@@ -711,15 +670,20 @@ export default function Desafios() {
                   challenge={activeChallenge} 
                   submissionsCount={submissions.length}
                   onSubmitSuccess={() => refetchSubmissions()}
+                  userTrack={mainTrack}
                 />
+                
+                {/* Personalized Challenges Section */}
+                <PersonalizedChallengesSection userTrack={mainTrack} userLevel={userLevel} />
+                
                 <CommunitySubmissions 
                   submissions={sortedSubmissions}
                   onVote={handleVote}
                   sortBy={sortBy}
                   onSortChange={setSortBy}
+                  userVotes={userVotes}
                 />
                 <ChallengeRanking submissions={sortedSubmissions} />
-                <PastChallenges challenges={pastChallenges} />
               </>
             ) : (
               <Card className="p-12 text-center">
@@ -732,28 +696,23 @@ export default function Desafios() {
 
           {/* Tab: Submissions Only */}
           <TabsContent value="submissions">
-            <div>
-              <CommunitySubmissions 
-                submissions={sortedSubmissions}
-                onVote={handleVote}
-                sortBy={sortBy}
-                onSortChange={setSortBy}
-              />
-            </div>
+            <CommunitySubmissions 
+              submissions={sortedSubmissions}
+              onVote={handleVote}
+              sortBy={sortBy}
+              onSortChange={setSortBy}
+              userVotes={userVotes}
+            />
           </TabsContent>
 
           {/* Tab: Ranking Only */}
           <TabsContent value="ranking">
-            <div>
-              <ChallengeRanking submissions={sortedSubmissions} />
-            </div>
+            <ChallengeRanking submissions={sortedSubmissions} />
           </TabsContent>
 
           {/* Tab: History Only */}
           <TabsContent value="history">
-            <div>
-              <PastChallenges challenges={pastChallenges} />
-            </div>
+            <PastChallenges challenges={pastChallenges} />
           </TabsContent>
         </Tabs>
       </div>

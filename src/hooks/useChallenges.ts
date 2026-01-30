@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import type { Track } from "./useUserProfile";
 
 export interface Challenge {
   id: string;
@@ -13,6 +14,12 @@ export interface Challenge {
   end_date: string;
   status: string;
   created_at: string;
+  // New fields
+  difficulty: string;
+  reward_badge: string | null;
+  reward_highlight: boolean;
+  tracks: string[];
+  deliverables_schema: Record<string, unknown>;
 }
 
 export interface ChallengeSubmission {
@@ -27,6 +34,12 @@ export interface ChallengeSubmission {
   votes_count: number;
   is_winner: boolean;
   created_at: string;
+  // New fields
+  track: string | null;
+  proof_links: string[];
+  assets: string[];
+  time_spent_minutes: number | null;
+  version: number;
 }
 
 export interface CreateChallengeData {
@@ -35,9 +48,24 @@ export interface CreateChallengeData {
   rules?: string | null;
   start_date: string;
   end_date: string;
-  xp_reward: number;
+  xp_reward?: number;
   badge_reward_id?: string | null;
-  status: string;
+  status?: string;
+  difficulty?: string;
+  reward_badge?: string | null;
+  reward_highlight?: boolean;
+  tracks?: string[];
+}
+
+export interface SubmitData {
+  challengeId: string;
+  title: string;
+  description?: string;
+  imageUrl?: string;
+  linkUrl?: string;
+  track?: Track;
+  proofLinks?: string[];
+  timeSpentMinutes?: number;
 }
 
 export function useChallenges() {
@@ -151,13 +179,10 @@ export function useChallenges() {
       description,
       imageUrl,
       linkUrl,
-    }: {
-      challengeId: string;
-      title: string;
-      description?: string;
-      imageUrl?: string;
-      linkUrl?: string;
-    }) => {
+      track,
+      proofLinks,
+      timeSpentMinutes,
+    }: SubmitData) => {
       if (!user) throw new Error("User not authenticated");
 
       const { data, error } = await supabase
@@ -169,6 +194,9 @@ export function useChallenges() {
           description,
           image_url: imageUrl,
           link_url: linkUrl,
+          track: track || null,
+          proof_links: proofLinks || [],
+          time_spent_minutes: timeSpentMinutes || null,
         })
         .select()
         .single();
@@ -235,12 +263,35 @@ export function useChallenges() {
     return !!data;
   };
 
+  // Fetch user's votes for a challenge
+  const fetchUserVotes = async (challengeId: string) => {
+    if (!user) return [];
+    
+    const { data: submissions } = await supabase
+      .from("challenge_submissions")
+      .select("id")
+      .eq("challenge_id", challengeId);
+    
+    if (!submissions) return [];
+    
+    const submissionIds = submissions.map(s => s.id);
+    
+    const { data: votes } = await supabase
+      .from("challenge_votes")
+      .select("submission_id")
+      .eq("user_id", user.id)
+      .in("submission_id", submissionIds);
+    
+    return votes?.map(v => v.submission_id) || [];
+  };
+
   return {
     activeChallenge,
     allChallenges: allChallenges || [],
     pastChallenges: allChallenges?.filter((c) => c.status === "ended") || [],
     isLoading: isLoadingActive || isLoadingAll,
     fetchSubmissions,
+    fetchUserVotes,
     // CRUD operations
     createChallenge: createMutation.mutateAsync,
     isCreating: createMutation.isPending,

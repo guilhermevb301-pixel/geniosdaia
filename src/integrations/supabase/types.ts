@@ -87,6 +87,7 @@ export type Database = {
       }
       challenge_submissions: {
         Row: {
+          assets: string[] | null
           challenge_id: string
           created_at: string
           description: string | null
@@ -95,11 +96,16 @@ export type Database = {
           image_url: string | null
           is_winner: boolean
           link_url: string | null
+          proof_links: string[] | null
+          time_spent_minutes: number | null
           title: string
+          track: string | null
           user_id: string
+          version: number | null
           votes_count: number
         }
         Insert: {
+          assets?: string[] | null
           challenge_id: string
           created_at?: string
           description?: string | null
@@ -108,11 +114,16 @@ export type Database = {
           image_url?: string | null
           is_winner?: boolean
           link_url?: string | null
+          proof_links?: string[] | null
+          time_spent_minutes?: number | null
           title: string
+          track?: string | null
           user_id: string
+          version?: number | null
           votes_count?: number
         }
         Update: {
+          assets?: string[] | null
           challenge_id?: string
           created_at?: string
           description?: string | null
@@ -121,8 +132,12 @@ export type Database = {
           image_url?: string | null
           is_winner?: boolean
           link_url?: string | null
+          proof_links?: string[] | null
+          time_spent_minutes?: number | null
           title?: string
+          track?: string | null
           user_id?: string
+          version?: number | null
           votes_count?: number
         }
         Relationships: [
@@ -168,37 +183,52 @@ export type Database = {
         Row: {
           badge_reward_id: string | null
           created_at: string
+          deliverables_schema: Json | null
           description: string
+          difficulty: string | null
           end_date: string
           id: string
+          reward_badge: string | null
+          reward_highlight: boolean | null
           rules: string | null
           start_date: string
           status: string
           title: string
+          tracks: string[] | null
           xp_reward: number
         }
         Insert: {
           badge_reward_id?: string | null
           created_at?: string
+          deliverables_schema?: Json | null
           description: string
+          difficulty?: string | null
           end_date: string
           id?: string
+          reward_badge?: string | null
+          reward_highlight?: boolean | null
           rules?: string | null
           start_date: string
           status?: string
           title: string
+          tracks?: string[] | null
           xp_reward?: number
         }
         Update: {
           badge_reward_id?: string | null
           created_at?: string
+          deliverables_schema?: Json | null
           description?: string
+          difficulty?: string | null
           end_date?: string
           id?: string
+          reward_badge?: string | null
+          reward_highlight?: boolean | null
           rules?: string | null
           start_date?: string
           status?: string
           title?: string
+          tracks?: string[] | null
           xp_reward?: number
         }
         Relationships: [
@@ -241,6 +271,48 @@ export type Database = {
           is_active?: boolean | null
           order_index?: number | null
           title?: string
+        }
+        Relationships: []
+      }
+      daily_challenges: {
+        Row: {
+          checklist: Json
+          created_at: string | null
+          deliverable: string
+          difficulty: string
+          estimated_minutes: number | null
+          id: string
+          is_bonus: boolean | null
+          objective: string
+          steps: Json
+          title: string
+          track: string
+        }
+        Insert: {
+          checklist?: Json
+          created_at?: string | null
+          deliverable: string
+          difficulty?: string
+          estimated_minutes?: number | null
+          id?: string
+          is_bonus?: boolean | null
+          objective: string
+          steps?: Json
+          title: string
+          track: string
+        }
+        Update: {
+          checklist?: Json
+          created_at?: string | null
+          deliverable?: string
+          difficulty?: string
+          estimated_minutes?: number | null
+          id?: string
+          is_bonus?: boolean | null
+          objective?: string
+          steps?: Json
+          title?: string
+          track?: string
         }
         Relationships: []
       }
@@ -900,6 +972,36 @@ export type Database = {
           },
         ]
       }
+      user_profiles: {
+        Row: {
+          created_at: string | null
+          display_name: string | null
+          goals: Json | null
+          id: string
+          main_track: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_name?: string | null
+          goals?: Json | null
+          id?: string
+          main_track?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          display_name?: string | null
+          goals?: Json | null
+          id?: string
+          main_track?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_role_history: {
         Row: {
           changed_by: string
@@ -972,6 +1074,35 @@ export type Database = {
         }
         Relationships: []
       }
+      user_submission_votes: {
+        Row: {
+          created_at: string | null
+          id: string
+          submission_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          submission_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          submission_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_submission_votes_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_xp: {
         Row: {
           created_at: string
@@ -1005,6 +1136,36 @@ export type Database = {
           total_xp?: number
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      xp_events: {
+        Row: {
+          created_at: string | null
+          id: string
+          reason: string
+          reference_id: string | null
+          reference_type: string | null
+          user_id: string
+          xp: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          reason: string
+          reference_id?: string | null
+          reference_type?: string | null
+          user_id: string
+          xp: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          reason?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          user_id?: string
+          xp?: number
         }
         Relationships: []
       }
