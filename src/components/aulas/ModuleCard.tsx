@@ -4,6 +4,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { BookOpen, CheckCircle2 } from "lucide-react";
+import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton";
 
 interface ModuleCardProps {
   id: string;
@@ -33,10 +34,12 @@ export function ModuleCard({
         <div className="relative">
           <AspectRatio ratio={3 / 4}>
             {coverImageUrl ? (
-              <img
+              <ImageWithSkeleton
                 src={coverImageUrl}
                 alt={title}
-                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                className="transition-transform duration-300 group-hover:scale-105"
+                containerClassName="h-full w-full"
+                fallbackIcon={<BookOpen className="h-12 w-12 text-primary/40" />}
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">

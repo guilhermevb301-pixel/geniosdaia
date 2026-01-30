@@ -22,6 +22,7 @@ import Desafios from "./pages/Desafios";
 import Certificados from "./pages/Certificados";
 import VerifyCertificate from "./pages/VerifyCertificate";
 import MeuCaderno from "./pages/MeuCaderno";
+import MeusGpts from "./pages/MeusGpts";
 import AdminModules from "./pages/admin/AdminModules";
 import AdminLessons from "./pages/admin/AdminLessons";
 import AdminTemplates from "./pages/admin/AdminTemplates";
@@ -29,6 +30,7 @@ import AdminPrompts from "./pages/admin/AdminPrompts";
 import AdminMentees from "./pages/admin/AdminMentees";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminChallenges from "./pages/admin/AdminChallenges";
+import AdminGpts from "./pages/admin/AdminGpts";
 import MenteeEditor from "./pages/admin/MenteeEditor";
 import NotFound from "./pages/NotFound";
 
@@ -105,6 +107,14 @@ const App = () => (
               }
             />
             <Route
+              path="/meus-gpts"
+              element={
+                <ProtectedRoute>
+                  <MeusGpts />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/desafios"
               element={
                 <ProtectedRoute>
@@ -171,6 +181,14 @@ const App = () => (
               element={
                 <AdminRoute>
                   <AdminPrompts />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/gpts"
+              element={
+                <AdminRoute>
+                  <AdminGpts />
                 </AdminRoute>
               }
             />

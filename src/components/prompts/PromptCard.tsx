@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton";
 
 interface PromptVariation {
   id: string;
@@ -82,11 +83,13 @@ export function PromptCard({ prompt }: PromptCardProps) {
         {/* Imagem de capa com foco ajustável */}
         <div className="aspect-video bg-muted overflow-hidden">
           {prompt.thumbnail_url ? (
-            <img
+            <ImageWithSkeleton
               src={prompt.thumbnail_url}
               alt={prompt.title}
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-              style={{ objectPosition: prompt.thumbnail_focus || 'center' }}
+              className="transition-transform duration-300 group-hover:scale-105"
+              containerClassName="w-full h-full"
+              objectPosition={prompt.thumbnail_focus || 'center'}
+              fallbackIcon={<Icon className="h-12 w-12 text-muted-foreground/40" />}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">

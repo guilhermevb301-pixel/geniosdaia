@@ -16,7 +16,8 @@ import {
   Lightbulb,
   Trophy,
   Award,
-  NotebookPen
+  NotebookPen,
+  Bot
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -32,6 +33,7 @@ import { useState } from "react";
 const tools = [
   { label: "Templates", href: "/templates", icon: Zap },
   { label: "Banco de Prompts", href: "/prompts", icon: Lightbulb },
+  { label: "Meus GPTs", href: "/meus-gpts", icon: MessageSquare },
   { label: "Eventos", href: "/eventos", icon: Calendar },
   { label: "Desafios", href: "/desafios", icon: Trophy },
 ];
@@ -262,6 +264,19 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                       >
                         <FileText className="h-4 w-4" />
                         Templates
+                      </Link>
+                      <Link
+                        to="/admin/gpts"
+                        onClick={handleClick}
+                        className={cn(
+                          "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                          isActive("/admin/gpts")
+                            ? "text-primary bg-primary/10"
+                            : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
+                        )}
+                      >
+                        <Bot className="h-4 w-4" />
+                        GPTs
                       </Link>
                     </>
                   )}
