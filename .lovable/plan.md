@@ -1,57 +1,312 @@
 
 
-# Plano: Sistema de Secoes para Agrupar Modulos
+# Plano: Otimizacao de Carregamento + Nova Pagina "Meus GPTs"
 
 ## Visao Geral
 
-Vou criar um sistema de **Secoes** que funcionam como titulos grandes acima dos modulos, permitindo organizar o conteudo de forma hierarquica. Baseado na imagem de referencia (ex: "Cursos - Aprimoramento"), cada secao tera um titulo e contera varios modulos abaixo.
+Este plano aborda duas melhorias:
+1. **Performance**: Otimizar carregamento de fotos e videos com lazy loading, placeholders e tecnicas modernas
+2. **Nova Funcionalidade**: Criar pagina "Meus GPTs" para links de GPTs personalizados
 
 ---
 
-## Estrutura Visual Desejada
+## PARTE 1: Otimizacao de Carregamento
+
+### Problemas Identificados
+
+Analisando o codigo atual, identifiquei os seguintes pontos de lentidao:
+
+1. **Imagens sem lazy loading** - Todas carregam de uma vez
+2. **Sem placeholders/skeleton** - Usuario ve espaco vazio enquanto carrega
+3. **Sem atributo loading="lazy"** - Browser nao otimiza carregamento
+4. **Videos do YouTube carregam imediatamente** - iframes pesados
+5. **Imagens grandes sem dimensoes definidas** - causa layout shift
+
+### Solucoes a Implementar
+
+```text
+ANTES                              DEPOIS
++------------------+              +------------------+
+| [carrega tudo    |              | [skeleton]       |
+|  de uma vez]     |              | [lazy load]      |
+| Lento e pesado   |              | [blur-up effect] |
++------------------+              +------------------+
+```
+
+### Componentes a Modificar
+
+| Arquivo | Otimizacao |
+|---------|------------|
+| `ModuleCard.tsx` | Lazy loading + skeleton + blur placeholder |
+| `PromptCard.tsx` | Lazy loading + skeleton em thumbnails |
+| `Templates.tsx` | Lazy loading nas imagens de templates |
+| `VideoPlayer.tsx` | Thumbnail do YouTube antes de carregar iframe |
+
+### Implementacao Tecnica
+
+**1. Componente ImageWithSkeleton (Novo)**
+
+```tsx
+// src/components/ui/image-with-skeleton.tsx
+interface ImageWithSkeletonProps {
+  src: string;
+  alt: string;
+  className?: string;
+  aspectRatio?: "video" | "square" | "portrait";
+}
+
+export function ImageWithSkeleton({ src, alt, className, aspectRatio = "video" }: ImageWithSkeletonProps) {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
+
+  return (
+    <div className={cn("relative overflow-hidden", aspectClasses[aspectRatio])}>
+      {/* Skeleton enquanto carrega */}
+      {!isLoaded && !hasError && (
+        <Skeleton className="absolute inset-0" />
+      )}
+      
+      {/* Imagem com lazy loading nativo */}
+      <img
+        src={src}
+        alt={alt}
+        loading="lazy"
+        decoding="async"
+        onLoad={() => setIsLoaded(true)}
+        onError={() => setHasError(true)}
+        className={cn(
+          "transition-opacity duration-300",
+          isLoaded ? "opacity-100" : "opacity-0",
+          className
+        )}
+      />
+    </div>
+  );
+}
+```
+
+**2. Video com Thumbnail (Lite YouTube Embed)**
+
+Em vez de carregar o iframe pesado do YouTube imediatamente, mostrar apenas a thumbnail ate o usuario clicar:
+
+```tsx
+// VideoPlayer.tsx - Otimizado
+const [showVideo, setShowVideo] = useState(false);
+
+// Extrair ID do YouTube
+const videoId = extractYouTubeId(lesson.videoUrl);
+
+return showVideo ? (
+  <iframe src={`https://www.youtube.com/embed/${videoId}?autoplay=1`} ... />
+) : (
+  <button onClick={() => setShowVideo(true)} className="relative">
+    {/* Thumbnail do YouTube (muito leve) */}
+    <img 
+      src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
+      loading="lazy"
+      alt={lesson.title}
+    />
+    {/* Icone de play */}
+    <PlayCircle className="absolute inset-0 m-auto h-16 w-16" />
+  </button>
+);
+```
+
+**3. Atualizacoes nos Componentes Existentes**
+
+Adicionar em todas as tags `<img>`:
+- `loading="lazy"` - carregamento nativo preguicoso
+- `decoding="async"` - decodificacao assincrona
+- Skeleton como fallback durante carregamento
+
+---
+
+## PARTE 2: Nova Pagina "Meus GPTs"
+
+### Estrutura Visual
 
 ```text
 +------------------------------------------------------------------+
-|  AULAS                                                            |
-|  Seu curso de automacao com n8n                                   |
-|                                                                   |
-|  [========= Progresso Geral =========]                           |
-|                                                                   |
+|  MEUS GPTs                                                        |
+|  GPTs personalizados para acelerar seu aprendizado               |
 +------------------------------------------------------------------+
 |                                                                   |
-|  Cursos - Fundamentos                    <-- TITULO DA SECAO     |
-|  +--------+  +--------+  +--------+                              |
-|  |Mod 1   |  |Mod 2   |  |Mod 3   |      <-- MODULOS DA SECAO    |
-|  +--------+  +--------+  +--------+                              |
+|  +------------------------+  +------------------------+          |
+|  | [Logo GPT]             |  | [Logo GPT]             |          |
+|  | Nome do GPT            |  | Nome do GPT            |          |
+|  | Descricao breve...     |  | Descricao breve...     |          |
+|  | [Acessar GPT ->]       |  | [Acessar GPT ->]       |          |
+|  +------------------------+  +------------------------+          |
 |                                                                   |
-|  Cursos - Aprimoramento                  <-- OUTRO TITULO        |
-|  +--------+  +--------+  +--------+  +--------+                  |
-|  |Mod 4   |  |Mod 5   |  |Mod 6   |  |Mod 7   |                  |
-|  +--------+  +--------+  +--------+  +--------+                  |
-|                                                                   |
-|  Projetos Praticos                       <-- OUTRO TITULO        |
-|  +--------+  +--------+                                          |
-|  |Mod 8   |  |Mod 9   |                                          |
-|  +--------+  +--------+                                          |
+|  +------------------------+  +------------------------+          |
+|  | [Logo GPT]             |  | [Logo GPT]             |          |
+|  | Assistente de Codigo   |  | Gerador de Workflows   |          |
+|  | Ajuda com scripts...   |  | Cria automacoes...     |          |
+|  | [Acessar GPT ->]       |  | [Acessar GPT ->]       |          |
+|  +------------------------+  +------------------------+          |
 +------------------------------------------------------------------+
 ```
 
----
+### Arquitetura
 
-## Arquitetura da Solucao
+Dois caminhos possiveis:
 
-### Opcao Escolhida: Nova Tabela `module_sections`
+**Opcao A: Dados no Banco (Recomendado)**
+- Criar tabela `custom_gpts` no Supabase
+- Admin pode gerenciar via painel
+- Mais flexivel e escalavel
 
-Criar uma tabela separada para secoes, com os modulos referenciando a secao a qual pertencem.
+**Opcao B: Dados Estaticos**
+- Links hardcoded no codigo
+- Mais simples, menos flexivel
 
-```text
-module_sections                    modules
-+------------------+              +------------------+
-| id               |<-------------| section_id (FK)  |
-| title            |              | id               |
-| order_index      |              | title            |
-| created_at       |              | order_index      |
-+------------------+              +------------------+
+### Implementacao com Banco (Opcao A)
+
+**1. Nova Tabela `custom_gpts`**
+
+```sql
+CREATE TABLE public.custom_gpts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  description TEXT,
+  gpt_url TEXT NOT NULL,
+  icon_url TEXT,
+  order_index INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- RLS
+ALTER TABLE public.custom_gpts ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can read active GPTs"
+ON public.custom_gpts FOR SELECT
+USING (is_active = true);
+
+CREATE POLICY "Admins can manage GPTs"
+ON public.custom_gpts FOR ALL
+USING (has_role(auth.uid(), 'admin'::app_role))
+WITH CHECK (has_role(auth.uid(), 'admin'::app_role));
+```
+
+**2. Nova Pagina `/meus-gpts`**
+
+```tsx
+// src/pages/MeusGpts.tsx
+export default function MeusGpts() {
+  const { data: gpts } = useQuery({
+    queryKey: ["custom_gpts"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("custom_gpts")
+        .select("*")
+        .eq("is_active", true)
+        .order("order_index");
+      return data;
+    },
+  });
+
+  return (
+    <AppLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold">Meus GPTs</h1>
+          <p className="text-muted-foreground">
+            GPTs personalizados para acelerar seu aprendizado
+          </p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {gpts?.map((gpt) => (
+            <GptCard key={gpt.id} gpt={gpt} />
+          ))}
+        </div>
+      </div>
+    </AppLayout>
+  );
+}
+```
+
+**3. Componente GptCard**
+
+```tsx
+// src/components/gpts/GptCard.tsx
+interface GptCardProps {
+  gpt: {
+    id: string;
+    title: string;
+    description: string | null;
+    gpt_url: string;
+    icon_url: string | null;
+  };
+}
+
+export function GptCard({ gpt }: GptCardProps) {
+  return (
+    <Card className="group hover:border-primary/50 transition-colors">
+      <CardContent className="p-6 space-y-4">
+        {/* Icone */}
+        <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+          {gpt.icon_url ? (
+            <img src={gpt.icon_url} alt="" className="h-8 w-8 rounded-lg" />
+          ) : (
+            <Bot className="h-6 w-6 text-primary" />
+          )}
+        </div>
+
+        {/* Conteudo */}
+        <div>
+          <h3 className="font-semibold">{gpt.title}</h3>
+          {gpt.description && (
+            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+              {gpt.description}
+            </p>
+          )}
+        </div>
+
+        {/* Botao */}
+        <a
+          href={gpt.gpt_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+        >
+          Acessar GPT
+          <ExternalLink className="h-4 w-4" />
+        </a>
+      </CardContent>
+    </Card>
+  );
+}
+```
+
+**4. Adicionar na Sidebar**
+
+```tsx
+// SidebarContent.tsx - Adicionar apos "Banco de Prompts"
+<Link
+  to="/meus-gpts"
+  className={cn(/* estilos */)}
+>
+  <Bot className="h-5 w-5" />
+  Meus GPTs
+</Link>
+```
+
+**5. Adicionar Rota**
+
+```tsx
+// App.tsx
+import MeusGpts from "./pages/MeusGpts";
+
+<Route
+  path="/meus-gpts"
+  element={
+    <ProtectedRoute>
+      <MeusGpts />
+    </ProtectedRoute>
+  }
+/>
 ```
 
 ---
@@ -60,218 +315,51 @@ module_sections                    modules
 
 | Arquivo | Acao | Descricao |
 |---------|------|-----------|
-| Nova migracao SQL | Criar | Tabela `module_sections` + coluna `section_id` em `modules` |
-| `src/pages/Aulas.tsx` | Modificar | Agrupar modulos por secao na exibicao |
-| `src/components/aulas/ModuleGrid.tsx` | Modificar | Aceitar titulo de secao como prop |
-| `src/pages/admin/AdminModules.tsx` | Modificar | Adicionar gestao de secoes |
-
----
-
-## Detalhes de Implementacao
-
-### 1. Migracao de Banco de Dados
-
-```sql
--- Criar tabela de secoes
-CREATE TABLE IF NOT EXISTS public.module_sections (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title TEXT NOT NULL,
-  order_index INTEGER NOT NULL DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
--- Adicionar coluna section_id na tabela modules
-ALTER TABLE public.modules 
-ADD COLUMN section_id UUID REFERENCES public.module_sections(id) ON DELETE SET NULL;
-
--- RLS para secoes (leitura publica, escrita admin/mentor)
-ALTER TABLE public.module_sections ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY "Anyone can read sections" 
-ON public.module_sections FOR SELECT USING (true);
-
-CREATE POLICY "Admins and mentors can manage sections"
-ON public.module_sections FOR ALL
-USING (
-  has_role(auth.uid(), 'admin'::app_role) OR 
-  has_role(auth.uid(), 'mentor'::app_role)
-)
-WITH CHECK (
-  has_role(auth.uid(), 'admin'::app_role) OR 
-  has_role(auth.uid(), 'mentor'::app_role)
-);
-```
-
-### 2. Pagina Aulas.tsx - Agrupar por Secao
-
-```tsx
-// Buscar secoes
-const { data: sectionsData } = useQuery({
-  queryKey: ["module_sections"],
-  queryFn: async () => {
-    const { data, error } = await supabase
-      .from("module_sections")
-      .select("*")
-      .order("order_index");
-    if (error) throw error;
-    return data;
-  },
-});
-
-// Agrupar modulos por secao
-const modulesWithoutSection = modules.filter(m => !m.section_id);
-const sectionGroups = (sectionsData || []).map(section => ({
-  section,
-  modules: modules.filter(m => m.section_id === section.id)
-}));
-
-// Renderizar
-return (
-  <div className="space-y-8">
-    {/* Modulos sem secao */}
-    {modulesWithoutSection.length > 0 && (
-      <ModuleGrid modules={modulesWithoutSection} />
-    )}
-    
-    {/* Secoes com seus modulos */}
-    {sectionGroups.map(({ section, modules }) => (
-      <div key={section.id} className="space-y-4">
-        <h2 className="text-xl font-semibold text-foreground">
-          {section.title}
-        </h2>
-        <ModuleGrid modules={modules} />
-      </div>
-    ))}
-  </div>
-);
-```
-
-### 3. AdminModules.tsx - Gestao de Secoes
-
-Adicionar interface para:
-
-**Criar/Editar Secoes:**
-- Botao "Nova Secao" no topo
-- Lista de secoes existentes com opcao de editar/excluir
-- Campo de titulo para cada secao
-
-**Vincular Modulos a Secoes:**
-- Ao criar/editar modulo, select para escolher a secao
-- Opcao "Sem secao" para modulos avulsos
-- Drag-and-drop para reordenar (opcional, fase 2)
-
-```tsx
-// No modal de modulo, adicionar select de secao
-<div className="space-y-2">
-  <Label>Secao</Label>
-  <Select value={sectionId} onValueChange={setSectionId}>
-    <SelectTrigger>
-      <SelectValue placeholder="Sem secao" />
-    </SelectTrigger>
-    <SelectContent>
-      <SelectItem value="">Sem secao</SelectItem>
-      {sections.map(section => (
-        <SelectItem key={section.id} value={section.id}>
-          {section.title}
-        </SelectItem>
-      ))}
-    </SelectContent>
-  </Select>
-</div>
-```
-
----
-
-## Fluxo do Administrador
-
-```text
-1. Acessar /admin/modules
-        |
-        v
-2. Criar Secao (ex: "Cursos - Fundamentos")
-        |
-        v
-3. Criar Modulos e vincular a secao criada
-        |
-        v
-4. Resultado: Na pagina /aulas, modulos aparecem
-   agrupados sob o titulo da secao
-```
-
----
-
-## Interface Admin - Layout Proposto
-
-```text
-+------------------------------------------------------------------+
-| [<-] Gerenciar Modulos                        [+ Nova Secao]     |
-|      Crie e organize os modulos do curso      [+ Novo Modulo]    |
-+------------------------------------------------------------------+
-|                                                                   |
-| SECOES                                                           |
-| +------------------------------------------------------------+   |
-| | Cursos - Fundamentos        [Editar] [Excluir]             |   |
-| +------------------------------------------------------------+   |
-| | Cursos - Aprimoramento      [Editar] [Excluir]             |   |
-| +------------------------------------------------------------+   |
-|                                                                   |
-| MODULOS                                                          |
-| +--------+  +--------+  +--------+                               |
-| |Mod 1   |  |Mod 2   |  |Mod 3   |                               |
-| |Secao:  |  |Secao:  |  |Secao:  |                               |
-| |Fundam. |  |Fundam. |  |Aprimo. |                               |
-| +--------+  +--------+  +--------+                               |
-+------------------------------------------------------------------+
-```
+| `src/components/ui/image-with-skeleton.tsx` | Criar | Componente de imagem otimizada |
+| `src/components/aulas/ModuleCard.tsx` | Modificar | Usar ImageWithSkeleton |
+| `src/components/prompts/PromptCard.tsx` | Modificar | Lazy loading nas imagens |
+| `src/components/aulas/VideoPlayer.tsx` | Modificar | Thumbnail antes do iframe |
+| `src/pages/Templates.tsx` | Modificar | Lazy loading nas imagens |
+| Migracao SQL | Criar | Tabela custom_gpts |
+| `src/pages/MeusGpts.tsx` | Criar | Pagina de GPTs |
+| `src/components/gpts/GptCard.tsx` | Criar | Card de GPT |
+| `src/components/layout/SidebarContent.tsx` | Modificar | Link para Meus GPTs |
+| `src/App.tsx` | Modificar | Rota /meus-gpts |
 
 ---
 
 ## Resultado Esperado
 
-1. **Titulos grandes** - Secoes aparecem como titulos acima dos modulos
-2. **Organizacao flexivel** - Modulos podem pertencer a qualquer secao
-3. **Modulos avulsos** - Modulos sem secao aparecem no topo
-4. **Gestao simples** - Admin cria secoes e vincula modulos via select
-5. **Visual premium** - Layout identico a imagem de referencia
+### Performance
+- Imagens carregam sob demanda (lazy loading nativo)
+- Skeleton aparece enquanto imagem carrega
+- Videos do YouTube so carregam ao clicar (economia de dados)
+- Transicoes suaves de carregamento
+- Reducao significativa no tempo inicial de carregamento
+
+### Meus GPTs
+- Nova pagina acessivel na sidebar
+- Cards visuais para cada GPT
+- Links externos para ChatGPT
+- Admin pode gerenciar via banco de dados (futuro painel admin)
 
 ---
 
 ## Secao Tecnica
 
-### Interface de Tipos
+### Lazy Loading Nativo vs Intersection Observer
 
-```typescript
-interface ModuleSection {
-  id: string;
-  title: string;
-  order_index: number;
-  created_at: string;
-}
+O atributo `loading="lazy"` e suportado em 95%+ dos browsers modernos e oferece:
+- Zero JavaScript adicional
+- Gerenciado pelo browser
+- Performance otima
 
-interface ModuleWithSection extends Module {
-  section_id: string | null;
-}
+Para browsers antigos, a imagem simplesmente carrega normalmente (fallback gracioso).
 
-interface SectionGroup {
-  section: ModuleSection;
-  modules: ModuleWithProgress[];
-}
-```
+### YouTube Lite Embed
 
-### Queries Atualizadas
-
-```typescript
-// Buscar modulos com section_id
-const { data: modulesData } = useQuery({
-  queryKey: ["modules"],
-  queryFn: async () => {
-    const { data, error } = await supabase
-      .from("modules")
-      .select("*, section_id")  // incluir section_id
-      .order("order_index");
-    if (error) throw error;
-    return data;
-  },
-});
-```
+Beneficios da abordagem thumbnail-first:
+- Thumbnail: ~30-50KB vs iframe completo: ~500KB-1MB
+- Zero JavaScript do YouTube ate o clique
+- Primeira renderizacao muito mais rapida
 
