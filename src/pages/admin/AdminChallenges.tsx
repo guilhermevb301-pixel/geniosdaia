@@ -53,6 +53,10 @@ interface FormData {
   end_date: Date | undefined;
   xp_reward: number;
   status: string;
+  difficulty: string;
+  reward_badge: string;
+  reward_highlight: boolean;
+  tracks: string[];
 }
 
 const initialFormData: FormData = {
@@ -63,7 +67,19 @@ const initialFormData: FormData = {
   end_date: undefined,
   xp_reward: 100,
   status: "active",
+  difficulty: "intermediario",
+  reward_badge: "",
+  reward_highlight: false,
+  tracks: [],
 };
+
+const availableTracks = [
+  { value: "agentes", label: "Agentes de IA" },
+  { value: "videos", label: "Vídeos com IA" },
+  { value: "fotos", label: "Imagens com IA" },
+  { value: "crescimento", label: "Crescimento" },
+  { value: "propostas", label: "Propostas" },
+];
 
 export default function AdminChallenges() {
   const [activeTab, setActiveTab] = useState("active");
@@ -115,6 +131,10 @@ export default function AdminChallenges() {
       end_date: new Date(challenge.end_date),
       xp_reward: challenge.xp_reward,
       status: challenge.status,
+      difficulty: challenge.difficulty || "intermediario",
+      reward_badge: challenge.reward_badge || "",
+      reward_highlight: challenge.reward_highlight || false,
+      tracks: challenge.tracks || [],
     });
     setIsDialogOpen(true);
   };
@@ -170,6 +190,10 @@ export default function AdminChallenges() {
       end_date: formData.end_date.toISOString(),
       xp_reward: formData.xp_reward,
       status: formData.status,
+      difficulty: formData.difficulty,
+      reward_badge: formData.reward_badge || null,
+      reward_highlight: formData.reward_highlight,
+      tracks: formData.tracks,
     };
 
     try {
@@ -505,6 +529,70 @@ export default function AdminChallenges() {
                     <SelectItem value="ended">Encerrado</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+
+            {/* Difficulty */}
+            <div className="space-y-2">
+              <Label>Dificuldade</Label>
+              <Select
+                value={formData.difficulty}
+                onValueChange={(value) => setFormData({ ...formData, difficulty: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="iniciante">Iniciante</SelectItem>
+                  <SelectItem value="intermediario">Intermediário</SelectItem>
+                  <SelectItem value="avancado">Avançado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Reward Badge */}
+            <div className="space-y-2">
+              <Label htmlFor="reward_badge">Nome do Badge (opcional)</Label>
+              <Input
+                id="reward_badge"
+                value={formData.reward_badge}
+                onChange={(e) => setFormData({ ...formData, reward_badge: e.target.value })}
+                placeholder="Ex: Mestre dos Agentes"
+              />
+            </div>
+
+            {/* Reward Highlight */}
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="reward_highlight"
+                checked={formData.reward_highlight}
+                onChange={(e) => setFormData({ ...formData, reward_highlight: e.target.checked })}
+                className="h-4 w-4 rounded border-input"
+              />
+              <Label htmlFor="reward_highlight">Dar destaque ao vencedor</Label>
+            </div>
+
+            {/* Tracks */}
+            <div className="space-y-2">
+              <Label>Trilhas aplicáveis</Label>
+              <div className="flex flex-wrap gap-2">
+                {availableTracks.map((track) => (
+                  <Button
+                    key={track.value}
+                    type="button"
+                    size="sm"
+                    variant={formData.tracks.includes(track.value) ? "default" : "outline"}
+                    onClick={() => {
+                      const newTracks = formData.tracks.includes(track.value)
+                        ? formData.tracks.filter(t => t !== track.value)
+                        : [...formData.tracks, track.value];
+                      setFormData({ ...formData, tracks: newTracks });
+                    }}
+                  >
+                    {track.label}
+                  </Button>
+                ))}
               </div>
             </div>
           </div>
