@@ -19,7 +19,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { LEVEL_NAMES } from "@/lib/gamification";
 import { SubmitChallengeModal } from "@/components/challenges/SubmitChallengeModal";
-import { ObjectivesChecklist } from "@/components/challenges/ObjectivesChecklist";
+import { ObjectivesModal } from "@/components/challenges/ObjectivesModal";
+import { ObjectivesSummary } from "@/components/challenges/ObjectivesSummary";
 import { RecommendedChallenges } from "@/components/challenges/RecommendedChallenges";
 import { YourChallengesBanner } from "@/components/challenges/YourChallengesBanner";
 import { ChallengeProgressSection } from "@/components/challenges/ChallengeProgressSection";
@@ -529,17 +530,28 @@ export default function Desafios() {
   const { userXP } = useUserXP();
   const [sortBy, setSortBy] = useState("votes");
   const [selectedObjectives, setSelectedObjectives] = useState<string[]>([]);
+  const [showObjectivesModal, setShowObjectivesModal] = useState(false);
+  const hasCheckedObjectives = useRef(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const userLevel = userXP?.current_level || 1;
   const objectivesRef = useRef<HTMLDivElement>(null);
 
-  // Carregar objetivos salvos do perfil
+  // Carregar objetivos salvos do perfil e verificar se precisa abrir o modal
   useEffect(() => {
     if (profile?.goals?.selected_objectives) {
       setSelectedObjectives(profile.goals.selected_objectives);
     }
-  }, [profile?.goals?.selected_objectives]);
+    
+    // Abrir modal automaticamente se não tem objetivos salvos (apenas na primeira verificação)
+    if (!hasCheckedObjectives.current && profile !== undefined) {
+      hasCheckedObjectives.current = true;
+      const hasObjectives = profile?.goals?.selected_objectives && profile.goals.selected_objectives.length > 0;
+      if (!hasObjectives) {
+        setShowObjectivesModal(true);
+      }
+    }
+  }, [profile]);
   
   // Get challenge progress data for the banner
   const {
@@ -693,11 +705,19 @@ export default function Desafios() {
               isCompleting={isCompleting}
             />
             
-            {/* Checklist de Objetivos */}
+            {/* Modal de Objetivos */}
+            <ObjectivesModal
+              open={showObjectivesModal}
+              onOpenChange={setShowObjectivesModal}
+              selectedObjectives={selectedObjectives}
+              onConfirm={handleObjectivesChange}
+            />
+
+            {/* Card Resumo de Objetivos */}
             <div ref={objectivesRef}>
-              <ObjectivesChecklist 
+              <ObjectivesSummary 
                 selectedObjectives={selectedObjectives}
-                onObjectivesChange={handleObjectivesChange}
+                onEdit={() => setShowObjectivesModal(true)}
               />
             </div>
             
