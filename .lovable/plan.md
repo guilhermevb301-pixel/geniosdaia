@@ -1,123 +1,245 @@
 
-# Plano: Download de Videos no Banco de Prompts
+# Plano: Checklist Multi-Selecao com Dependencias Automaticas
 
-## Problema Identificado
+## Resumo
 
-Atualmente, os videos de exemplo no Banco de Prompts sao exibidos mas **nao podem ser baixados**. O componente `PromptCard.tsx` mostra o video com uma tag `<video>` (linhas 232-240), porem nao oferece opcao de download.
-
-Alem disso, o sistema de variacoes so suporta imagens - nao ha campo para video nas variacoes.
+Adicionar um checklist interativo de objetivos na aba "Desafio Ativo" da pagina `/desafios`. O checklist tera grupos tematicos, dependencias automaticas (ex: marcar "Criar Agente" obriga marcar "Infra do Agente"), e salvamento no perfil do usuario. Abaixo do checklist, mostrara "Desafios Recomendados Para Voce" filtrados pelos objetivos selecionados.
 
 ---
 
-## Solucao Proposta
-
-### Parte 1: Adicionar Botao de Download (Rapido)
-
-Adicionar um botao de download ao lado do video de exemplo no `PromptCard.tsx`:
+## Estrutura do Checklist
 
 ```text
-+----------------------------------+
-|  Video de exemplo                |
-|  +----------------------------+  |
-|  |                            |  |
-|  |   [Player de Video]        |  |
-|  |                            |  |
-|  +----------------------------+  |
-|  [Baixar Video]  <-- NOVO        |
-+----------------------------------+
++------------------------------------------+
+|  DEFINA SEUS OBJETIVOS                   |
++------------------------------------------+
+|                                          |
+|  A) Quero construir meu Agente (produto) |
+|  [ ] Criar meu 1o Agente de IA do zero   |
+|                                          |
+|  B) Quero vender (dinheiro)              |
+|  [ ] Vender primeiro projeto de Agente   |
+|  [ ] Fechar clientes para Agentes        |
+|  [ ] Vender + Fechar clientes (combo)    |
+|  [ ] Criar proposta que vende            |
+|                                          |
+|  C) Quero crescer (audiencia)            |
+|  [ ] Viralizar nas redes                 |
+|  [ ] Criar conteudo que vende            |
+|  [ ] Criar Agentes + Viralizar (combo)   |
+|  [ ] Criar Agentes + Fechar + Viralizar  |
+|                                          |
+|  D) Infra obrigatoria (pre-requisito)    |
+|  [x] Infra do Agente (OBRIGATORIO)       |  <- auto-marcado se A ou combos de C
+|                                          |
+|  E) Ativos criativos                     |
+|  [ ] Criar videos incriveis              |
+|  [ ] Criar videos + Viralizar (combo)    |
+|  [ ] Criar fotos profissionais           |
+|  [ ] Fotos + portfolio pra vender        |
+|                                          |
++------------------------------------------+
+|  DESAFIOS RECOMENDADOS PARA VOCE         |
++------------------------------------------+
+|  [Card Desafio 1] [Card Desafio 2] ...   |
+|  OU                                      |
+|  "Marque seus objetivos acima para ver   |
+|   desafios personalizados"               |
++------------------------------------------+
 ```
-
-### Parte 2: Suporte a Video nas Variacoes (Opcional)
-
-Estender a tabela `prompt_variations` para incluir campo de video:
-
-| Campo | Tipo | Descricao |
-|-------|------|-----------|
-| video_url | text | URL do video da variacao |
 
 ---
 
-## Implementacao Tecnica
+## Logica de Dependencias
 
-### Arquivo: `src/components/prompts/PromptCard.tsx`
+| Quando o usuario marca... | Acao automatica |
+|---------------------------|-----------------|
+| "Criar meu 1o Agente de IA do zero" (grupo A) | Auto-marca "Infra do Agente" (grupo D) e bloqueia desmarcacao |
+| "Criar Agentes + Viralizar (combo)" (grupo C) | Auto-marca "Infra do Agente" (grupo D) e bloqueia desmarcacao |
+| "Criar Agentes + Fechar + Viralizar (combo completo)" (grupo C) | Auto-marca "Infra do Agente" (grupo D) e bloqueia desmarcacao |
+| Qualquer item de "Quero vender" (grupo B) | Mostra badge de sugestao: "Recomendamos: Criar proposta que vende" |
 
-Adicionar botao de download apos a tag `<video>`:
+---
 
-```tsx
-{/* Video de exemplo */}
-{prompt.example_video_url && (
-  <div className="space-y-2">
-    <h4 className="text-sm font-medium text-muted-foreground">Video de exemplo</h4>
-    <video
-      src={prompt.example_video_url}
-      controls
-      className="w-full rounded-lg"
-    />
-    {/* NOVO: Botao de download */}
-    <a
-      href={prompt.example_video_url}
-      download
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
-    >
-      <Download className="h-4 w-4" />
-      Baixar video
-    </a>
-  </div>
-)}
-```
+## Armazenamento
 
-### Importante: Download de Arquivos do Supabase Storage
+- Os objetivos serao salvos no campo `goals.selected_objectives` do `user_profiles` como array de strings
+- Exemplo: `["criar_agente", "infra_agente", "vender_projeto"]`
+- Ao carregar a pagina, restaura as marcacoes salvas
 
-Para que o download funcione corretamente com arquivos do Supabase Storage, pode ser necessario usar uma abordagem com `fetch` + `Blob`:
+---
 
-```tsx
-const handleDownload = async (url: string, filename: string) => {
-  try {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    
-    const link = document.createElement('a');
-    link.href = blobUrl;
-    link.download = filename || 'video.mp4';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(blobUrl);
-    
-    toast.success("Download iniciado!");
-  } catch (error) {
-    toast.error("Erro ao baixar video");
-  }
-};
-```
+## Filtragem de Desafios
+
+Cada objetivo tera tags associadas para filtrar os desafios:
+
+| Objetivo | Tags para filtrar |
+|----------|-------------------|
+| Criar Agente | agentes, n8n, automacao |
+| Vender projeto | vendas, comercial, propostas |
+| Fechar clientes | prospecao, clientes, vendas |
+| Criar proposta | propostas, comercial |
+| Viralizar | crescimento, redes, marketing |
+| Criar conteudo que vende | conteudo, marketing, vendas |
+| Criar videos | videos, producao |
+| Criar fotos | fotos, producao |
+| Infra do Agente | infra, n8n, vps, baserow |
+
+Os desafios personalizados (da tabela `daily_challenges`) serao filtrados por estas tags.
 
 ---
 
 ## Arquivos a Modificar
 
-| Arquivo | Acao |
-|---------|------|
-| `src/components/prompts/PromptCard.tsx` | Adicionar botao de download + funcao de download |
+| Arquivo | Mudancas |
+|---------|----------|
+| `src/pages/Desafios.tsx` | Adicionar novo componente `ObjectivesChecklist` na aba "Desafio Ativo", acima de `PersonalizedChallengesSection`. Adicionar secao "Desafios Recomendados Para Voce" |
+| `src/hooks/useUserProfile.ts` | Expandir tipo `goals` para incluir `selected_objectives: string[]` |
 
 ---
 
-## Resultado Esperado
+## Novo Componente: ObjectivesChecklist
 
-- Usuario mentor consegue baixar videos de exemplo com um clique
-- Download funciona mesmo com arquivos do Supabase Storage
-- Feedback visual (toast) ao iniciar download
+```tsx
+// Estrutura de dados para os objetivos
+const OBJECTIVES = {
+  grupo_a: {
+    title: "A) Quero construir meu Agente (produto)",
+    items: [
+      { id: "criar_agente", label: "Criar meu 1o Agente de IA do zero (rodando)", requiresInfra: true }
+    ]
+  },
+  grupo_b: {
+    title: "B) Quero vender (dinheiro)",
+    items: [
+      { id: "vender_projeto", label: "Vender primeiro projeto de Agente de IA" },
+      { id: "fechar_clientes", label: "Fechar clientes para Agentes" },
+      { id: "vender_fechar_combo", label: "Vender + Fechar clientes (combo)" },
+      { id: "criar_proposta", label: "Criar proposta que vende (1 pagina + 3 pacotes)" }
+    ],
+    suggestProposal: true
+  },
+  // ... outros grupos
+}
+```
 
 ---
 
-## Extensao Futura (Opcional)
+## Fluxo de Usuario
 
-Se desejar suporte completo a videos nas variacoes (nao apenas no campo legado `example_video_url`):
+1. Usuario acessa `/desafios`
+2. Na aba "Desafio Ativo", ve primeiro o card do Desafio da Semana (existente)
+3. Abaixo, ve o novo checklist "Defina Seus Objetivos"
+4. Marca opcoes - se marcar algo que requer Infra, auto-marca e bloqueia
+5. Escolhas sao salvas automaticamente (debounce de 500ms)
+6. Abaixo do checklist, ve "Desafios Recomendados Para Voce" filtrados
+7. Se nenhum objetivo marcado, ve estado vazio com instrucao
 
-1. Migracao SQL para adicionar `video_url` em `prompt_variations`
-2. Atualizar `VariationEditor.tsx` para permitir upload de video
-3. Atualizar `PromptCard.tsx` para exibir/baixar video de cada variacao
+---
 
-Deseja que eu implemente essa extensao tambem?
+## Detalhes Tecnicos
+
+### 1. Estado local e persistencia
+
+```tsx
+const [selectedObjectives, setSelectedObjectives] = useState<string[]>([]);
+
+// Ao carregar, restaura do profile.goals.selected_objectives
+useEffect(() => {
+  if (profile?.goals?.selected_objectives) {
+    setSelectedObjectives(profile.goals.selected_objectives);
+  }
+}, [profile]);
+
+// Ao mudar, salva com debounce
+useEffect(() => {
+  const timer = setTimeout(() => {
+    updateProfile({
+      goals: {
+        ...profile?.goals,
+        selected_objectives: selectedObjectives
+      }
+    });
+  }, 500);
+  return () => clearTimeout(timer);
+}, [selectedObjectives]);
+```
+
+### 2. Logica de dependencias
+
+```tsx
+const INFRA_REQUIRED_BY = ["criar_agente", "agentes_viralizar_combo", "agentes_fechar_viralizar_combo"];
+
+const toggleObjective = (id: string) => {
+  setSelectedObjectives(prev => {
+    let newSelection = prev.includes(id)
+      ? prev.filter(o => o !== id)
+      : [...prev, id];
+
+    // Se marcou algo que requer infra, adiciona infra
+    if (INFRA_REQUIRED_BY.includes(id) && !prev.includes(id)) {
+      if (!newSelection.includes("infra_agente")) {
+        newSelection.push("infra_agente");
+      }
+    }
+
+    // Se desmarcou tudo que requer infra, libera infra para desmarcacao
+    // (a infra so pode ser desmarcada se nenhum item que requer estiver marcado)
+
+    return newSelection;
+  });
+};
+
+const isInfraLocked = selectedObjectives.some(o => INFRA_REQUIRED_BY.includes(o));
+```
+
+### 3. Sugestao de proposta (grupo B)
+
+```tsx
+const showProposalSuggestion = 
+  selectedObjectives.some(o => ["vender_projeto", "fechar_clientes", "vender_fechar_combo"].includes(o)) &&
+  !selectedObjectives.includes("criar_proposta");
+```
+
+### 4. Filtragem de desafios
+
+```tsx
+const OBJECTIVE_TAGS: Record<string, string[]> = {
+  criar_agente: ["agentes", "n8n", "automacao"],
+  vender_projeto: ["vendas", "comercial", "propostas"],
+  // ...
+};
+
+const relevantTags = selectedObjectives.flatMap(o => OBJECTIVE_TAGS[o] || []);
+const filteredChallenges = dailyChallenges.filter(c => 
+  relevantTags.some(tag => c.track?.includes(tag) || c.title?.toLowerCase().includes(tag))
+);
+```
+
+---
+
+## Resumo Visual
+
+A aba "Desafio Ativo" tera esta ordem:
+
+1. **Desafio da Semana** (card hero existente)
+2. **Defina Seus Objetivos** (NOVO - checklist com grupos A-E)
+3. **Desafios Recomendados Para Voce** (NOVO - lista filtrada)
+4. ~~Seu Desafio Personalizado (Hoje)~~ (sera substituido pelos recomendados)
+5. ~~Bonus da Semana~~ (sera substituido pelos recomendados)
+6. **Submissoes da Comunidade** (existente)
+7. **Ranking do Desafio** (existente)
+
+---
+
+## Criterios de Aceite
+
+- [x] Checklist multi-selecao com 5 grupos (A-E)
+- [x] Dependencia: marcar Agente/combos auto-marca Infra e bloqueia desmarcacao
+- [x] Sugestao visual ao marcar itens de venda (recomenda proposta)
+- [x] Salvamento automatico no campo `goals.selected_objectives`
+- [x] Restauracao das marcacoes ao recarregar pagina
+- [x] Secao "Desafios Recomendados" filtra por tags dos objetivos
+- [x] Estado vazio quando nenhum objetivo marcado
+- [x] Layout dark mantido, visual consistente
+- [x] Tudo em PT-BR
