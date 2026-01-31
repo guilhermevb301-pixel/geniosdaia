@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -13,17 +13,28 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Link2, Clock, Target } from "lucide-react";
+import { Link2, Clock, Target, GripVertical, ArrowUp, ArrowDown } from "lucide-react";
 import { useDailyChallengesAdmin } from "@/hooks/useDailyChallengesAdmin";
 import { formatEstimatedTimeShort } from "@/lib/utils";
 import { useObjectiveChallengeLinks } from "@/hooks/useObjectiveChallengeLinks";
 import { ObjectiveItem } from "@/hooks/useObjectives";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface ChallengeLinkingModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   objectiveItem: ObjectiveItem | null;
+}
+
+interface SelectedChallenge {
+  id: string;
+  title: string;
+  track: string;
+  difficulty: string;
+  estimated_minutes: number | null;
+  estimated_time_unit: string;
+  is_bonus: boolean;
 }
 
 export function ChallengeLinkingModal({
@@ -33,19 +44,35 @@ export function ChallengeLinkingModal({
 }: ChallengeLinkingModalProps) {
   const { challenges: allDailyChallenges, isLoading: isLoadingChallenges } =
     useDailyChallengesAdmin();
-  const { linkedChallengeIds, saveLinks, isSaving } = useObjectiveChallengeLinks(
-    objectiveItem?.id
-  );
+  const { links, saveLinks, isSaving } = useObjectiveChallengeLinks(objectiveItem?.id);
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectedChallenges, setSelectedChallenges] = useState<SelectedChallenge[]>([]);
 
-  // Sync selected IDs when modal opens or linked challenges load
+  // Sync selected challenges when modal opens or links load
   useEffect(() => {
-    if (open && linkedChallengeIds) {
-      setSelectedIds(linkedChallengeIds);
+    if (open && links) {
+      // Restore order from links
+      const ordered = links
+        .sort((a, b) => a.order_index - b.order_index)
+        .map((link) => {
+          const challenge = allDailyChallenges.find((c) => c.id === link.daily_challenge_id);
+          if (!challenge) return null;
+          return {
+            id: challenge.id,
+            title: challenge.title,
+            track: challenge.track,
+            difficulty: challenge.difficulty,
+            estimated_minutes: challenge.estimated_minutes,
+            estimated_time_unit: challenge.estimated_time_unit || "minutes",
+            is_bonus: challenge.is_bonus || false,
+          };
+        })
+        .filter(Boolean) as SelectedChallenge[];
+
+      setSelectedChallenges(ordered);
     }
-  }, [open, linkedChallengeIds]);
+  }, [open, links, allDailyChallenges]);
 
   // Reset search when modal closes
   useEffect(() => {
@@ -54,8 +81,10 @@ export function ChallengeLinkingModal({
     }
   }, [open]);
 
-  // Filter challenges by search
+  // Filter challenges by search (exclude already selected)
+  const selectedIds = selectedChallenges.map((c) => c.id);
   const filteredChallenges = allDailyChallenges.filter((challenge) => {
+    if (selectedIds.includes(challenge.id)) return false;
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -65,13 +94,42 @@ export function ChallengeLinkingModal({
     );
   });
 
-  const toggleChallenge = (challengeId: string) => {
-    setSelectedIds((prev) =>
-      prev.includes(challengeId)
-        ? prev.filter((id) => id !== challengeId)
-        : [...prev, challengeId]
-    );
-  };
+  const addChallenge = useCallback((challenge: typeof allDailyChallenges[0]) => {
+    setSelectedChallenges((prev) => [
+      ...prev,
+      {
+        id: challenge.id,
+        title: challenge.title,
+        track: challenge.track,
+        difficulty: challenge.difficulty,
+        estimated_minutes: challenge.estimated_minutes,
+        estimated_time_unit: challenge.estimated_time_unit || "minutes",
+        is_bonus: challenge.is_bonus || false,
+      },
+    ]);
+  }, []);
+
+  const removeChallenge = useCallback((id: string) => {
+    setSelectedChallenges((prev) => prev.filter((c) => c.id !== id));
+  }, []);
+
+  const moveUp = useCallback((index: number) => {
+    if (index === 0) return;
+    setSelectedChallenges((prev) => {
+      const newArr = [...prev];
+      [newArr[index - 1], newArr[index]] = [newArr[index], newArr[index - 1]];
+      return newArr;
+    });
+  }, []);
+
+  const moveDown = useCallback((index: number) => {
+    setSelectedChallenges((prev) => {
+      if (index === prev.length - 1) return prev;
+      const newArr = [...prev];
+      [newArr[index], newArr[index + 1]] = [newArr[index + 1], newArr[index]];
+      return newArr;
+    });
+  }, []);
 
   const handleSave = () => {
     if (!objectiveItem) return;
@@ -79,11 +137,11 @@ export function ChallengeLinkingModal({
     saveLinks(
       {
         objectiveItemId: objectiveItem.id,
-        challengeIds: selectedIds,
+        challengeIds: selectedChallenges.map((c) => c.id),
       },
       {
         onSuccess: () => {
-          toast.success(`${selectedIds.length} desafio(s) vinculado(s) com sucesso!`);
+          toast.success(`${selectedChallenges.length} desafio(s) vinculado(s) com sucesso!`);
           onOpenChange(false);
         },
       }
@@ -93,9 +151,9 @@ export function ChallengeLinkingModal({
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case "iniciante":
-        return "bg-green-500/10 text-green-600 border-green-500/30";
+        return "bg-emerald-500/10 text-emerald-600 border-emerald-500/30";
       case "intermediario":
-        return "bg-yellow-500/10 text-yellow-600 border-yellow-500/30";
+        return "bg-amber-500/10 text-amber-600 border-amber-500/30";
       case "avancado":
         return "bg-red-500/10 text-red-600 border-red-500/30";
       default:
@@ -117,22 +175,84 @@ export function ChallengeLinkingModal({
         </DialogHeader>
 
         <div className="flex-1 min-h-0 py-4 space-y-4">
+          {/* Selected challenges with ordering */}
+          {selectedChallenges.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium flex items-center gap-2">
+                <GripVertical className="h-4 w-4" />
+                Ordem de liberação ({selectedChallenges.length})
+              </p>
+              <div className="space-y-1 max-h-[200px] overflow-y-auto border rounded-lg p-2 bg-muted/30">
+                {selectedChallenges.map((challenge, index) => (
+                  <div
+                    key={challenge.id}
+                    className="flex items-center gap-2 p-2 bg-background rounded border"
+                  >
+                    <span className="w-6 h-6 flex items-center justify-center text-xs font-bold bg-primary/10 text-primary rounded">
+                      {index + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{challenge.title}</p>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="text-xs">
+                          {challenge.track}
+                        </Badge>
+                        {challenge.estimated_minutes && (
+                          <span className="text-xs text-muted-foreground">
+                            {formatEstimatedTimeShort(
+                              challenge.estimated_minutes,
+                              challenge.estimated_time_unit as "minutes" | "hours" | "days" | "weeks"
+                            )}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        onClick={() => moveUp(index)}
+                        disabled={index === 0}
+                      >
+                        <ArrowUp className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        onClick={() => moveDown(index)}
+                        disabled={index === selectedChallenges.length - 1}
+                      >
+                        <ArrowDown className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 text-destructive hover:text-destructive"
+                        onClick={() => removeChallenge(challenge.id)}
+                      >
+                        ×
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                O primeiro desafio é liberado imediatamente. Os demais são desbloqueados após completar o anterior.
+              </p>
+            </div>
+          )}
+
+          {/* Search */}
           <Input
-            placeholder="Buscar desafios por título, trilha ou objetivo..."
+            placeholder="Buscar desafios para adicionar..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
 
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">
-              {filteredChallenges.length} desafio(s) disponível(is)
-            </span>
-            <Badge variant="secondary">
-              {selectedIds.length} selecionado(s)
-            </Badge>
-          </div>
-
-          <ScrollArea className="h-[400px] border rounded-lg">
+          {/* Available challenges */}
+          <ScrollArea className="h-[300px] border rounded-lg">
             {isLoadingChallenges ? (
               <div className="space-y-2 p-3">
                 {[1, 2, 3, 4, 5].map((i) => (
@@ -142,22 +262,22 @@ export function ChallengeLinkingModal({
             ) : filteredChallenges.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                 <Target className="h-12 w-12 mb-2 opacity-30" />
-                <p>Nenhum desafio encontrado</p>
+                <p>
+                  {searchQuery
+                    ? "Nenhum desafio encontrado"
+                    : "Todos os desafios já foram adicionados"}
+                </p>
               </div>
             ) : (
               <div className="divide-y">
                 {filteredChallenges.map((challenge) => (
-                  <label
+                  <div
                     key={challenge.id}
-                    htmlFor={`challenge-link-${challenge.id}`}
-                    className={`flex items-start gap-3 p-3 hover:bg-muted/50 cursor-pointer transition-colors ${
-                      selectedIds.includes(challenge.id) ? "bg-primary/5" : ""
-                    }`}
+                    className="flex items-start gap-3 p-3 hover:bg-muted/50 cursor-pointer transition-colors"
+                    onClick={() => addChallenge(challenge)}
                   >
                     <Checkbox
-                      id={`challenge-link-${challenge.id}`}
-                      checked={selectedIds.includes(challenge.id)}
-                      onCheckedChange={() => toggleChallenge(challenge.id)}
+                      checked={false}
                       className="mt-1"
                     />
                     <div className="flex-1 min-w-0">
@@ -173,16 +293,17 @@ export function ChallengeLinkingModal({
                         </Badge>
                         <Badge
                           variant="outline"
-                          className={`text-xs ${getDifficultyColor(
-                            challenge.difficulty
-                          )}`}
+                          className={cn("text-xs", getDifficultyColor(challenge.difficulty))}
                         >
                           {challenge.difficulty}
                         </Badge>
                         {challenge.estimated_minutes && (
                           <span className="text-xs text-muted-foreground flex items-center gap-1">
                             <Clock className="h-3 w-3" />
-                            {formatEstimatedTimeShort(challenge.estimated_minutes, challenge.estimated_time_unit)}
+                            {formatEstimatedTimeShort(
+                              challenge.estimated_minutes,
+                              challenge.estimated_time_unit as "minutes" | "hours" | "days" | "weeks"
+                            )}
                           </span>
                         )}
                         {challenge.is_bonus && (
@@ -192,7 +313,7 @@ export function ChallengeLinkingModal({
                         )}
                       </div>
                     </div>
-                  </label>
+                  </div>
                 ))}
               </div>
             )}
@@ -204,7 +325,7 @@ export function ChallengeLinkingModal({
             Cancelar
           </Button>
           <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? "Salvando..." : `Salvar (${selectedIds.length})`}
+            {isSaving ? "Salvando..." : `Salvar (${selectedChallenges.length})`}
           </Button>
         </DialogFooter>
       </DialogContent>

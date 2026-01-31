@@ -6,6 +6,7 @@ export interface ObjectiveChallengeLink {
   id: string;
   objective_item_id: string;
   daily_challenge_id: string;
+  order_index: number;
   created_at: string;
 }
 
@@ -21,7 +22,8 @@ export function useObjectiveChallengeLinks(objectiveItemId?: string) {
       const { data, error } = await supabase
         .from("objective_challenge_links")
         .select("*")
-        .eq("objective_item_id", objectiveItemId);
+        .eq("objective_item_id", objectiveItemId)
+        .order("order_index", { ascending: true });
 
       if (error) throw error;
       return data as ObjectiveChallengeLink[];
@@ -35,7 +37,8 @@ export function useObjectiveChallengeLinks(objectiveItemId?: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("objective_challenge_links")
-        .select("*");
+        .select("*")
+        .order("order_index", { ascending: true });
 
       if (error) throw error;
       return data as ObjectiveChallengeLink[];
@@ -61,10 +64,10 @@ export function useObjectiveChallengeLinks(objectiveItemId?: string) {
     },
   });
 
-  // Get linked challenge IDs for an objective
+  // Get linked challenge IDs for an objective (in order)
   const linkedChallengeIds = links.map(link => link.daily_challenge_id);
 
-  // Save links (replace all links for an objective)
+  // Save links with order (replace all links for an objective)
   const saveLinksMutation = useMutation({
     mutationFn: async ({ 
       objectiveItemId, 
@@ -81,11 +84,12 @@ export function useObjectiveChallengeLinks(objectiveItemId?: string) {
 
       if (deleteError) throw deleteError;
 
-      // Insert new links
+      // Insert new links with order_index
       if (challengeIds.length > 0) {
-        const newLinks = challengeIds.map(challengeId => ({
+        const newLinks = challengeIds.map((challengeId, index) => ({
           objective_item_id: objectiveItemId,
           daily_challenge_id: challengeId,
+          order_index: index,
         }));
 
         const { error: insertError } = await supabase
@@ -99,6 +103,7 @@ export function useObjectiveChallengeLinks(objectiveItemId?: string) {
       queryClient.invalidateQueries({ queryKey: ["objectiveChallengeLinks"] });
       queryClient.invalidateQueries({ queryKey: ["allObjectiveChallengeLinks"] });
       queryClient.invalidateQueries({ queryKey: ["objectiveLinkCounts"] });
+      queryClient.invalidateQueries({ queryKey: ["userChallengeProgress"] });
     },
     onError: (error: Error) => {
       toast.error("Erro ao salvar vínculos: " + error.message);
