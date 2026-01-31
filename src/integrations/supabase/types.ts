@@ -734,6 +734,71 @@ export type Database = {
           },
         ]
       }
+      objective_groups: {
+        Row: {
+          created_at: string
+          id: string
+          order_index: number
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_index?: number
+          title: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_index?: number
+          title?: string
+        }
+        Relationships: []
+      }
+      objective_items: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          is_infra: boolean
+          label: string
+          objective_key: string
+          order_index: number
+          requires_infra: boolean
+          tags: string[] | null
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          is_infra?: boolean
+          label: string
+          objective_key: string
+          order_index?: number
+          requires_infra?: boolean
+          tags?: string[] | null
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          is_infra?: boolean
+          label?: string
+          objective_key?: string
+          order_index?: number
+          requires_infra?: boolean
+          tags?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "objective_items_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "objective_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prompt_variations: {
         Row: {
           content: string
