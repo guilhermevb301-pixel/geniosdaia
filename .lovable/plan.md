@@ -1,102 +1,132 @@
 
-# Plano: Editar Arena dos Genios para Mentores + Corrigir Duplicacao
+# Plano: Centralizar Edicao da Arena em /admin/challenges
 
-## Problema Identificado na Imagem
+## Resumo
 
-A secao "Defina Seus Objetivos" esta aparecendo **duplicada multiplas vezes**. Isso provavelmente e um problema de renderizacao ou key duplicada no React.
-
----
-
-## Resumo das Mudancas
-
-1. **Corrigir duplicacao** do checklist de objetivos
-2. **Substituir banner** "Desafio da Semana" por "Seus Desafios" (personalizado)
-3. **Permitir edicao** de objetivos por mentores/admins
-4. **Permitir edicao** do catalogo de desafios recomendados por mentores/admins
-5. **Persistencia** em tabelas do banco de dados
-6. **Controle de acesso**: so mentor/admin veem botoes de edicao
+Mover toda a funcionalidade de edicao (objetivos + desafios recomendados) para a pagina `/admin/challenges` e remover os botoes de edicao da pagina `/desafios`. A pagina de admin tera 3 abas principais: Desafios Semanais, Objetivos do Checklist, e Desafios Recomendados.
 
 ---
 
-## Estrutura de Dados Proposta
+## Mudancas na Pagina /admin/challenges
 
-### Nova Tabela: `objective_groups`
+A pagina sera reorganizada com um sistema de abas:
 
-Para armazenar os grupos de objetivos (editaveis por mentor/admin):
+```text
++----------------------------------------------------------+
+|  GERENCIAR ARENA DOS GENIOS                              |
++----------------------------------------------------------+
+|  [Desafios Semanais] [Objetivos] [Desafios Recomendados] |
++----------------------------------------------------------+
+|                                                          |
+|  (conteudo da aba selecionada)                           |
+|                                                          |
++----------------------------------------------------------+
+```
+
+### Aba 1: Desafios Semanais (ja existe)
+- Lista de desafios da tabela `challenges`
+- CRUD completo (criar, editar, excluir)
+- Filtros por status (ativos, agendados, encerrados)
+
+### Aba 2: Objetivos (NOVO)
+- Gerenciar grupos e itens de objetivos (tabelas `objective_groups` e `objective_items`)
+- Mesmo conteudo que atualmente esta no `ObjectivesEditorModal`
+- Sera renderizado inline (nao em modal)
+- Permite adicionar/editar/excluir grupos e itens
+- Configurar regras de dependencia (requires_infra, is_infra)
+- Definir tags para filtragem
+
+### Aba 3: Desafios Recomendados (NOVO)
+- CRUD completo para a tabela `daily_challenges`
+- Campos: titulo, objetivo, trilha, dificuldade, tempo estimado, checklist, passos, is_bonus
+- Permite criar novos desafios personalizados
+- Permite editar desafios existentes
+- Permite excluir desafios
+
+---
+
+## Remover Edicao da Pagina /desafios
+
+Atualmente a pagina `/desafios` tem botoes de edicao visiveis para mentor/admin:
+- Botao "Editar" no componente `ObjectivesChecklist`
+- Link "Gerenciar" no componente `RecommendedChallenges`
+
+Mudancas:
+1. Remover o botao "Editar" do `ObjectivesChecklist.tsx`
+2. Remover o link "Gerenciar Desafios" do `RecommendedChallenges.tsx`
+3. Remover a importacao e renderizacao do `ObjectivesEditorModal` no `ObjectivesChecklist.tsx`
+
+---
+
+## Estrutura do Novo AdminChallenges
+
+```tsx
+export default function AdminChallenges() {
+  const [activeTab, setActiveTab] = useState("weekly");
+
+  return (
+    <AppLayout>
+      <div className="space-y-6">
+        <Header />
+        
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="weekly">Desafios Semanais</TabsTrigger>
+            <TabsTrigger value="objectives">Objetivos</TabsTrigger>
+            <TabsTrigger value="recommended">Desafios Recomendados</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="weekly">
+            {/* Conteudo atual - lista de challenges */}
+            <WeeklyChallengesTab />
+          </TabsContent>
+
+          <TabsContent value="objectives">
+            {/* Editor de objetivos inline */}
+            <ObjectivesTab />
+          </TabsContent>
+
+          <TabsContent value="recommended">
+            {/* CRUD de daily_challenges */}
+            <RecommendedChallengesTab />
+          </TabsContent>
+        </Tabs>
+      </div>
+    </AppLayout>
+  );
+}
+```
+
+---
+
+## Novo CRUD para Desafios Recomendados
+
+Criar hook `useDailyChallengesAdmin.ts` com:
+
+```tsx
+// Queries
+- listar todos daily_challenges
+- buscar por id
+
+// Mutations
+- createDailyChallenge(data)
+- updateDailyChallenge(id, data)
+- deleteDailyChallenge(id)
+```
+
+Interface de edicao tera:
 
 | Campo | Tipo | Descricao |
 |-------|------|-----------|
-| id | uuid | PK |
-| title | text | Titulo do grupo (ex: "A) Quero construir meu Agente") |
-| order_index | int | Ordenacao |
-| created_at | timestamp | Data de criacao |
-
-### Nova Tabela: `objective_items`
-
-Para armazenar os itens de cada grupo:
-
-| Campo | Tipo | Descricao |
-|-------|------|-----------|
-| id | uuid | PK |
-| group_id | uuid | FK para objective_groups |
-| label | text | Texto do objetivo |
-| objective_key | text | ID unico (ex: "criar_agente") |
-| requires_infra | bool | Se requer infra automaticamente |
-| is_infra | bool | Se e o item de infra |
-| order_index | int | Ordenacao |
-| tags | text[] | Tags para filtrar desafios |
-| created_at | timestamp | Data de criacao |
-
----
-
-## Fluxo de Edicao para Mentor/Admin
-
-```text
-+------------------------------------------+
-|  DEFINA SEUS OBJETIVOS    [Editar]       |  <- Botao visivel so para mentor/admin
-+------------------------------------------+
-|                                          |
-|  A) Quero construir meu Agente (produto) |  [Editar Grupo] [Adicionar Item]
-|  [x] Criar meu 1o Agente de IA do zero   |  [Editar] [Excluir]
-|                                          |
-|  ... outros grupos ...                   |
-+------------------------------------------+
-```
-
-Modal de edicao permitira:
-- Editar titulo do grupo
-- Adicionar/remover/editar itens
-- Definir regras de dependencia (requires_infra, is_infra)
-- Definir tags para filtragem de desafios
-
----
-
-## Substituicao do Banner
-
-Antes:
-```text
-+------------------------------------------+
-|  DESAFIO DA SEMANA (banner gradiente)    |
-|  Titulo do desafio global                |
-|  Tempo restante, participantes, etc      |
-+------------------------------------------+
-```
-
-Depois:
-```text
-+------------------------------------------+
-|  SEUS DESAFIOS (banner personalizado)    |
-|  Baseado na sua trilha: Agentes          |
-|  X desafios para voce | Nivel: Y         |
-+------------------------------------------+
-```
-
-O banner mostrara:
-- Titulo personalizado: "Seus Desafios"
-- Trilha principal do usuario
-- Quantidade de desafios recomendados
-- Nivel atual do usuario
-- Botao para ver todos os desafios
+| title | text | Titulo do desafio |
+| objective | text | Objetivo do desafio |
+| track | select | Trilha (agentes, videos, fotos, etc) |
+| difficulty | select | Dificuldade (iniciante, intermediario, avancado) |
+| estimated_minutes | number | Tempo estimado em minutos |
+| steps | text[] | Lista de passos |
+| checklist | text[] | Lista de itens do checklist |
+| deliverable | text | Entregavel esperado |
+| is_bonus | boolean | Se e desafio bonus |
 
 ---
 
@@ -104,125 +134,153 @@ O banner mostrara:
 
 | Arquivo | Mudancas |
 |---------|----------|
-| `src/pages/Desafios.tsx` | Remover duplicacao, substituir banner, adicionar botoes de edicao condicionais |
-| `src/components/challenges/ObjectivesChecklist.tsx` | Adicionar modo de edicao, carregar dados do banco |
-| `src/components/challenges/RecommendedChallenges.tsx` | Adicionar botao de edicao para mentor/admin |
-| Nova migracao SQL | Criar tabelas objective_groups e objective_items |
+| `src/pages/admin/AdminChallenges.tsx` | Adicionar sistema de abas, incluir aba de Objetivos e Desafios Recomendados |
+| `src/components/challenges/ObjectivesChecklist.tsx` | Remover botao de edicao e modal |
+| `src/components/challenges/RecommendedChallenges.tsx` | Remover link de gerenciar |
+| `src/components/challenges/ObjectivesEditorModal.tsx` | Converter para componente inline (ObjectivesEditor) |
+
+## Novos Arquivos
+
+| Arquivo | Descricao |
+|---------|-----------|
+| `src/hooks/useDailyChallengesAdmin.ts` | Hook com CRUD completo para daily_challenges |
 
 ---
 
-## Componentes Novos
+## Detalhes de Implementacao
 
-### 1. `ObjectivesEditorModal.tsx`
+### 1. ObjectivesEditor (inline)
 
-Modal para mentor/admin editar grupos e itens de objetivos:
-- Lista de grupos com drag-and-drop para reordenar
-- Formulario para adicionar/editar grupo
-- Formulario para adicionar/editar item
-- Campos: label, requires_infra, is_infra, tags
+Converter o modal existente em componente inline:
+- Remover wrapper de Dialog
+- Manter toda a logica de edicao
+- Adicionar melhor tratamento de estados
 
-### 2. `YourChallengesBanner.tsx`
+### 2. DailyChallengesEditor
 
-Banner personalizado substituindo o ActiveChallengeHero:
-- Mostra trilha do usuario
-- Quantidade de desafios recomendados
-- Nivel atual
-- Gradiente similar ao design atual
-
----
-
-## Logica de Permissao
+Novo componente para gerenciar desafios recomendados:
 
 ```tsx
-import { useIsAdmin } from "@/hooks/useIsAdmin";
-import { useIsMentor } from "@/hooks/useIsMentor";
-
-function ObjectivesChecklist() {
-  const { isAdmin } = useIsAdmin();
-  const { isMentor } = useIsMentor();
-  const canEdit = isAdmin || isMentor;
-
+function DailyChallengesEditor() {
+  const { challenges, isLoading, createChallenge, updateChallenge, deleteChallenge } = useDailyChallengesAdmin();
+  
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>Defina Seus Objetivos</CardTitle>
-          {canEdit && (
-            <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
-              <Pencil className="h-4 w-4 mr-2" />
-              Editar
-            </Button>
-          )}
-        </div>
-      </CardHeader>
-      {/* ... conteudo ... */}
-    </Card>
+    <div className="space-y-6">
+      {/* Botao novo desafio */}
+      <Button onClick={() => setShowForm(true)}>
+        <Plus /> Novo Desafio Recomendado
+      </Button>
+      
+      {/* Lista de desafios */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {challenges.map(challenge => (
+          <DailyChallengeCard 
+            key={challenge.id}
+            challenge={challenge}
+            onEdit={() => handleEdit(challenge)}
+            onDelete={() => handleDelete(challenge.id)}
+          />
+        ))}
+      </div>
+      
+      {/* Dialog/Modal de criacao/edicao */}
+      <Dialog open={showForm} onOpenChange={setShowForm}>
+        <DialogContent>
+          <form onSubmit={handleSubmit}>
+            {/* Campos do formulario */}
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
+}
+```
+
+### 3. useDailyChallengesAdmin hook
+
+```tsx
+export function useDailyChallengesAdmin() {
+  const queryClient = useQueryClient();
+
+  // Fetch all daily challenges
+  const { data: challenges = [], isLoading } = useQuery({
+    queryKey: ["adminDailyChallenges"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("daily_challenges")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Create mutation
+  const createMutation = useMutation({
+    mutationFn: async (data) => {
+      const { error } = await supabase.from("daily_challenges").insert(data);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["adminDailyChallenges"] });
+      toast.success("Desafio criado!");
+    },
+  });
+
+  // Update mutation
+  const updateMutation = useMutation({...});
+
+  // Delete mutation
+  const deleteMutation = useMutation({...});
+
+  return {
+    challenges,
+    isLoading,
+    createChallenge: createMutation.mutate,
+    updateChallenge: updateMutation.mutate,
+    deleteChallenge: deleteMutation.mutate,
+  };
 }
 ```
 
 ---
 
-## Correcao da Duplicacao
+## Fluxo de Usuario (Mentor/Admin)
 
-O problema de duplicacao pode estar em:
-1. Multiplas renderizacoes do componente no `Desafios.tsx`
-2. Problema de key no map
-3. StrictMode do React (renderiza 2x em dev)
-
-Verificar e garantir que:
-- `ObjectivesChecklist` aparece apenas UMA VEZ
-- Keys unicas em todas as listas
-
----
-
-## RLS Policies para Novas Tabelas
-
-```sql
--- objective_groups
-CREATE POLICY "Anyone can read objective_groups"
-ON objective_groups FOR SELECT USING (true);
-
-CREATE POLICY "Mentors and admins can manage objective_groups"
-ON objective_groups FOR ALL
-USING (has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'mentor'))
-WITH CHECK (has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'mentor'));
-
--- objective_items (mesmas policies)
-```
+1. Mentor acessa `/admin/challenges`
+2. Ve 3 abas: Desafios Semanais, Objetivos, Desafios Recomendados
+3. Na aba "Objetivos", pode:
+   - Ver todos os grupos e itens
+   - Adicionar novo grupo
+   - Editar titulo de grupo
+   - Adicionar/editar/excluir itens
+   - Configurar regras de dependencia
+4. Na aba "Desafios Recomendados", pode:
+   - Ver lista de desafios personalizados
+   - Criar novo desafio com todos os campos
+   - Editar desafio existente
+   - Excluir desafio
+5. Mudancas refletem imediatamente em `/desafios`
 
 ---
 
-## Persistencia dos Dados
+## Fluxo de Usuario (Membro)
 
-1. **Objetivos do usuario**: ja salvo em `user_profiles.goals.selected_objectives` (array)
-2. **Grupos de objetivos**: nova tabela `objective_groups`
-3. **Itens de objetivos**: nova tabela `objective_items`
-4. **Desafios recomendados**: ja existe em `daily_challenges`
-
----
-
-## Fluxo Completo
-
-1. Usuario acessa `/desafios`
-2. Ve banner "Seus Desafios" com info personalizada
-3. Abaixo, ve checklist de objetivos (carregado do banco)
-4. Marca objetivos (salvo no perfil)
-5. Ve desafios recomendados filtrados
-6. Se mentor/admin: ve botoes de edicao
-7. Mentor clica em "Editar Objetivos" -> abre modal
-8. Mentor edita grupos/itens -> salva no banco
-9. Mudancas refletem para todos os usuarios
+1. Membro acessa `/desafios`
+2. Ve checklist de objetivos (sem botao editar)
+3. Marca seus objetivos
+4. Ve desafios recomendados filtrados (sem link gerenciar)
+5. Interage normalmente com a arena
 
 ---
 
 ## Criterios de Aceite
 
-- [ ] "Defina Seus Objetivos" aparece apenas uma vez (corrigir duplicacao)
-- [ ] Banner do topo e "Seus Desafios" (personalizado)
-- [ ] Mentor/admin ve botoes de edicao
-- [ ] Membro comum so ve e marca objetivos
-- [ ] Mentor consegue editar objetivos (itens, grupos, textos)
-- [ ] Mentor consegue editar catalogo de desafios recomendados
-- [ ] Tudo persistente ao recarregar
-- [ ] Visual dark consistente, sem placeholders
+- [ ] `/admin/challenges` tem 3 abas: Desafios Semanais, Objetivos, Desafios Recomendados
+- [ ] Aba Objetivos permite CRUD de grupos e itens (inline, nao modal)
+- [ ] Aba Desafios Recomendados permite CRUD de daily_challenges
+- [ ] Pagina `/desafios` nao tem botoes de edicao para ninguem
+- [ ] Membros so visualizam e marcam objetivos
+- [ ] Mudancas feitas no admin refletem para todos os usuarios
+- [ ] Tudo persistente no banco de dados
+- [ ] Visual dark consistente com design atual
