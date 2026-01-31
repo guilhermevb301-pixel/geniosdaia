@@ -1,15 +1,11 @@
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Target, Lightbulb, Lock, Sparkles, Pencil } from "lucide-react";
+import { Target, Lightbulb, Lock, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useObjectives } from "@/hooks/useObjectives";
-import { useIsAdmin } from "@/hooks/useIsAdmin";
-import { useIsMentor } from "@/hooks/useIsMentor";
-import { ObjectivesEditorModal } from "./ObjectivesEditorModal";
 
 interface ObjectivesChecklistProps {
   selectedObjectives: string[];
@@ -21,11 +17,6 @@ export function ObjectivesChecklist({
   onObjectivesChange 
 }: ObjectivesChecklistProps) {
   const { objectiveGroups, isLoading, infraRequiredBy } = useObjectives();
-  const { isAdmin } = useIsAdmin();
-  const { isMentor } = useIsMentor();
-  const [showEditor, setShowEditor] = useState(false);
-
-  const canEdit = isAdmin || isMentor;
 
   // IDs que requerem infra dinamicamente do banco
   const isInfraLocked = selectedObjectives.some(o => infraRequiredBy.includes(o));
@@ -82,27 +73,13 @@ export function ObjectivesChecklist({
   }
 
   return (
-    <>
-      <Card className="border-primary/20 bg-card">
-        <CardHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Target className="h-5 w-5 text-primary" />
-              Defina Seus Objetivos
-            </CardTitle>
-            {canEdit && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setShowEditor(true)}
-                className="gap-2"
-              >
-                <Pencil className="h-4 w-4" />
-                Editar
-              </Button>
-            )}
-          </div>
-          <p className="text-sm text-muted-foreground">
+    <Card className="border-primary/20 bg-card">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <Target className="h-5 w-5 text-primary" />
+          Defina Seus Objetivos
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">
             Marque seus objetivos para receber desafios personalizados
           </p>
         </CardHeader>
@@ -189,12 +166,5 @@ export function ObjectivesChecklist({
           )}
         </CardContent>
       </Card>
-
-      {/* Modal de edição para mentor/admin */}
-      <ObjectivesEditorModal 
-        open={showEditor} 
-        onOpenChange={setShowEditor} 
-      />
-    </>
   );
 }

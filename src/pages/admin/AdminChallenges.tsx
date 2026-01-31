@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Trophy, Plus, Pencil, Trash2, CalendarIcon, Users } from "lucide-react";
+import { Trophy, Plus, Pencil, Trash2, CalendarIcon, Target, Sparkles } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,6 +44,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useChallenges, Challenge } from "@/hooks/useChallenges";
 import { toast } from "@/hooks/use-toast";
+import { ObjectivesEditor } from "@/components/admin/ObjectivesEditor";
+import { DailyChallengesEditor } from "@/components/admin/DailyChallengesEditor";
 
 interface FormData {
   title: string;
@@ -82,7 +84,12 @@ const availableTracks = [
 ];
 
 export default function AdminChallenges() {
-  const [activeTab, setActiveTab] = useState("active");
+  // Main tabs: weekly, objectives, recommended
+  const [mainTab, setMainTab] = useState("weekly");
+  
+  // Weekly challenges sub-tab: active, scheduled, ended
+  const [statusTab, setStatusTab] = useState("active");
+  
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingChallenge, setEditingChallenge] = useState<Challenge | null>(null);
@@ -145,40 +152,20 @@ export default function AdminChallenges() {
   };
 
   const handleSubmit = async () => {
-    // Validation
     if (!formData.title || formData.title.length < 5) {
-      toast({
-        title: "Erro de validação",
-        description: "O título deve ter pelo menos 5 caracteres.",
-        variant: "destructive",
-      });
+      toast({ title: "Erro", description: "Título deve ter pelo menos 5 caracteres.", variant: "destructive" });
       return;
     }
-
     if (!formData.description || formData.description.length < 20) {
-      toast({
-        title: "Erro de validação",
-        description: "A descrição deve ter pelo menos 20 caracteres.",
-        variant: "destructive",
-      });
+      toast({ title: "Erro", description: "Descrição deve ter pelo menos 20 caracteres.", variant: "destructive" });
       return;
     }
-
     if (!formData.start_date || !formData.end_date) {
-      toast({
-        title: "Erro de validação",
-        description: "As datas de início e fim são obrigatórias.",
-        variant: "destructive",
-      });
+      toast({ title: "Erro", description: "Datas são obrigatórias.", variant: "destructive" });
       return;
     }
-
     if (formData.end_date <= formData.start_date) {
-      toast({
-        title: "Erro de validação",
-        description: "A data de fim deve ser posterior à data de início.",
-        variant: "destructive",
-      });
+      toast({ title: "Erro", description: "Data de fim deve ser posterior à de início.", variant: "destructive" });
       return;
     }
 
@@ -199,59 +186,40 @@ export default function AdminChallenges() {
     try {
       if (editingChallenge) {
         await updateChallenge({ id: editingChallenge.id, data: challengeData });
-        toast({
-          title: "Desafio atualizado!",
-          description: "O desafio foi atualizado com sucesso.",
-        });
+        toast({ title: "Sucesso!", description: "Desafio atualizado." });
       } else {
         await createChallenge(challengeData);
-        toast({
-          title: "Desafio criado!",
-          description: "O novo desafio foi criado com sucesso.",
-        });
+        toast({ title: "Sucesso!", description: "Desafio criado." });
       }
       setIsDialogOpen(false);
       setFormData(initialFormData);
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao salvar o desafio.",
-        variant: "destructive",
-      });
+    } catch {
+      toast({ title: "Erro", description: "Ocorreu um erro ao salvar.", variant: "destructive" });
     }
   };
 
   const handleDelete = async () => {
     if (!deletingChallengeId) return;
-
     try {
       await deleteChallenge(deletingChallengeId);
-      toast({
-        title: "Desafio excluído!",
-        description: "O desafio foi excluído com sucesso.",
-      });
+      toast({ title: "Sucesso!", description: "Desafio excluído." });
       setIsDeleteDialogOpen(false);
       setDeletingChallengeId(null);
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao excluir o desafio.",
-        variant: "destructive",
-      });
+    } catch {
+      toast({ title: "Erro", description: "Ocorreu um erro ao excluir.", variant: "destructive" });
     }
   };
 
   const getStatusBadge = (challenge: Challenge) => {
     const startDate = new Date(challenge.start_date);
     const endDate = new Date(challenge.end_date);
-    
     if (challenge.status === "ended" || endDate < now) {
       return <Badge variant="secondary">Encerrado</Badge>;
     }
     if (startDate > now) {
-      return <Badge className="bg-blue-500 hover:bg-blue-600">Agendado</Badge>;
+      return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">Agendado</Badge>;
     }
-    return <Badge className="bg-success hover:bg-success/90">Ativo</Badge>;
+    return <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">Ativo</Badge>;
   };
 
   const ChallengeCard = ({ challenge }: { challenge: Challenge }) => (
@@ -263,10 +231,7 @@ export default function AdminChallenges() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground line-clamp-2">
-          {challenge.description}
-        </p>
-        
+        <p className="text-sm text-muted-foreground line-clamp-2">{challenge.description}</p>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <CalendarIcon className="h-4 w-4" />
           <span>
@@ -274,28 +239,16 @@ export default function AdminChallenges() {
             {format(new Date(challenge.end_date), "dd/MM/yyyy", { locale: ptBR })}
           </span>
         </div>
-
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Badge variant="outline" className="gap-1">
-              <Trophy className="h-3 w-3" />
-              {challenge.xp_reward} XP
-            </Badge>
-          </div>
-
+          <Badge variant="outline" className="gap-1">
+            <Trophy className="h-3 w-3" />
+            {challenge.xp_reward} XP
+          </Badge>
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleOpenEdit(challenge)}
-            >
+            <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(challenge)}>
               <Pencil className="h-4 w-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => handleOpenDelete(challenge.id)}
-            >
+            <Button variant="ghost" size="icon" onClick={() => handleOpenDelete(challenge.id)}>
               <Trash2 className="h-4 w-4 text-destructive" />
             </Button>
           </div>
@@ -329,70 +282,89 @@ export default function AdminChallenges() {
     <AppLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <Trophy className="h-6 w-6 text-primary" />
-              <h1 className="text-2xl font-bold">Gerenciar Desafios</h1>
-            </div>
-            <p className="text-muted-foreground mt-1">
-              Crie e gerencie os desafios semanais da Arena
-            </p>
+        <div>
+          <div className="flex items-center gap-2">
+            <Trophy className="h-6 w-6 text-primary" />
+            <h1 className="text-2xl font-bold">Gerenciar Arena dos Gênios</h1>
           </div>
-          <Button onClick={handleOpenCreate} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Novo Desafio
-          </Button>
+          <p className="text-muted-foreground mt-1">
+            Gerencie desafios semanais, objetivos e desafios recomendados
+          </p>
         </div>
 
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="active" className="gap-2">
-              Ativos
-              {activeChallenges.length > 0 && (
-                <Badge variant="secondary" className="h-5 px-1.5">
-                  {activeChallenges.length}
-                </Badge>
-              )}
+        {/* Main Tabs */}
+        <Tabs value={mainTab} onValueChange={setMainTab}>
+          <TabsList className="grid w-full grid-cols-3 max-w-lg">
+            <TabsTrigger value="weekly" className="gap-2">
+              <Trophy className="h-4 w-4" />
+              Semanais
             </TabsTrigger>
-            <TabsTrigger value="scheduled" className="gap-2">
-              Agendados
-              {scheduledChallenges.length > 0 && (
-                <Badge variant="secondary" className="h-5 px-1.5">
-                  {scheduledChallenges.length}
-                </Badge>
-              )}
+            <TabsTrigger value="objectives" className="gap-2">
+              <Target className="h-4 w-4" />
+              Objetivos
             </TabsTrigger>
-            <TabsTrigger value="ended" className="gap-2">
-              Encerrados
-              {endedChallenges.length > 0 && (
-                <Badge variant="secondary" className="h-5 px-1.5">
-                  {endedChallenges.length}
-                </Badge>
-              )}
+            <TabsTrigger value="recommended" className="gap-2">
+              <Sparkles className="h-4 w-4" />
+              Recomendados
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="active" className="mt-6">
-            <ChallengeGrid 
-              challenges={activeChallenges} 
-              emptyMessage="Nenhum desafio ativo no momento" 
-            />
+          {/* Weekly Challenges Tab */}
+          <TabsContent value="weekly" className="mt-6 space-y-6">
+            <div className="flex items-center justify-between">
+              <Tabs value={statusTab} onValueChange={setStatusTab}>
+                <TabsList>
+                  <TabsTrigger value="active" className="gap-2">
+                    Ativos
+                    {activeChallenges.length > 0 && (
+                      <Badge variant="secondary" className="h-5 px-1.5">
+                        {activeChallenges.length}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="scheduled" className="gap-2">
+                    Agendados
+                    {scheduledChallenges.length > 0 && (
+                      <Badge variant="secondary" className="h-5 px-1.5">
+                        {scheduledChallenges.length}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="ended" className="gap-2">
+                    Encerrados
+                    {endedChallenges.length > 0 && (
+                      <Badge variant="secondary" className="h-5 px-1.5">
+                        {endedChallenges.length}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+              <Button onClick={handleOpenCreate} className="gap-2">
+                <Plus className="h-4 w-4" />
+                Novo Desafio
+              </Button>
+            </div>
+
+            {statusTab === "active" && (
+              <ChallengeGrid challenges={activeChallenges} emptyMessage="Nenhum desafio ativo no momento" />
+            )}
+            {statusTab === "scheduled" && (
+              <ChallengeGrid challenges={scheduledChallenges} emptyMessage="Nenhum desafio agendado" />
+            )}
+            {statusTab === "ended" && (
+              <ChallengeGrid challenges={endedChallenges} emptyMessage="Nenhum desafio encerrado" />
+            )}
           </TabsContent>
 
-          <TabsContent value="scheduled" className="mt-6">
-            <ChallengeGrid 
-              challenges={scheduledChallenges} 
-              emptyMessage="Nenhum desafio agendado" 
-            />
+          {/* Objectives Tab */}
+          <TabsContent value="objectives" className="mt-6">
+            <ObjectivesEditor />
           </TabsContent>
 
-          <TabsContent value="ended" className="mt-6">
-            <ChallengeGrid 
-              challenges={endedChallenges} 
-              emptyMessage="Nenhum desafio encerrado" 
-            />
+          {/* Recommended Challenges Tab */}
+          <TabsContent value="recommended" className="mt-6">
+            <DailyChallengesEditor />
           </TabsContent>
         </Tabs>
       </div>
@@ -401,11 +373,9 @@ export default function AdminChallenges() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {editingChallenge ? "Editar Desafio" : "Novo Desafio"}
-            </DialogTitle>
+            <DialogTitle>{editingChallenge ? "Editar Desafio" : "Novo Desafio"}</DialogTitle>
             <DialogDescription>
-              Preencha os campos abaixo para {editingChallenge ? "editar o" : "criar um novo"} desafio.
+              Preencha os campos para {editingChallenge ? "editar o" : "criar um novo"} desafio semanal.
             </DialogDescription>
           </DialogHeader>
 
@@ -426,7 +396,7 @@ export default function AdminChallenges() {
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Descreva o desafio em detalhes..."
+                placeholder="Descreva o desafio..."
                 rows={3}
               />
             </div>
@@ -437,7 +407,7 @@ export default function AdminChallenges() {
                 id="rules"
                 value={formData.rules}
                 onChange={(e) => setFormData({ ...formData, rules: e.target.value })}
-                placeholder="Regras e critérios de avaliação..."
+                placeholder="Regras e critérios..."
                 rows={2}
               />
             </div>
@@ -516,64 +486,23 @@ export default function AdminChallenges() {
               </div>
 
               <div className="space-y-2">
-                <Label>Status</Label>
+                <Label>Dificuldade</Label>
                 <Select
-                  value={formData.status}
-                  onValueChange={(value) => setFormData({ ...formData, status: value })}
+                  value={formData.difficulty}
+                  onValueChange={(value) => setFormData({ ...formData, difficulty: value })}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="active">Ativo</SelectItem>
-                    <SelectItem value="ended">Encerrado</SelectItem>
+                    <SelectItem value="iniciante">Iniciante</SelectItem>
+                    <SelectItem value="intermediario">Intermediário</SelectItem>
+                    <SelectItem value="avancado">Avançado</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            {/* Difficulty */}
-            <div className="space-y-2">
-              <Label>Dificuldade</Label>
-              <Select
-                value={formData.difficulty}
-                onValueChange={(value) => setFormData({ ...formData, difficulty: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="iniciante">Iniciante</SelectItem>
-                  <SelectItem value="intermediario">Intermediário</SelectItem>
-                  <SelectItem value="avancado">Avançado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Reward Badge */}
-            <div className="space-y-2">
-              <Label htmlFor="reward_badge">Nome do Badge (opcional)</Label>
-              <Input
-                id="reward_badge"
-                value={formData.reward_badge}
-                onChange={(e) => setFormData({ ...formData, reward_badge: e.target.value })}
-                placeholder="Ex: Mestre dos Agentes"
-              />
-            </div>
-
-            {/* Reward Highlight */}
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="reward_highlight"
-                checked={formData.reward_highlight}
-                onChange={(e) => setFormData({ ...formData, reward_highlight: e.target.checked })}
-                className="h-4 w-4 rounded border-input"
-              />
-              <Label htmlFor="reward_highlight">Dar destaque ao vencedor</Label>
-            </div>
-
-            {/* Tracks */}
             <div className="space-y-2">
               <Label>Trilhas aplicáveis</Label>
               <div className="flex flex-wrap gap-2">
@@ -602,20 +531,19 @@ export default function AdminChallenges() {
               Cancelar
             </Button>
             <Button onClick={handleSubmit} disabled={isCreating || isUpdating}>
-              {isCreating || isUpdating ? "Salvando..." : editingChallenge ? "Salvar" : "Criar Desafio"}
+              {isCreating || isUpdating ? "Salvando..." : editingChallenge ? "Salvar" : "Criar"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir Desafio</AlertDialogTitle>
             <AlertDialogDescription>
               Tem certeza que deseja excluir este desafio? Esta ação não pode ser desfeita.
-              Todas as submissões relacionadas também serão excluídas.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -623,7 +551,7 @@ export default function AdminChallenges() {
             <AlertDialogAction
               onClick={handleDelete}
               disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground"
             >
               {isDeleting ? "Excluindo..." : "Excluir"}
             </AlertDialogAction>
