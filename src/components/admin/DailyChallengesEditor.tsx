@@ -35,6 +35,7 @@ import {
 import { Plus, Pencil, Trash2, Sparkles, Clock, X } from "lucide-react";
 import { useDailyChallengesAdmin, DailyChallengeFormData } from "@/hooks/useDailyChallengesAdmin";
 import { DailyChallenge } from "@/hooks/useDailyChallenges";
+import { formatEstimatedTimeShort } from "@/lib/utils";
 
 const trackOptions = [
   { value: "agentes", label: "Agentes de IA" },
@@ -58,6 +59,7 @@ const initialFormData: DailyChallengeFormData = {
   track: "agentes",
   difficulty: "iniciante",
   estimated_minutes: 30,
+  estimated_time_unit: "minutes",
   steps: [],
   checklist: [],
   deliverable: "",
@@ -99,6 +101,7 @@ export function DailyChallengesEditor() {
       track: challenge.track,
       difficulty: challenge.difficulty,
       estimated_minutes: challenge.estimated_minutes,
+      estimated_time_unit: challenge.estimated_time_unit || 'minutes',
       steps: challenge.steps || [],
       checklist: challenge.checklist || [],
       deliverable: challenge.deliverable,
@@ -238,7 +241,7 @@ export function DailyChallengesEditor() {
                   {challenge.estimated_minutes && (
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Clock className="h-3 w-3" />
-                      {challenge.estimated_minutes}min
+                      {formatEstimatedTimeShort(challenge.estimated_minutes, challenge.estimated_time_unit)}
                     </div>
                   )}
                 </div>
@@ -343,16 +346,35 @@ export function DailyChallengesEditor() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="estimated_minutes">Tempo Estimado (min)</Label>
-                <Input
-                  id="estimated_minutes"
-                  type="number"
-                  value={formData.estimated_minutes || ""}
-                  onChange={(e) =>
-                    setFormData({ ...formData, estimated_minutes: parseInt(e.target.value) || null })
-                  }
-                  placeholder="30"
-                />
+                <Label>Tempo Estimado</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="estimated_minutes"
+                    type="number"
+                    value={formData.estimated_minutes || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, estimated_minutes: parseInt(e.target.value) || null })
+                    }
+                    placeholder="3"
+                    className="w-24"
+                  />
+                  <Select
+                    value={formData.estimated_time_unit}
+                    onValueChange={(value: "minutes" | "hours" | "days" | "weeks") =>
+                      setFormData({ ...formData, estimated_time_unit: value })
+                    }
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="minutes">Minutos</SelectItem>
+                      <SelectItem value="hours">Horas</SelectItem>
+                      <SelectItem value="days">Dias</SelectItem>
+                      <SelectItem value="weeks">Semanas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="flex items-center gap-2 pt-6">
