@@ -4,6 +4,7 @@ import { Sparkles, Clock, CheckCircle2 } from "lucide-react";
 import { DailyChallenge } from "@/hooks/useDailyChallenges";
 import { cn } from "@/lib/utils";
 import { useObjectives } from "@/hooks/useObjectives";
+import { useObjectiveChallengeLinks } from "@/hooks/useObjectiveChallengeLinks";
 
 interface RecommendedChallengesProps {
   selectedObjectives: string[];
@@ -17,26 +18,48 @@ export function RecommendedChallenges({
   isLoading 
 }: RecommendedChallengesProps) {
   const { objectiveGroups } = useObjectives();
+  const { allLinks, isLoadingAllLinks } = useObjectiveChallengeLinks();
 
-  // Calcular tags relevantes baseadas nos objetivos selecionados
-  const relevantTags = selectedObjectives.flatMap(objectiveKey => {
-    const item = objectiveGroups
-      .flatMap(g => g.items)
-      .find(i => i.objective_key === objectiveKey);
-    return item?.tags || [];
-  });
-  const uniqueTags = [...new Set(relevantTags)];
+  // Get all objective items with their IDs
+  const allObjectiveItems = objectiveGroups.flatMap(g => g.items);
 
-  // Filtrar desafios que correspondem às tags
+  // Get objective item IDs from selected keys
+  const selectedItemIds = allObjectiveItems
+    .filter(item => selectedObjectives.includes(item.objective_key))
+    .map(item => item.id);
+
+  // Get linked challenge IDs from the links table
+  const linkedChallengeIds = allLinks
+    .filter(link => selectedItemIds.includes(link.objective_item_id))
+    .map(link => link.daily_challenge_id);
+
+  const uniqueLinkedIds = [...new Set(linkedChallengeIds)];
+
+  // Filter challenges by linked IDs (primary) or fallback to tags
   const filteredChallenges = allChallenges.filter(challenge => {
-    // Match por track
-    if (uniqueTags.some(tag => challenge.track?.toLowerCase().includes(tag))) {
+    // First check linked challenges
+    if (uniqueLinkedIds.includes(challenge.id)) {
       return true;
     }
-    // Match por título
-    if (uniqueTags.some(tag => challenge.title?.toLowerCase().includes(tag))) {
-      return true;
+    
+    // Fallback to tag matching if no links found
+    if (uniqueLinkedIds.length === 0) {
+      const relevantTags = selectedObjectives.flatMap(objectiveKey => {
+        const item = allObjectiveItems.find(i => i.objective_key === objectiveKey);
+        return item?.tags || [];
+      });
+      const uniqueTags = [...new Set(relevantTags)];
+      
+      // Match por track
+      if (uniqueTags.some(tag => challenge.track?.toLowerCase().includes(tag))) {
+        return true;
+      }
+      // Match por título
+      if (uniqueTags.some(tag => challenge.title?.toLowerCase().includes(tag))) {
+        return true;
+      }
     }
+    
     return false;
   });
 
@@ -55,8 +78,25 @@ export function RecommendedChallenges({
     );
   }
 
+  // Loading
+  if (isLoading || isLoadingAllLinks) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Sparkles className="h-5 w-5 text-primary" />
+            Desafios Recomendados Para Você
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-center py-8">
+          <p className="text-muted-foreground text-sm">Carregando desafios...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   // Sem desafios correspondentes
-  if (filteredChallenges.length === 0 && !isLoading) {
+  if (filteredChallenges.length === 0) {
     return (
       <Card>
         <CardHeader>
@@ -70,13 +110,6 @@ export function RecommendedChallenges({
             Nenhum desafio encontrado para seus objetivos atuais. 
             Novos desafios serão adicionados em breve!
           </p>
-          <div className="flex flex-wrap gap-2 justify-center mt-4">
-            {uniqueTags.slice(0, 6).map(tag => (
-              <Badge key={tag} variant="secondary" className="text-xs">
-                {tag}
-              </Badge>
-            ))}
-          </div>
         </CardContent>
       </Card>
     );
@@ -91,8 +124,10 @@ export function RecommendedChallenges({
             Desafios Recomendados Para Você
           </CardTitle>
           <p className="text-sm text-muted-foreground mt-1">
-            Baseado nos seus objetivos: {uniqueTags.slice(0, 4).join(", ")}
-            {uniqueTags.length > 4 && ` +${uniqueTags.length - 4}`}
+            {uniqueLinkedIds.length > 0 
+              ? `${filteredChallenges.length} desafio${filteredChallenges.length !== 1 ? 's' : ''} vinculado${filteredChallenges.length !== 1 ? 's' : ''} aos seus objetivos`
+              : "Baseado nas tags dos seus objetivos"
+            }
           </p>
         </div>
       </CardHeader>

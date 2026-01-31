@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
@@ -24,8 +25,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, GripVertical, FolderPlus, Target } from "lucide-react";
+import { Plus, Pencil, Trash2, GripVertical, FolderPlus, Target, Link2 } from "lucide-react";
 import { useObjectives, ObjectiveGroup, ObjectiveItem } from "@/hooks/useObjectives";
+import { useDailyChallengesAdmin } from "@/hooks/useDailyChallengesAdmin";
+import { useObjectiveChallengeLinks } from "@/hooks/useObjectiveChallengeLinks";
 
 export function ObjectivesEditor() {
   const {
@@ -40,12 +43,39 @@ export function ObjectivesEditor() {
     isUpdating,
   } = useObjectives();
 
+  // Daily challenges for linking
+  const { challenges: allDailyChallenges, isLoading: isLoadingChallenges } = useDailyChallengesAdmin();
+
   const [editingGroup, setEditingGroup] = useState<ObjectiveGroup | null>(null);
   const [editingItem, setEditingItem] = useState<ObjectiveItem | null>(null);
   const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
   const [isItemDialogOpen, setIsItemDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ type: "group" | "item"; id: string } | null>(null);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [challengeSearchQuery, setChallengeSearchQuery] = useState("");
+
+  // Linked challenges state
+  const [selectedChallengeIds, setSelectedChallengeIds] = useState<string[]>([]);
+  
+  // Get existing links for the editing item
+  const { linkedChallengeIds, saveLinks, isSaving } = useObjectiveChallengeLinks(editingItem?.id);
+
+  // Sync linked challenges when editing item changes
+  useEffect(() => {
+    if (editingItem && linkedChallengeIds) {
+      setSelectedChallengeIds(linkedChallengeIds);
+    }
+  }, [editingItem?.id, linkedChallengeIds]);
+
+  // Filter challenges by search
+  const filteredChallenges = allDailyChallenges.filter(challenge => {
+    if (!challengeSearchQuery) return true;
+    const query = challengeSearchQuery.toLowerCase();
+    return (
+      challenge.title.toLowerCase().includes(query) ||
+      challenge.track.toLowerCase().includes(query)
+    );
+  });
 
   // Form states
   const [groupTitle, setGroupTitle] = useState("");
@@ -70,6 +100,7 @@ export function ObjectivesEditor() {
 
   const handleOpenItemDialog = (groupId: string, item?: ObjectiveItem) => {
     setSelectedGroupId(groupId);
+    setChallengeSearchQuery("");
     if (item) {
       setEditingItem(item);
       setItemForm({
@@ -79,8 +110,10 @@ export function ObjectivesEditor() {
         is_infra: item.is_infra,
         tags: item.tags.join(", "),
       });
+      // linkedChallengeIds will be loaded via useEffect
     } else {
       setEditingItem(null);
+      setSelectedChallengeIds([]);
       setItemForm({
         label: "",
         objective_key: "",
@@ -104,7 +137,7 @@ export function ObjectivesEditor() {
     setIsGroupDialogOpen(false);
   };
 
-  const handleSaveItem = () => {
+  const handleSaveItem = async () => {
     if (!itemForm.label.trim() || !itemForm.objective_key.trim() || !selectedGroupId) return;
 
     const tags = itemForm.tags
@@ -121,6 +154,12 @@ export function ObjectivesEditor() {
         is_infra: itemForm.is_infra,
         tags,
       });
+      
+      // Save challenge links
+      saveLinks({
+        objectiveItemId: editingItem.id,
+        challengeIds: selectedChallengeIds,
+      });
     } else {
       const group = objectiveGroups.find(g => g.id === selectedGroupId);
       const maxOrder = Math.max(...(group?.items.map(i => i.order_index) || []), -1);
@@ -133,8 +172,17 @@ export function ObjectivesEditor() {
         tags,
         order_index: maxOrder + 1,
       });
+      // Note: links for new items will need to be added after item creation
     }
     setIsItemDialogOpen(false);
+  };
+
+  const toggleChallengeLink = (challengeId: string) => {
+    setSelectedChallengeIds(prev => 
+      prev.includes(challengeId)
+        ? prev.filter(id => id !== challengeId)
+        : [...prev, challengeId]
+    );
   };
 
   const handleDelete = () => {
@@ -400,6 +448,63 @@ export function ObjectivesEditor() {
                 </Label>
               </div>
             </div>
+
+            {/* Linked Challenges Section - Only show when editing */}
+            {editingItem && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Link2 className="h-4 w-4" />
+                  Desafios Vinculados ({selectedChallengeIds.length} selecionados)
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Selecione quais desafios aparecem quando este objetivo for marcado
+                </p>
+                <Input
+                  placeholder="Buscar desafios..."
+                  value={challengeSearchQuery}
+                  onChange={(e) => setChallengeSearchQuery(e.target.value)}
+                  className="mb-2"
+                />
+                <ScrollArea className="h-48 border rounded-lg p-2">
+                  {isLoadingChallenges ? (
+                    <div className="space-y-2">
+                      <Skeleton className="h-8 w-full" />
+                      <Skeleton className="h-8 w-full" />
+                      <Skeleton className="h-8 w-full" />
+                    </div>
+                  ) : filteredChallenges.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      Nenhum desafio encontrado
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {filteredChallenges.map(challenge => (
+                        <div
+                          key={challenge.id}
+                          className="flex items-center gap-2 p-2 rounded hover:bg-muted/50 cursor-pointer"
+                          onClick={() => toggleChallengeLink(challenge.id)}
+                        >
+                          <Checkbox
+                            checked={selectedChallengeIds.includes(challenge.id)}
+                            onCheckedChange={() => toggleChallengeLink(challenge.id)}
+                          />
+                          <span className="text-sm flex-1 truncate">{challenge.title}</span>
+                          <Badge variant="secondary" className="text-xs shrink-0">
+                            {challenge.track}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </div>
+            )}
+            
+            {!editingItem && (
+              <p className="text-xs text-muted-foreground bg-muted/30 p-3 rounded-lg">
+                💡 Após criar o item, você poderá editar para vincular desafios recomendados.
+              </p>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsItemDialogOpen(false)}>
@@ -407,7 +512,7 @@ export function ObjectivesEditor() {
             </Button>
             <Button
               onClick={handleSaveItem}
-              disabled={isUpdating || !itemForm.label.trim() || !itemForm.objective_key.trim()}
+              disabled={isUpdating || isSaving || !itemForm.label.trim() || !itemForm.objective_key.trim()}
             >
               {editingItem ? "Salvar" : "Criar"}
             </Button>
