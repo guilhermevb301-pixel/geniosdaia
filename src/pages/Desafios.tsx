@@ -8,18 +8,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useChallenges, ChallengeSubmission } from "@/hooks/useChallenges";
 import { useUserProfile } from "@/hooks/useUserProfile";
-import { useDailyChallenges } from "@/hooks/useDailyChallenges";
+import { useDailyChallenges, DailyChallenge } from "@/hooks/useDailyChallenges";
 import { useUserXP } from "@/hooks/useUserXP";
 import { useAuth } from "@/contexts/AuthContext";
-import { Trophy, Clock, Users, ChevronUp, Gift, Star, Crown, History, Bot, FileText, Sparkles, Target } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Trophy, Clock, Users, ChevronUp, Gift, Star, Crown, History, Bot, FileText } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { LEVEL_NAMES } from "@/lib/gamification";
 import { SubmitChallengeModal } from "@/components/challenges/SubmitChallengeModal";
-import { PersonalizedChallengeCard } from "@/components/challenges/PersonalizedChallengeCard";
+import { ObjectivesChecklist } from "@/components/challenges/ObjectivesChecklist";
+import { RecommendedChallenges } from "@/components/challenges/RecommendedChallenges";
+import { supabase } from "@/integrations/supabase/client";
 
 // ============= Utility Functions =============
 
@@ -62,15 +64,6 @@ function getDifficultyLevel(difficulty: string): number {
     case "intermediario": return 2;
     case "avancado": return 3;
     default: return 2;
-  }
-}
-
-function getDifficultyLabel(difficulty: string): string {
-  switch (difficulty) {
-    case "iniciante": return "Iniciante";
-    case "intermediario": return "Intermediário";
-    case "avancado": return "Avançado";
-    default: return "Intermediário";
   }
 }
 
@@ -408,48 +401,6 @@ function ActiveChallengeHero({
   );
 }
 
-function PersonalizedChallengesSection({ userTrack, userLevel }: { userTrack: string; userLevel: number }) {
-  const { personalizedChallenge, bonusChallenge, isLoading } = useDailyChallenges(
-    userTrack as "agentes" | "videos" | "fotos" | "crescimento" | "propostas",
-    userLevel
-  );
-
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-48 w-full" />
-        <Skeleton className="h-48 w-full" />
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Personalized Daily Challenge */}
-      {personalizedChallenge && (
-        <div className="space-y-3">
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <Target className="h-5 w-5 text-primary" />
-            Seu Desafio Personalizado (Hoje)
-          </h3>
-          <PersonalizedChallengeCard challenge={personalizedChallenge} />
-        </div>
-      )}
-
-      {/* Weekly Bonus Challenge */}
-      {bonusChallenge && (
-        <div className="space-y-3">
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-amber-500" />
-            Bônus da Semana: Propostas que Vendem
-          </h3>
-          <PersonalizedChallengeCard challenge={bonusChallenge} isBonus />
-        </div>
-      )}
-    </div>
-  );
-}
-
 function CommunitySubmissions({ 
   submissions, 
   onVote,
@@ -571,11 +522,60 @@ function PastChallenges({ challenges }: { challenges: { id: string; title: strin
 export default function Desafios() {
   const { user } = useAuth();
   const { activeChallenge, pastChallenges, isLoading, fetchSubmissions, fetchUserVotes, vote } = useChallenges();
-  const { mainTrack } = useUserProfile();
+  const { profile, mainTrack, updateProfile } = useUserProfile();
   const { userXP } = useUserXP();
   const [sortBy, setSortBy] = useState("votes");
+  const [selectedObjectives, setSelectedObjectives] = useState<string[]>([]);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const userLevel = userXP?.current_level || 1;
+
+  // Carregar objetivos salvos do perfil
+  useEffect(() => {
+    if (profile?.goals?.selected_objectives) {
+      setSelectedObjectives(profile.goals.selected_objectives);
+    }
+  }, [profile?.goals?.selected_objectives]);
+
+  // Salvar objetivos com debounce
+  const handleObjectivesChange = useCallback((objectives: string[]) => {
+    setSelectedObjectives(objectives);
+    
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+    
+    debounceRef.current = setTimeout(() => {
+      updateProfile({
+        goals: {
+          ...profile?.goals,
+          selected_objectives: objectives
+        }
+      }).catch(err => {
+        console.error("Erro ao salvar objetivos:", err);
+        toast.error("Erro ao salvar seus objetivos");
+      });
+    }, 500);
+  }, [profile?.goals, updateProfile]);
+
+  // Buscar todos os desafios diários para filtrar
+  const { data: allDailyChallenges = [] } = useQuery({
+    queryKey: ["allDailyChallenges"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("daily_challenges")
+        .select("*")
+        .order("created_at", { ascending: false });
+      
+      if (error) throw error;
+      
+      return (data || []).map(challenge => ({
+        ...challenge,
+        steps: Array.isArray(challenge.steps) ? challenge.steps : JSON.parse(challenge.steps as string || "[]"),
+        checklist: Array.isArray(challenge.checklist) ? challenge.checklist : JSON.parse(challenge.checklist as string || "[]"),
+      })) as DailyChallenge[];
+    },
+  });
 
   const { data: submissions = [], refetch: refetchSubmissions } = useQuery({
     queryKey: ["challengeSubmissions", activeChallenge?.id],
@@ -673,8 +673,17 @@ export default function Desafios() {
                   userTrack={mainTrack}
                 />
                 
-                {/* Personalized Challenges Section */}
-                <PersonalizedChallengesSection userTrack={mainTrack} userLevel={userLevel} />
+                {/* Checklist de Objetivos */}
+                <ObjectivesChecklist 
+                  selectedObjectives={selectedObjectives}
+                  onObjectivesChange={handleObjectivesChange}
+                />
+                
+                {/* Desafios Recomendados */}
+                <RecommendedChallenges 
+                  selectedObjectives={selectedObjectives}
+                  allChallenges={allDailyChallenges}
+                />
                 
                 <CommunitySubmissions 
                   submissions={sortedSubmissions}
