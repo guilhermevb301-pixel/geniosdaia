@@ -23,6 +23,7 @@ import { ObjectivesChecklist } from "@/components/challenges/ObjectivesChecklist
 import { RecommendedChallenges } from "@/components/challenges/RecommendedChallenges";
 import { YourChallengesBanner } from "@/components/challenges/YourChallengesBanner";
 import { ChallengeProgressSection } from "@/components/challenges/ChallengeProgressSection";
+import { useChallengeProgressData } from "@/hooks/useChallengeProgressData";
 import { supabase } from "@/integrations/supabase/client";
 
 // ============= Utility Functions =============
@@ -523,7 +524,7 @@ function PastChallenges({ challenges }: { challenges: { id: string; title: strin
 
 export default function Desafios() {
   const { user } = useAuth();
-  const { activeChallenge, pastChallenges, isLoading, fetchSubmissions, fetchUserVotes, vote } = useChallenges();
+  const { activeChallenge: weeklyChallenge, pastChallenges, isLoading, fetchSubmissions, fetchUserVotes, vote } = useChallenges();
   const { profile, mainTrack, updateProfile } = useUserProfile();
   const { userXP } = useUserXP();
   const [sortBy, setSortBy] = useState("votes");
@@ -539,6 +540,16 @@ export default function Desafios() {
       setSelectedObjectives(profile.goals.selected_objectives);
     }
   }, [profile?.goals?.selected_objectives]);
+  
+  // Get challenge progress data for the banner
+  const {
+    activeChallengeData,
+    activeChallenge: activeProgress,
+    completeChallenge,
+    isCompleting,
+    lockedChallenges,
+    completedChallenges,
+  } = useChallengeProgressData(selectedObjectives);
 
   // Salvar objetivos com debounce
   const handleObjectivesChange = useCallback((objectives: string[]) => {
@@ -581,15 +592,15 @@ export default function Desafios() {
   });
 
   const { data: submissions = [], refetch: refetchSubmissions } = useQuery({
-    queryKey: ["challengeSubmissions", activeChallenge?.id],
-    queryFn: () => activeChallenge ? fetchSubmissions(activeChallenge.id) : [],
-    enabled: !!activeChallenge,
+    queryKey: ["challengeSubmissions", weeklyChallenge?.id],
+    queryFn: () => weeklyChallenge ? fetchSubmissions(weeklyChallenge.id) : [],
+    enabled: !!weeklyChallenge,
   });
 
   const { data: userVotes = [], refetch: refetchVotes } = useQuery({
-    queryKey: ["userVotes", activeChallenge?.id, user?.id],
-    queryFn: () => activeChallenge ? fetchUserVotes(activeChallenge.id) : [],
-    enabled: !!activeChallenge && !!user,
+    queryKey: ["userVotes", weeklyChallenge?.id, user?.id],
+    queryFn: () => weeklyChallenge ? fetchUserVotes(weeklyChallenge.id) : [],
+    enabled: !!weeklyChallenge && !!user,
   });
 
   const sortedSubmissions = [...submissions].sort((a, b) => {
@@ -667,25 +678,19 @@ export default function Desafios() {
 
           {/* Tab: Active Challenge */}
           <TabsContent value="active" className="space-y-8">
-            {/* Banner Personalizado "Seus Desafios" */}
+            {/* Banner Personalizado "Seus Desafios" com Desafio Ativo integrado */}
             <YourChallengesBanner
               userTrack={mainTrack}
               userLevel={userLevel}
-              recommendedCount={
-                allDailyChallenges.filter(c => {
-                  // Calcular tags dos objetivos selecionados
-                  const relevantTags = selectedObjectives;
-                  if (relevantTags.length === 0) return false;
-                  return relevantTags.some(tag => 
-                    c.track?.toLowerCase().includes(tag) || 
-                    c.title?.toLowerCase().includes(tag)
-                  );
-                }).length
-              }
+              recommendedCount={lockedChallenges.length + (activeProgress ? 1 : 0)}
               selectedObjectivesCount={selectedObjectives.length}
               onScrollToObjectives={() => {
                 objectivesRef.current?.scrollIntoView({ behavior: "smooth" });
               }}
+              activeChallenge={activeChallengeData}
+              activeProgress={activeProgress}
+              onCompleteChallenge={() => activeProgress && completeChallenge(activeProgress.id)}
+              isCompleting={isCompleting}
             />
             
             {/* Checklist de Objetivos */}
@@ -705,7 +710,7 @@ export default function Desafios() {
               allChallenges={allDailyChallenges}
             />
             
-            {activeChallenge && (
+            {weeklyChallenge && (
               <>
                 <CommunitySubmissions 
                   submissions={sortedSubmissions}
