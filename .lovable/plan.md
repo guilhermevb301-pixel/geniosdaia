@@ -1,221 +1,288 @@
 
+# Plano: Popup de Objetivos na Entrada da Arena dos Genios
 
-# Plano: Integrar Desafio Ativo no Banner Roxo com Countdown
+## Resumo do Pedido
 
-## Objetivo
-
-Mover o desafio ativo para dentro do banner roxo "Seus Desafios" no topo da pagina, substituindo o contador "0 desafios para voce" pela contagem regressiva em tempo real.
-
----
-
-## Estado Atual vs. Estado Desejado
-
-### Atual
-
-```text
-+----------------------------------------------------------------+
-| [Banner Roxo] PERSONALIZADO PARA VOCE                          |
-|                                                    +-------+   |
-| Seus Desafios                                      |   0   |   |
-| Baseado nos seus X objetivos...                    |desaf. |   |
-|                                                    +-------+   |
-+----------------------------------------------------------------+
-
-[Card separado abaixo]
-+----------------------------------------------------------------+
-| DESAFIO ATIVO                              Iniciante | agentes |
-| Crie seu primeiro agente...                                    |
-| Tempo restante: 29min 45s                                      |
-| [Progress bar]                                                 |
-| [Checklist]                                                    |
-| [Botao Completar]                                              |
-+----------------------------------------------------------------+
-```
-
-### Desejado
-
-```text
-+----------------------------------------------------------------+
-| [Banner Roxo] DESAFIO ATIVO                Iniciante | agentes |
-|                                                    +-------+   |
-| Crie seu primeiro agente de atendimento            |  29m  |   |
-| Objetivo: Construir um agente simples...           |  45s  |   |
-|                                                    +-------+   |
-| [Progress bar 99% restante]                                    |
-+----------------------------------------------------------------+
-+----------------------------------------------------------------+
-| Checklist (0/3)                                                |
-| [ ] Agente responde corretamente                               |
-| [ ] Respostas sao naturais                                     |
-| [ ] Cobre casos de erro                                        |
-|                                                                |
-| [Completei Este Desafio]                                       |
-+----------------------------------------------------------------+
-```
+Voce quer:
+1. Remover as letras dos grupos (A), B), C)...) e mostrar apenas os objetivos
+2. Criar um popup/modal que aparece ao entrar na pagina /desafios
+3. O usuario escolhe seus objetivos no popup e depois ve os desafios
 
 ---
 
 ## Solucao Proposta
 
-### 1. Criar Componente Unificado: ActiveChallengeBanner
+### Como Vai Funcionar
 
-Novo componente que combina o visual do `YourChallengesBanner` (fundo roxo gradiente) com o conteudo do `ActiveChallengeCard` (countdown, objetivo, checklist).
-
-Estrutura do componente:
-
-```tsx
-function ActiveChallengeBanner({
-  challenge,        // DailyChallenge
-  progress,         // UserChallengeProgress (com deadline)
-  userTrack,
-  userLevel,
-  onComplete,
-  isCompleting,
-  lockedCount,      // Numero de desafios bloqueados
-  completedCount,   // Numero de desafios completados
-}) {
-  // Countdown em tempo real
-  // Checklist interativo
-  // Botao de completar
-}
+```text
+Usuario entra em /desafios
+         |
+         v
+  Ja tem objetivos salvos?
+      /          \
+   SIM            NAO
+    |              |
+    v              v
+ Vai direto    Abre popup
+ para os       "Defina seus
+ desafios      objetivos"
+                  |
+                  v
+           Usuario escolhe
+           e clica Confirmar
+                  |
+                  v
+            Fecha popup,
+            mostra desafios
 ```
 
-### 2. Modificar YourChallengesBanner
+### Visual do Popup
 
-Adicionar props opcionais para receber dados do desafio ativo:
-
-```tsx
-interface YourChallengesBannerProps {
-  // ... props existentes
-  activeChallenge?: DailyChallenge;
-  activeProgress?: UserChallengeProgress;
-  onCompleteChallenge?: () => void;
-  isCompleting?: boolean;
-}
+```text
++----------------------------------------------------------+
+|  [X]                                                      |
+|                                                           |
+|     [icone alvo]                                          |
+|                                                           |
+|     QUAL E O SEU OBJETIVO?                                |
+|                                                           |
+|     Escolha um ou mais objetivos para personalizarmos     |
+|     seus desafios e sua jornada de aprendizado.           |
+|                                                           |
+|  +-----------------------------------------------------+  |
+|  | [ ] Vender primeiro projeto de Agente de IA        |  |
+|  +-----------------------------------------------------+  |
+|  | [X] Viralizar nas redes (posicionamento + ideias)  |  |
+|  +-----------------------------------------------------+  |
+|  | [X] Criar conteudo que vende (nao so viral)        |  |
+|  +-----------------------------------------------------+  |
+|  | [ ] Criar Agentes + Fechar clientes + Viralizar    |  |
+|  +-----------------------------------------------------+  |
+|  | [ ] Criar videos incriveis (producao)              |  |
+|  +-----------------------------------------------------+  |
+|  | [ ] Criar videos + Viralizar (combo)               |  |
+|  +-----------------------------------------------------+  |
+|  | [ ] Criar fotos profissionais (producao)           |  |
+|  +-----------------------------------------------------+  |
+|  | [ ] Fotos profissionais + portfolio pra vender     |  |
+|  +-----------------------------------------------------+  |
+|                                                           |
+|  Dica: Voce pode mudar seus objetivos depois              |
+|                                                           |
+|  [          Confirmar Objetivos (2)          ]            |
+|                                                           |
++----------------------------------------------------------+
 ```
 
-Quando `activeChallenge` estiver presente:
-- Trocar badge de "PERSONALIZADO PARA VOCE" para "DESAFIO ATIVO"
-- Trocar titulo "Seus Desafios" para o titulo do desafio
-- Trocar contador de desafios pela contagem regressiva
-- Adicionar barra de progresso do tempo
-- Mover checklist e botao para dentro do banner
+### Na Pagina Apos Confirmar
 
-### 3. Modificar ChallengeProgressSection
+O card "Defina Seus Objetivos" atual sera substituido por um card menor e mais limpo:
 
-Passar o desafio ativo como prop para o banner em vez de renderizar o `ActiveChallengeCard` separadamente.
-
-### 4. Atualizar Desafios.tsx
-
-Passar o estado do desafio ativo para o `YourChallengesBanner`.
+```text
++----------------------------------------------------------+
+| Seus Objetivos (2 selecionados)              [Editar]    |
+|                                                          |
+| [chip] Viralizar nas redes                               |
+| [chip] Criar conteudo que vende                          |
++----------------------------------------------------------+
+```
 
 ---
 
-## Arquivos a Modificar
+## Arquivos a Criar/Modificar
+
+### Novo Arquivo
+
+| Arquivo | Descricao |
+|---------|-----------|
+| `src/components/challenges/ObjectivesModal.tsx` | Modal que aparece na primeira visita |
+
+### Arquivos a Modificar
 
 | Arquivo | Mudancas |
 |---------|----------|
-| `src/components/challenges/YourChallengesBanner.tsx` | Adicionar logica para exibir desafio ativo com countdown |
-| `src/components/challenges/ChallengeProgressSection.tsx` | Exportar dados do desafio ativo para o banner |
-| `src/pages/Desafios.tsx` | Integrar o estado do progresso no banner |
+| `src/components/challenges/ObjectivesChecklist.tsx` | Remover agrupamento A), B), C) e simplificar visual |
+| `src/pages/Desafios.tsx` | Adicionar logica para abrir modal automaticamente |
 
 ---
 
-## Detalhes do Design
+## Detalhes Tecnicos
 
-### Estrutura Visual do Banner Ativo
+### Logica do Modal
 
-```text
-+------------------------------------------------------------------+
-| [Badge: DESAFIO ATIVO]                [Iniciante] [agentes]      |
-|                                                                  |
-| Titulo do Desafio (grande, bold)          +------------------+   |
-|                                           |      29min       |   |
-| Trilha: Agentes de IA                     |       45s        |   |
-| Nivel 1: Iniciante                        |   tempo restante |   |
-|                                           +------------------+   |
-|                                                                  |
-| Progresso do tempo                                  99% restante |
-| [=========================================================-]     |
-+------------------------------------------------------------------+
-| Objetivo                                                         |
-| Construir um agente simples que responde perguntas frequentes    |
-+------------------------------------------------------------------+
-| Checklist (0/3)                                                  |
-| [ ] Agente responde corretamente                                 |
-| [ ] Respostas sao naturais                                       |
-| [ ] Cobre casos de erro                                          |
-|                                                                  |
-| [           Completei Este Desafio           ]                   |
-| Complete todos os itens do checklist para finalizar              |
-+------------------------------------------------------------------+
-```
-
-### Cores e Estilos
-
-- Fundo: `bg-gradient-to-br from-primary via-purple-600 to-indigo-800` (mantido do banner atual)
-- Badge "DESAFIO ATIVO": `bg-primary text-primary-foreground` (verde/roxo vibrante)
-- Countdown: Texto grande amarelo/accent como na imagem
-- Progress bar: Verde gradiente (como na primeira imagem)
-- Checklist: Background semi-transparente `bg-background/10`
-- Botao: Roxo solido ocupando largura total
-
-### Codigo do Contador
-
-O contador deve mostrar no estilo compacto quando ha dias restantes, e detalhado quando esta proximo:
+O modal aparece automaticamente se:
+- `profile?.goals?.selected_objectives` esta vazio ou undefined
+- Usuario ainda nao tem objetivos salvos
 
 ```tsx
-function formatTimeCompact(timeLeft) {
-  if (timeLeft.days > 0) {
-    return `${timeLeft.days}d ${timeLeft.hours}h`;
+// Em Desafios.tsx
+const [showObjectivesModal, setShowObjectivesModal] = useState(false);
+
+// Verificar se precisa mostrar o modal
+useEffect(() => {
+  if (!isLoading && profile) {
+    const hasObjectives = profile.goals?.selected_objectives?.length > 0;
+    if (!hasObjectives) {
+      setShowObjectivesModal(true);
+    }
   }
-  if (timeLeft.hours > 0) {
-    return `${timeLeft.hours}h ${timeLeft.minutes}min`;
+}, [profile, isLoading]);
+```
+
+### Estrutura do Modal
+
+```tsx
+function ObjectivesModal({
+  open,
+  onOpenChange,
+  selectedObjectives,
+  onConfirm,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  selectedObjectives: string[];
+  onConfirm: (objectives: string[]) => void;
+}) {
+  const [localSelection, setLocalSelection] = useState(selectedObjectives);
+  const { objectiveGroups, infraRequiredBy } = useObjectives();
+  
+  // Achata todos os itens (sem mostrar grupos)
+  const allItems = objectiveGroups.flatMap(g => g.items);
+  
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg max-h-[85vh]">
+        <DialogHeader>
+          <div className="flex flex-col items-center text-center gap-3">
+            <Target className="h-12 w-12 text-primary" />
+            <DialogTitle className="text-2xl">
+              Qual e o seu objetivo?
+            </DialogTitle>
+            <p className="text-muted-foreground">
+              Escolha um ou mais objetivos para personalizarmos 
+              seus desafios e sua jornada de aprendizado.
+            </p>
+          </div>
+        </DialogHeader>
+        
+        <ScrollArea className="max-h-[400px] pr-4">
+          <div className="space-y-2">
+            {allItems.map((item) => (
+              <ObjectiveItem 
+                key={item.id}
+                item={item}
+                isSelected={localSelection.includes(item.objective_key)}
+                onToggle={() => toggleItem(item)}
+              />
+            ))}
+          </div>
+        </ScrollArea>
+        
+        <DialogFooter>
+          <p className="text-xs text-muted-foreground mr-auto">
+            Voce pode mudar seus objetivos depois
+          </p>
+          <Button onClick={() => onConfirm(localSelection)}>
+            Confirmar Objetivos ({localSelection.length})
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+```
+
+### Card Resumido de Objetivos (Substitui o Checklist)
+
+```tsx
+function ObjectivesSummary({
+  selectedObjectives,
+  allItems,
+  onEdit,
+}: {
+  selectedObjectives: string[];
+  allItems: ObjectiveItem[];
+  onEdit: () => void;
+}) {
+  const selectedItems = allItems.filter(item => 
+    selectedObjectives.includes(item.objective_key)
+  );
+
+  if (selectedItems.length === 0) {
+    return (
+      <Card className="p-4 border-dashed border-primary/50 cursor-pointer"
+            onClick={onEdit}>
+        <div className="flex items-center justify-center gap-2 text-primary">
+          <Target className="h-5 w-5" />
+          <span>Clique para definir seus objetivos</span>
+        </div>
+      </Card>
+    );
   }
-  return `${timeLeft.minutes}min ${timeLeft.seconds}s`;
+
+  return (
+    <Card className="p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Target className="h-5 w-5 text-primary" />
+          <span className="font-medium">
+            Seus Objetivos ({selectedItems.length})
+          </span>
+        </div>
+        <Button variant="ghost" size="sm" onClick={onEdit}>
+          Editar
+        </Button>
+      </div>
+      
+      <div className="flex flex-wrap gap-2">
+        {selectedItems.map((item) => (
+          <Badge key={item.id} variant="secondary">
+            {item.label}
+          </Badge>
+        ))}
+      </div>
+    </Card>
+  );
 }
 ```
 
 ---
 
-## Logica de Condicional
+## Fluxo Completo
 
-O banner deve exibir conteudo diferente baseado no estado:
-
-1. **Sem objetivos selecionados**: Mostrar mensagem para definir objetivos
-2. **Objetivos selecionados, sem desafio ativo**: Mostrar contador de desafios recomendados
-3. **Desafio ativo presente**: Mostrar desafio com countdown e checklist
-
-```tsx
-{activeChallenge ? (
-  <ActiveChallengeBannerContent ... />
-) : (
-  <DefaultBannerContent ... />
-)}
-```
+1. **Primeira visita**: Usuario entra em /desafios, modal abre automaticamente
+2. **Selecao**: Usuario marca os objetivos desejados (lista simples, sem grupos A/B/C)
+3. **Confirmar**: Clica no botao "Confirmar Objetivos (X)"
+4. **Salvar**: Sistema salva em `profile.goals.selected_objectives` e fecha modal
+5. **Visualizacao**: Card resumido mostra os objetivos selecionados com badges
+6. **Editar**: Usuario pode clicar em "Editar" para reabrir o modal
 
 ---
 
-## Fluxo do Usuario
+## Visitas Seguintes
 
-1. Usuario acessa `/desafios`
-2. Marca um objetivo no checklist
-3. Sistema busca desafios vinculados
-4. **Banner roxo muda instantaneamente** para mostrar o desafio ativo
-5. Countdown comeca a rodar em tempo real
-6. Usuario marca itens do checklist
-7. Clica em "Completei Este Desafio"
-8. Banner atualiza para mostrar o proximo desafio (ou mensagem de sucesso)
+- Se usuario ja tem objetivos salvos, o modal nao abre
+- A pagina mostra diretamente o banner de desafio ativo + card resumido de objetivos
+- Usuario pode clicar em "Editar" para mudar objetivos
+
+---
+
+## Beneficios da Mudanca
+
+1. **Mais intuitivo**: Popup guia o usuario na primeira visita
+2. **Menos poluicao visual**: Remove categorias A), B), C) desnecessarias
+3. **Lista limpa**: Objetivos aparecem em lista simples e clara
+4. **Menos espaco na pagina**: Card resumido ocupa menos espaco que o checklist completo
+5. **Facilidade**: Usuario pode mudar objetivos a qualquer momento
 
 ---
 
 ## Criterios de Aceite
 
-- Desafio ativo aparece integrado no banner roxo
-- Countdown em tempo real no lugar do contador de desafios
-- Barra de progresso verde mostrando tempo restante
-- Checklist interativo dentro do banner
-- Botao "Completei" funcional
-- Transicao suave ao completar um desafio
-- Manter visual quando nao ha desafio ativo (fallback para contador)
+- Modal abre automaticamente se usuario nao tem objetivos
+- Objetivos aparecem em lista simples (sem A, B, C)
+- Botao "Confirmar" fecha modal e salva objetivos
+- Card resumido mostra badges dos objetivos selecionados
+- Botao "Editar" reabre o modal
+- Logica de infra obrigatoria continua funcionando
 
