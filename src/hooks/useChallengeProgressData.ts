@@ -28,6 +28,8 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
     initProgress,
     completeChallenge,
     isCompleting,
+    restartChallenge,
+    isRestarting,
   } = useUserChallengeProgress(selectedItemIds.length > 0 ? selectedItemIds : undefined);
 
   // Get linked challenges with their order for each objective
@@ -110,6 +112,8 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
     lockedChallenges,
     completeChallenge,
     isCompleting,
+    restartChallenge,
+    isRestarting,
     selectedItemIds,
   };
 }

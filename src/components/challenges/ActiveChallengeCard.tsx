@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Clock, CheckCircle2, Zap, Target } from "lucide-react";
+import { Clock, CheckCircle2, Zap, Target, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DailyChallenge } from "@/hooks/useDailyChallenges";
 import {
@@ -17,14 +17,18 @@ interface ActiveChallengeCardProps {
   progress: UserChallengeProgress;
   challenge: DailyChallenge;
   onComplete: () => void;
+  onRestart: () => void;
   isCompleting?: boolean;
+  isRestarting?: boolean;
 }
 
 export function ActiveChallengeCard({
   progress,
   challenge,
   onComplete,
+  onRestart,
   isCompleting,
+  isRestarting,
 }: ActiveChallengeCardProps) {
   const [timeLeft, setTimeLeft] = useState(calculateTimeLeft(progress.deadline));
   const [checkedItems, setCheckedItems] = useState<boolean[]>(
@@ -193,18 +197,31 @@ export function ActiveChallengeCard({
           </div>
         )}
 
-        {/* Complete button */}
-        <Button
-          onClick={onComplete}
-          disabled={!allItemsChecked || isCompleting}
-          className="w-full"
-          size="lg"
-        >
-          <CheckCircle2 className="mr-2 h-5 w-5" />
-          {isCompleting ? "Concluindo..." : "Completei Este Desafio"}
-        </Button>
+        {/* Complete or Restart button */}
+        {timeLeft.expired ? (
+          <Button
+            onClick={onRestart}
+            disabled={isRestarting}
+            variant="outline"
+            className="w-full border-amber-500 text-amber-500 hover:bg-amber-500/10"
+            size="lg"
+          >
+            <RotateCcw className="mr-2 h-5 w-5" />
+            {isRestarting ? "Reiniciando..." : "Reiniciar Desafio"}
+          </Button>
+        ) : (
+          <Button
+            onClick={onComplete}
+            disabled={!allItemsChecked || isCompleting}
+            className="w-full"
+            size="lg"
+          >
+            <CheckCircle2 className="mr-2 h-5 w-5" />
+            {isCompleting ? "Concluindo..." : "Completei Este Desafio"}
+          </Button>
+        )}
 
-        {!allItemsChecked && challenge.checklist && challenge.checklist.length > 0 && (
+        {!timeLeft.expired && !allItemsChecked && challenge.checklist && challenge.checklist.length > 0 && (
           <p className="text-xs text-center text-muted-foreground">
             Complete todos os itens do checklist para finalizar
           </p>

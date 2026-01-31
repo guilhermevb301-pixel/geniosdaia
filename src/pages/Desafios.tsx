@@ -559,6 +559,8 @@ export default function Desafios() {
     activeChallenge: activeProgress,
     completeChallenge,
     isCompleting,
+    restartChallenge,
+    isRestarting,
     lockedChallenges,
     completedChallenges,
   } = useChallengeProgressData(selectedObjectives);
@@ -702,7 +704,9 @@ export default function Desafios() {
               activeChallenge={activeChallengeData}
               activeProgress={activeProgress}
               onCompleteChallenge={() => activeProgress && completeChallenge(activeProgress.id)}
+              onRestartChallenge={() => activeProgress && restartChallenge(activeProgress.id)}
               isCompleting={isCompleting}
+              isRestarting={isRestarting}
             />
             
             {/* Modal de Objetivos */}

@@ -115,9 +115,8 @@ export function ObjectivesModal({
                 const isLocked = item.is_infra && isInfraLocked;
 
                 return (
-                  <label
+                  <div
                     key={item.id}
-                    htmlFor={`modal-${item.objective_key}`}
                     className={cn(
                       "flex items-center gap-3 p-4 rounded-lg transition-all cursor-pointer",
                       isChecked
@@ -125,19 +124,18 @@ export function ObjectivesModal({
                         : "bg-muted/30 border border-transparent hover:bg-muted/50",
                       isLocked && "cursor-not-allowed opacity-70"
                     )}
-                    onClick={(e) => {
-                      if (isLocked) {
-                        e.preventDefault();
-                        return;
-                      }
-                      toggleObjective(item);
+                    onClick={() => {
+                      if (!isLocked) toggleObjective(item);
                     }}
                   >
                     <Checkbox
                       id={`modal-${item.objective_key}`}
                       checked={isChecked}
                       disabled={isLocked}
-                      className="pointer-events-none"
+                      onCheckedChange={() => {
+                        if (!isLocked) toggleObjective(item);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
                     />
                     <div className="flex-1 min-w-0">
                       <span
@@ -160,7 +158,7 @@ export function ObjectivesModal({
                         PRÉ-REQUISITO
                       </Badge>
                     )}
-                  </label>
+                  </div>
                 );
               })
             )}
