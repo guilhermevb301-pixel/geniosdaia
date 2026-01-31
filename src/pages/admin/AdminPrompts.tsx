@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FocalPointSelector } from "@/components/prompts/FocalPointSelector";
 import { VariationEditor, Variation } from "@/components/prompts/VariationEditor";
-import { validateImageFile, ALLOWED_IMAGE_EXTENSIONS } from "@/lib/fileValidation";
+import { validateImageFile, validateVideoFile, ALLOWED_IMAGE_EXTENSIONS, MAX_VIDEO_SIZE } from "@/lib/fileValidation";
 
 type PromptCategory = "video" | "image" | "agent";
 
@@ -73,8 +73,15 @@ export default function AdminPrompts() {
   const [variations, setVariations] = useState<Variation[]>([
     { content: "", image_url: null, order_index: 0, isNew: true },
   ]);
+  
+  // Video upload state
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string>("");
+  const [videoUrl, setVideoUrl] = useState<string>("");
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
 
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   const { data: prompts, isLoading } = useQuery({
     queryKey: ["admin-prompts"],
@@ -116,15 +123,48 @@ export default function AdminPrompts() {
     return urlData.publicUrl;
   };
 
+  const uploadVideoFile = async (file: File): Promise<string> => {
+    // Validate video file before upload
+    const validation = validateVideoFile(file);
+    if (!validation.valid) {
+      toast.error(validation.error || "Arquivo inválido");
+      throw new Error(validation.error);
+    }
+
+    const fileExt = file.name.split(".").pop()?.toLowerCase();
+    const fileName = `videos/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+    const { error } = await supabase.storage.from("prompts").upload(fileName, file);
+    
+    if (error) {
+      console.error("Video upload error:", error);
+      toast.error(`Erro no upload do vídeo: ${error.message}`);
+      throw error;
+    }
+
+    const { data: urlData } = supabase.storage.from("prompts").getPublicUrl(fileName);
+    return urlData.publicUrl;
+  };
+
   const createMutation = useMutation({
     mutationFn: async () => {
       setIsUploading(true);
 
       let thumbnailUrl: string | null = null;
+      let exampleVideoUrl: string | null = null;
 
       // Upload thumbnail
       if (thumbnailFile) {
         thumbnailUrl = await uploadFile(thumbnailFile, "thumbnails");
+      }
+
+      // Upload video file or use external URL
+      if (videoFile) {
+        setIsUploadingVideo(true);
+        exampleVideoUrl = await uploadVideoFile(videoFile);
+        setIsUploadingVideo(false);
+      } else if (videoUrl) {
+        exampleVideoUrl = videoUrl;
       }
 
       // Create prompt first
@@ -138,6 +178,7 @@ export default function AdminPrompts() {
           tags: formData.tags.split(",").map((t) => t.trim()).filter(Boolean),
           thumbnail_url: thumbnailUrl,
           thumbnail_focus: thumbnailFocus,
+          example_video_url: exampleVideoUrl,
         })
         .select()
         .single();
@@ -180,10 +221,20 @@ export default function AdminPrompts() {
       setIsUploading(true);
 
       let thumbnailUrl = editingPrompt.thumbnail_url;
+      let exampleVideoUrl = editingPrompt.example_video_url;
 
       // Upload new thumbnail if provided
       if (thumbnailFile) {
         thumbnailUrl = await uploadFile(thumbnailFile, "thumbnails");
+      }
+
+      // Upload video file or use external URL
+      if (videoFile) {
+        setIsUploadingVideo(true);
+        exampleVideoUrl = await uploadVideoFile(videoFile);
+        setIsUploadingVideo(false);
+      } else if (videoUrl !== editingPrompt.example_video_url) {
+        exampleVideoUrl = videoUrl || null;
       }
 
       // Update prompt
@@ -197,6 +248,7 @@ export default function AdminPrompts() {
           tags: formData.tags.split(",").map((t) => t.trim()).filter(Boolean),
           thumbnail_url: thumbnailUrl,
           thumbnail_focus: thumbnailFocus,
+          example_video_url: exampleVideoUrl,
         })
         .eq("id", editingPrompt.id);
 
@@ -279,6 +331,9 @@ export default function AdminPrompts() {
     setThumbnailPreview("");
     setThumbnailFocus("center");
     setVariations([{ content: "", image_url: null, order_index: 0, isNew: true }]);
+    setVideoFile(null);
+    setVideoPreview("");
+    setVideoUrl("");
     setIsDialogOpen(true);
   };
 
@@ -293,6 +348,9 @@ export default function AdminPrompts() {
     setThumbnailFile(null);
     setThumbnailPreview(prompt.thumbnail_url || "");
     setThumbnailFocus(prompt.thumbnail_focus || "center");
+    setVideoFile(null);
+    setVideoPreview(prompt.example_video_url || "");
+    setVideoUrl(prompt.example_video_url || "");
     
     // Load existing variations or create one from legacy content
     if (prompt.variations && prompt.variations.length > 0) {
@@ -327,6 +385,33 @@ export default function AdminPrompts() {
     setThumbnailPreview("");
     setThumbnailFocus("center");
     setVariations([{ content: "", image_url: null, order_index: 0, isNew: true }]);
+    setVideoFile(null);
+    setVideoPreview("");
+    setVideoUrl("");
+  };
+
+  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const validation = validateVideoFile(file);
+      if (!validation.valid) {
+        toast.error(validation.error || "Arquivo inválido");
+        e.target.value = '';
+        return;
+      }
+      setVideoFile(file);
+      setVideoPreview(URL.createObjectURL(file));
+      setVideoUrl(""); // Clear external URL when file is selected
+    }
+  };
+
+  const clearVideo = () => {
+    setVideoFile(null);
+    setVideoPreview("");
+    setVideoUrl("");
+    if (videoInputRef.current) {
+      videoInputRef.current.value = '';
+    }
   };
 
   const handleSubmit = () => {
@@ -557,12 +642,82 @@ export default function AdminPrompts() {
               />
             </div>
 
+            {/* Video Upload Section */}
+            <div className="space-y-2">
+              <Label>Vídeo de Exemplo</Label>
+              <input
+                ref={videoInputRef}
+                type="file"
+                accept="video/mp4"
+                onChange={handleVideoChange}
+                className="hidden"
+              />
+              
+              {videoPreview ? (
+                <div className="space-y-2">
+                  <div className="relative rounded-lg overflow-hidden border">
+                    <video
+                      src={videoPreview}
+                      controls
+                      className="w-full aspect-video"
+                    />
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2 h-6 w-6"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        clearVideo();
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  {videoFile && (
+                    <p className="text-xs text-muted-foreground">
+                      Arquivo: {videoFile.name} ({(videoFile.size / 1024 / 1024).toFixed(1)}MB)
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div
+                  onClick={() => videoInputRef.current?.click()}
+                  className="border-2 border-dashed rounded-lg p-4 cursor-pointer hover:border-primary/50 transition-colors"
+                >
+                  <div className="flex flex-col items-center justify-center py-4 text-muted-foreground">
+                    <Video className="h-8 w-8 mb-2" />
+                    <p className="text-sm">Clique para adicionar vídeo MP4</p>
+                    <p className="text-xs text-muted-foreground mt-1">Máximo 100MB</p>
+                  </div>
+                </div>
+              )}
+
+              {/* External URL fallback */}
+              {!videoFile && (
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">ou cole uma URL externa</Label>
+                  <Input
+                    value={videoUrl}
+                    onChange={(e) => {
+                      setVideoUrl(e.target.value);
+                      if (e.target.value) {
+                        setVideoPreview(e.target.value);
+                      } else {
+                        setVideoPreview("");
+                      }
+                    }}
+                    placeholder="https://exemplo.com/video.mp4"
+                  />
+                </div>
+              )}
+            </div>
+
             {/* Separator */}
             <div className="border-t pt-4">
               <VariationEditor
                 variations={variations}
                 onChange={setVariations}
-                isUploading={isUploading}
+                isUploading={isUploading || isUploadingVideo}
               />
             </div>
           </div>

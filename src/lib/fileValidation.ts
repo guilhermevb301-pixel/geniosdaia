@@ -33,10 +33,19 @@ export const ALLOWED_JSON_EXTENSIONS = ['.json'];
 // Allowed file extensions for ZIP
 export const ALLOWED_ZIP_EXTENSIONS = ['.zip'];
 
+// Allowed MIME types for video files
+export const ALLOWED_VIDEO_TYPES = [
+  'video/mp4',
+] as const;
+
+// Allowed file extensions for video
+export const ALLOWED_VIDEO_EXTENSIONS = ['.mp4'];
+
 // Maximum file sizes
 export const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 export const MAX_JSON_SIZE = 2 * 1024 * 1024; // 2MB
 export const MAX_ZIP_SIZE = 50 * 1024 * 1024; // 50MB
+export const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
 
 export interface FileValidationResult {
   valid: boolean;
@@ -142,6 +151,38 @@ export function validateZipFile(file: File): FileValidationResult {
     return {
       valid: false,
       error: 'Extensão de arquivo inválida. Apenas arquivos .zip são permitidos.',
+    };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Validate a video file for upload
+ */
+export function validateVideoFile(file: File): FileValidationResult {
+  // Check file size
+  if (file.size > MAX_VIDEO_SIZE) {
+    return {
+      valid: false,
+      error: `Arquivo muito grande. Tamanho máximo: ${MAX_VIDEO_SIZE / 1024 / 1024}MB`,
+    };
+  }
+
+  // Check MIME type
+  if (!ALLOWED_VIDEO_TYPES.includes(file.type as typeof ALLOWED_VIDEO_TYPES[number])) {
+    return {
+      valid: false,
+      error: `Tipo de arquivo inválido. Apenas arquivos MP4 são permitidos.`,
+    };
+  }
+
+  // Check file extension
+  const extension = getFileExtension(file.name);
+  if (!ALLOWED_VIDEO_EXTENSIONS.includes(extension)) {
+    return {
+      valid: false,
+      error: `Extensão de arquivo inválida. Apenas arquivos .mp4 são permitidos.`,
     };
   }
 
