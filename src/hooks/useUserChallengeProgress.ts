@@ -270,6 +270,46 @@ export function useUserChallengeProgress(objectiveItemIds?: string[]) {
     },
   });
 
+  // Restart a challenge (reset timer)
+  const restartMutation = useMutation({
+    mutationFn: async (progressId: string) => {
+      if (!user) throw new Error("User not authenticated");
+
+      // Get the current progress record with challenge data
+      const { data: current, error: fetchError } = await supabase
+        .from("user_challenge_progress")
+        .select(`*, daily_challenges (*)`)
+        .eq("id", progressId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const challenge = current.daily_challenges;
+      const now = new Date().toISOString();
+
+      // Update with new deadline
+      const { error } = await supabase
+        .from("user_challenge_progress")
+        .update({
+          started_at: now,
+          deadline: calculateDeadline(
+            challenge?.estimated_minutes || 30,
+            (challenge?.estimated_time_unit as TimeUnit) || "minutes"
+          ),
+        })
+        .eq("id", progressId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["userChallengeProgress"] });
+      toast.success("Desafio reiniciado! ⏱️");
+    },
+    onError: (error: Error) => {
+      toast.error("Erro ao reiniciar desafio: " + error.message);
+    },
+  });
+
   // Derived state
   const activeChallenge = progress.find((p) => p.status === "active");
   const completedChallenges = progress.filter((p) => p.status === "completed");
@@ -288,5 +328,7 @@ export function useUserChallengeProgress(objectiveItemIds?: string[]) {
     isCompleting: completeMutation.isPending,
     clearProgress: clearProgressMutation.mutate,
     isClearing: clearProgressMutation.isPending,
+    restartChallenge: restartMutation.mutate,
+    isRestarting: restartMutation.isPending,
   };
 }
