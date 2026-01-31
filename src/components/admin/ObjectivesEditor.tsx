@@ -29,6 +29,7 @@ import { Plus, Pencil, Trash2, GripVertical, FolderPlus, Target, Link2 } from "l
 import { useObjectives, ObjectiveGroup, ObjectiveItem } from "@/hooks/useObjectives";
 import { useDailyChallengesAdmin } from "@/hooks/useDailyChallengesAdmin";
 import { useObjectiveChallengeLinks } from "@/hooks/useObjectiveChallengeLinks";
+import { ChallengeLinkingModal } from "./ChallengeLinkingModal";
 
 export function ObjectivesEditor() {
   const {
@@ -46,6 +47,9 @@ export function ObjectivesEditor() {
   // Daily challenges for linking
   const { challenges: allDailyChallenges, isLoading: isLoadingChallenges } = useDailyChallengesAdmin();
 
+  // Get link counts for all items
+  const { linkCounts, linkedChallengeIds, saveLinks, isSaving } = useObjectiveChallengeLinks();
+
   const [editingGroup, setEditingGroup] = useState<ObjectiveGroup | null>(null);
   const [editingItem, setEditingItem] = useState<ObjectiveItem | null>(null);
   const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
@@ -54,18 +58,22 @@ export function ObjectivesEditor() {
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [challengeSearchQuery, setChallengeSearchQuery] = useState("");
 
-  // Linked challenges state
+  // Linking modal state
+  const [isLinkingModalOpen, setIsLinkingModalOpen] = useState(false);
+  const [linkingItem, setLinkingItem] = useState<ObjectiveItem | null>(null);
+
+  // Linked challenges state for item dialog
   const [selectedChallengeIds, setSelectedChallengeIds] = useState<string[]>([]);
-  
-  // Get existing links for the editing item
-  const { linkedChallengeIds, saveLinks, isSaving } = useObjectiveChallengeLinks(editingItem?.id);
+
+  // Get existing links for the editing item via separate hook call
+  const { linkedChallengeIds: editingItemLinks } = useObjectiveChallengeLinks(editingItem?.id);
 
   // Sync linked challenges when editing item changes
   useEffect(() => {
-    if (editingItem && linkedChallengeIds) {
-      setSelectedChallengeIds(linkedChallengeIds);
+    if (editingItem && editingItemLinks) {
+      setSelectedChallengeIds(editingItemLinks);
     }
-  }, [editingItem?.id, linkedChallengeIds]);
+  }, [editingItem?.id, editingItemLinks]);
 
   // Filter challenges by search
   const filteredChallenges = allDailyChallenges.filter(challenge => {
@@ -303,20 +311,32 @@ export function ObjectivesEditor() {
                             </Badge>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 mt-1">
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
                           <code className="text-xs text-muted-foreground bg-muted px-1 rounded">
                             {item.objective_key}
                           </code>
+                          {/* Link count indicator */}
+                          <Badge 
+                            variant="outline" 
+                            className="text-xs cursor-pointer hover:bg-primary/10"
+                            onClick={() => {
+                              setLinkingItem(item);
+                              setIsLinkingModalOpen(true);
+                            }}
+                          >
+                            <Link2 className="h-3 w-3 mr-1" />
+                            {linkCounts[item.id] || 0} desafio(s)
+                          </Badge>
                           {item.tags.length > 0 && (
                             <div className="flex gap-1">
-                              {item.tags.slice(0, 3).map((tag) => (
+                              {item.tags.slice(0, 2).map((tag) => (
                                 <Badge key={tag} variant="secondary" className="text-xs">
                                   {tag}
                                 </Badge>
                               ))}
-                              {item.tags.length > 3 && (
+                              {item.tags.length > 2 && (
                                 <Badge variant="secondary" className="text-xs">
-                                  +{item.tags.length - 3}
+                                  +{item.tags.length - 2}
                                 </Badge>
                               )}
                             </div>
@@ -324,6 +344,17 @@ export function ObjectivesEditor() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="Vincular desafios"
+                          onClick={() => {
+                            setLinkingItem(item);
+                            setIsLinkingModalOpen(true);
+                          }}
+                        >
+                          <Link2 className="h-4 w-4 text-primary" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -539,6 +570,12 @@ export function ObjectivesEditor() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* Challenge Linking Modal */}
+      <ChallengeLinkingModal
+        open={isLinkingModalOpen}
+        onOpenChange={setIsLinkingModalOpen}
+        objectiveItem={linkingItem}
+      />
     </div>
   );
 }

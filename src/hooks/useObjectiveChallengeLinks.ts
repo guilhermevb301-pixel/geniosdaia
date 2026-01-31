@@ -42,6 +42,25 @@ export function useObjectiveChallengeLinks(objectiveItemId?: string) {
     },
   });
 
+  // Fetch link counts per objective item (for UI indicators)
+  const { data: linkCounts = {} } = useQuery({
+    queryKey: ["objectiveLinkCounts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("objective_challenge_links")
+        .select("objective_item_id");
+
+      if (error) throw error;
+
+      // Count links per item
+      const counts: Record<string, number> = {};
+      data.forEach((link) => {
+        counts[link.objective_item_id] = (counts[link.objective_item_id] || 0) + 1;
+      });
+      return counts;
+    },
+  });
+
   // Get linked challenge IDs for an objective
   const linkedChallengeIds = links.map(link => link.daily_challenge_id);
 
@@ -79,6 +98,7 @@ export function useObjectiveChallengeLinks(objectiveItemId?: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["objectiveChallengeLinks"] });
       queryClient.invalidateQueries({ queryKey: ["allObjectiveChallengeLinks"] });
+      queryClient.invalidateQueries({ queryKey: ["objectiveLinkCounts"] });
     },
     onError: (error: Error) => {
       toast.error("Erro ao salvar vínculos: " + error.message);
@@ -108,6 +128,7 @@ export function useObjectiveChallengeLinks(objectiveItemId?: string) {
     links,
     allLinks,
     linkedChallengeIds,
+    linkCounts,
     isLoadingLinks,
     isLoadingAllLinks,
     saveLinks: saveLinksMutation.mutate,
