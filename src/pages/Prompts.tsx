@@ -36,13 +36,13 @@ export default function Prompts() {
         .select(`
           *,
           variations:prompt_variations(
-            id, content, image_url, order_index
+            id, content, image_url, video_url, order_index
           )
         `)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data as (Prompt & { variations?: { id: string; content: string; image_url: string | null; order_index: number }[] })[];
+      return data as (Prompt & { variations?: { id: string; content: string; image_url: string | null; video_url: string | null; order_index: number }[] })[];
     },
   });
 

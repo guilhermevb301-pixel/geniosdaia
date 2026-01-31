@@ -22,6 +22,7 @@ interface PromptVariation {
   id: string;
   content: string;
   image_url: string | null;
+  video_url: string | null;
   order_index: number;
 }
 
@@ -71,7 +72,7 @@ export default function AdminPrompts() {
   const [thumbnailPreview, setThumbnailPreview] = useState<string>("");
   const [thumbnailFocus, setThumbnailFocus] = useState<string>("center");
   const [variations, setVariations] = useState<Variation[]>([
-    { content: "", image_url: null, order_index: 0, isNew: true },
+    { content: "", image_url: null, video_url: null, order_index: 0, isNew: true },
   ]);
   
   // Video upload state
@@ -91,7 +92,7 @@ export default function AdminPrompts() {
         .select(`
           *,
           variations:prompt_variations(
-            id, content, image_url, order_index
+            id, content, image_url, video_url, order_index
           )
         `)
         .order("created_at", { ascending: false });
@@ -185,12 +186,17 @@ export default function AdminPrompts() {
 
       if (promptError) throw promptError;
 
-      // Upload variation images and create variations
+      // Upload variation media and create variations
       for (const variation of variations) {
         let imageUrl = variation.image_url;
+        let videoUrl = variation.video_url;
         
         if (variation.imageFile) {
           imageUrl = await uploadFile(variation.imageFile, "variations");
+        }
+        
+        if (variation.videoFile) {
+          videoUrl = await uploadVideoFile(variation.videoFile);
         }
 
         const { error: variationError } = await supabase
@@ -199,6 +205,7 @@ export default function AdminPrompts() {
             prompt_id: promptData.id,
             content: variation.content,
             image_url: imageUrl,
+            video_url: videoUrl,
             order_index: variation.order_index,
           });
 
@@ -263,9 +270,14 @@ export default function AdminPrompts() {
       // Create new variations
       for (const variation of variations) {
         let imageUrl = variation.image_url;
+        let videoUrl = variation.video_url;
         
         if (variation.imageFile) {
           imageUrl = await uploadFile(variation.imageFile, "variations");
+        }
+        
+        if (variation.videoFile) {
+          videoUrl = await uploadVideoFile(variation.videoFile);
         }
 
         const { error: variationError } = await supabase
@@ -274,6 +286,7 @@ export default function AdminPrompts() {
             prompt_id: editingPrompt.id,
             content: variation.content,
             image_url: imageUrl,
+            video_url: videoUrl,
             order_index: variation.order_index,
           });
 
@@ -330,7 +343,7 @@ export default function AdminPrompts() {
     setThumbnailFile(null);
     setThumbnailPreview("");
     setThumbnailFocus("center");
-    setVariations([{ content: "", image_url: null, order_index: 0, isNew: true }]);
+    setVariations([{ content: "", image_url: null, video_url: null, order_index: 0, isNew: true }]);
     setVideoFile(null);
     setVideoPreview("");
     setVideoUrl("");
@@ -361,6 +374,7 @@ export default function AdminPrompts() {
             id: v.id,
             content: v.content,
             image_url: v.image_url,
+            video_url: v.video_url,
             order_index: v.order_index,
           }))
       );
@@ -370,6 +384,7 @@ export default function AdminPrompts() {
         {
           content: prompt.content,
           image_url: null,
+          video_url: null,
           order_index: 0,
           isNew: true,
         },
@@ -384,7 +399,7 @@ export default function AdminPrompts() {
     setThumbnailFile(null);
     setThumbnailPreview("");
     setThumbnailFocus("center");
-    setVariations([{ content: "", image_url: null, order_index: 0, isNew: true }]);
+    setVariations([{ content: "", image_url: null, video_url: null, order_index: 0, isNew: true }]);
     setVideoFile(null);
     setVideoPreview("");
     setVideoUrl("");
@@ -718,6 +733,7 @@ export default function AdminPrompts() {
                 variations={variations}
                 onChange={setVariations}
                 isUploading={isUploading || isUploadingVideo}
+                category={formData.category}
               />
             </div>
           </div>

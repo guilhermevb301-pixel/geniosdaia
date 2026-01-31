@@ -11,6 +11,7 @@ interface PromptVariation {
   id: string;
   content: string;
   image_url: string | null;
+  video_url: string | null;
   order_index: number;
 }
 
@@ -48,6 +49,7 @@ export function PromptCard({ prompt }: PromptCardProps) {
   const variations = (prompt.variations || []).sort((a, b) => a.order_index - b.order_index);
   const hasVariations = variations.length > 0;
   const currentVariation = variations[currentVariationIndex];
+  const isVideoCategory = prompt.category === 'video';
 
   // Reset variation index when modal opens
   useEffect(() => {
@@ -189,8 +191,28 @@ export function PromptCard({ prompt }: PromptCardProps) {
               {/* Conteúdo da Variação Atual */}
               {currentVariation && (
                 <div className="space-y-4">
-                  {/* Imagem da Variação */}
-                  {currentVariation.image_url && (
+                  {/* Video da Variação (para categoria video) */}
+                  {isVideoCategory && currentVariation.video_url && (
+                    <div className="space-y-2">
+                      <video
+                        src={currentVariation.video_url}
+                        controls
+                        className="w-full rounded-lg"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDownloadVideo(currentVariation.video_url!)}
+                        className="w-full"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Baixar vídeo
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Imagem da Variação (para categorias image/agent) */}
+                  {!isVideoCategory && currentVariation.image_url && (
                     <img
                       src={currentVariation.image_url}
                       alt={`Resultado do Prompt ${currentVariationIndex + 1}`}
@@ -251,31 +273,34 @@ export function PromptCard({ prompt }: PromptCardProps) {
                 </div>
               )}
 
-              {/* Vídeo de exemplo */}
-              {prompt.example_video_url && (
-                <div className="space-y-3">
-                  <h4 className="text-sm font-medium text-muted-foreground">Vídeo de exemplo</h4>
-                  <video
-                    src={prompt.example_video_url}
-                    controls
-                    className="w-full rounded-lg"
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDownloadVideo(prompt.example_video_url!)}
-                    className="w-full"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Baixar vídeo
-                  </Button>
-                </div>
-              )}
-
               {/* Botão de copiar */}
               <Button onClick={() => handleCopy(prompt.content)} className="w-full">
                 <Copy className="h-4 w-4 mr-2" />
                 Copiar Prompt
+              </Button>
+            </div>
+          )}
+
+          {/* Vídeo de exemplo - SEMPRE visível se existir */}
+          {prompt.example_video_url && (
+            <div className="space-y-3 border-t pt-4 mt-4">
+              <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Video className="h-4 w-4" />
+                Vídeo de exemplo
+              </h4>
+              <video
+                src={prompt.example_video_url}
+                controls
+                className="w-full rounded-lg"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleDownloadVideo(prompt.example_video_url!)}
+                className="w-full"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Baixar vídeo
               </Button>
             </div>
           )}

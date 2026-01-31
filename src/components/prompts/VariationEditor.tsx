@@ -1,30 +1,38 @@
 import { useState, useRef } from "react";
-import { Plus, X, Upload, GripVertical } from "lucide-react";
+import { Plus, X, Upload, GripVertical, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { validateImageFile } from "@/lib/fileValidation";
+import { validateImageFile, validateVideoFile } from "@/lib/fileValidation";
+
+type PromptCategory = "video" | "image" | "agent";
 
 export interface Variation {
   id?: string;
   content: string;
   image_url: string | null;
+  video_url: string | null;
   order_index: number;
   isNew?: boolean;
   imageFile?: File;
   imagePreview?: string;
+  videoFile?: File;
+  videoPreview?: string;
 }
 
 interface VariationEditorProps {
   variations: Variation[];
   onChange: (variations: Variation[]) => void;
   isUploading: boolean;
+  category: PromptCategory;
 }
 
-export function VariationEditor({ variations, onChange, isUploading }: VariationEditorProps) {
+export function VariationEditor({ variations, onChange, isUploading, category }: VariationEditorProps) {
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const videoInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const isVideoCategory = category === 'video';
 
   const addVariation = () => {
     onChange([
@@ -32,6 +40,7 @@ export function VariationEditor({ variations, onChange, isUploading }: Variation
       {
         content: "",
         image_url: null,
+        video_url: null,
         order_index: variations.length,
         isNew: true,
       },
@@ -56,6 +65,12 @@ export function VariationEditor({ variations, onChange, isUploading }: Variation
         imageFile: value,
         imagePreview: URL.createObjectURL(value),
       };
+    } else if (field === "videoFile" && value instanceof File) {
+      updated[index] = {
+        ...updated[index],
+        videoFile: value,
+        videoPreview: URL.createObjectURL(value),
+      };
     } else {
       updated[index] = { ...updated[index], [field]: value };
     }
@@ -75,6 +90,19 @@ export function VariationEditor({ variations, onChange, isUploading }: Variation
     }
   };
 
+  const handleVideoChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const validation = validateVideoFile(file);
+      if (!validation.valid) {
+        toast.error(validation.error || "Arquivo inválido");
+        e.target.value = '';
+        return;
+      }
+      updateVariation(index, "videoFile", file);
+    }
+  };
+
   const removeImage = (index: number) => {
     const updated = [...variations];
     updated[index] = {
@@ -84,6 +112,20 @@ export function VariationEditor({ variations, onChange, isUploading }: Variation
       imagePreview: undefined,
     };
     onChange(updated);
+  };
+
+  const removeVideo = (index: number) => {
+    const updated = [...variations];
+    updated[index] = {
+      ...updated[index],
+      video_url: null,
+      videoFile: undefined,
+      videoPreview: undefined,
+    };
+    onChange(updated);
+    if (videoInputRefs.current[index]) {
+      videoInputRefs.current[index]!.value = '';
+    }
   };
 
   return (
@@ -96,6 +138,7 @@ export function VariationEditor({ variations, onChange, isUploading }: Variation
       <div className="space-y-4">
         {variations.map((variation, index) => {
           const imageToShow = variation.imagePreview || variation.image_url;
+          const videoToShow = variation.videoPreview || variation.video_url;
 
           return (
             <div
@@ -130,46 +173,91 @@ export function VariationEditor({ variations, onChange, isUploading }: Variation
                 />
               </div>
 
-              {/* Image Upload */}
-              <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Imagem do Resultado</Label>
-                <input
-                  ref={(el) => (fileInputRefs.current[index] = el)}
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleImageChange(index, e)}
-                  className="hidden"
-                />
+              {/* Conditional Upload: Video for 'video' category, Image for others */}
+              {isVideoCategory ? (
+                /* Video Upload for video category */
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Vídeo do Resultado (MP4)</Label>
+                  <input
+                    ref={(el) => (videoInputRefs.current[index] = el)}
+                    type="file"
+                    accept="video/mp4"
+                    onChange={(e) => handleVideoChange(index, e)}
+                    className="hidden"
+                  />
 
-                {imageToShow ? (
-                  <div className="relative group">
-                    <img
-                      src={imageToShow}
-                      alt={`Variação ${index + 1}`}
-                      className="w-full max-h-48 object-contain rounded bg-background"
-                    />
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => removeImage(index)}
+                  {videoToShow ? (
+                    <div className="relative group">
+                      <video
+                        src={videoToShow}
+                        controls
+                        className="w-full max-h-48 rounded bg-background"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removeVideo(index)}
+                        disabled={isUploading}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => videoInputRefs.current[index]?.click()}
                       disabled={isUploading}
+                      className="w-full border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-muted-foreground hover:border-primary/50 transition-colors disabled:opacity-50"
                     >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => fileInputRefs.current[index]?.click()}
-                    disabled={isUploading}
-                    className="w-full border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-muted-foreground hover:border-primary/50 transition-colors disabled:opacity-50"
-                  >
-                    <Upload className="h-6 w-6 mb-2" />
-                    <span className="text-sm">Adicionar imagem</span>
-                  </button>
-                )}
-              </div>
+                      <Video className="h-6 w-6 mb-2" />
+                      <span className="text-sm">Adicionar vídeo MP4</span>
+                      <span className="text-xs mt-1">Máximo 100MB</span>
+                    </button>
+                  )}
+                </div>
+              ) : (
+                /* Image Upload for image/agent categories */
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Imagem do Resultado</Label>
+                  <input
+                    ref={(el) => (fileInputRefs.current[index] = el)}
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleImageChange(index, e)}
+                    className="hidden"
+                  />
+
+                  {imageToShow ? (
+                    <div className="relative group">
+                      <img
+                        src={imageToShow}
+                        alt={`Variação ${index + 1}`}
+                        className="w-full max-h-48 object-contain rounded bg-background"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => removeImage(index)}
+                        disabled={isUploading}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRefs.current[index]?.click()}
+                      disabled={isUploading}
+                      className="w-full border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-muted-foreground hover:border-primary/50 transition-colors disabled:opacity-50"
+                    >
+                      <Upload className="h-6 w-6 mb-2" />
+                      <span className="text-sm">Adicionar imagem</span>
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
