@@ -1,26 +1,14 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Clock, CheckCircle2 } from "lucide-react";
+import { Sparkles, Clock, CheckCircle2, Pencil, ExternalLink } from "lucide-react";
 import { DailyChallenge } from "@/hooks/useDailyChallenges";
 import { cn } from "@/lib/utils";
-
-// Mapeamento de objetivos para tags
-const OBJECTIVE_TAGS: Record<string, string[]> = {
-  criar_agente: ["agentes", "n8n", "automacao", "ia"],
-  vender_projeto: ["vendas", "comercial", "propostas"],
-  fechar_clientes: ["prospecao", "clientes", "vendas"],
-  vender_fechar_combo: ["vendas", "prospecao", "comercial"],
-  criar_proposta: ["propostas", "comercial", "vendas"],
-  viralizar: ["crescimento", "redes", "marketing"],
-  conteudo_vende: ["conteudo", "marketing", "vendas"],
-  agentes_viralizar_combo: ["agentes", "crescimento", "marketing", "automacao"],
-  agentes_fechar_viralizar_combo: ["agentes", "vendas", "crescimento", "automacao"],
-  infra_agente: ["infra", "n8n", "vps", "baserow", "whatsapp"],
-  criar_videos: ["videos", "producao"],
-  videos_viralizar_combo: ["videos", "crescimento", "marketing"],
-  criar_fotos: ["fotos", "producao"],
-  fotos_portfolio: ["fotos", "portfolio", "vendas"]
-};
+import { useObjectives } from "@/hooks/useObjectives";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useIsMentor } from "@/hooks/useIsMentor";
+import { Link } from "react-router-dom";
 
 interface RecommendedChallengesProps {
   selectedObjectives: string[];
@@ -33,8 +21,19 @@ export function RecommendedChallenges({
   allChallenges,
   isLoading 
 }: RecommendedChallengesProps) {
+  const { objectiveGroups } = useObjectives();
+  const { isAdmin } = useIsAdmin();
+  const { isMentor } = useIsMentor();
+  
+  const canEdit = isAdmin || isMentor;
+
   // Calcular tags relevantes baseadas nos objetivos selecionados
-  const relevantTags = selectedObjectives.flatMap(o => OBJECTIVE_TAGS[o] || []);
+  const relevantTags = selectedObjectives.flatMap(objectiveKey => {
+    const item = objectiveGroups
+      .flatMap(g => g.items)
+      .find(i => i.objective_key === objectiveKey);
+    return item?.tags || [];
+  });
   const uniqueTags = [...new Set(relevantTags)];
 
   // Filtrar desafios que correspondem às tags
@@ -70,10 +69,20 @@ export function RecommendedChallenges({
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Sparkles className="h-5 w-5 text-primary" />
-            Desafios Recomendados Para Você
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Desafios Recomendados Para Você
+            </CardTitle>
+            {canEdit && (
+              <Button variant="ghost" size="sm" asChild className="gap-2">
+                <Link to="/admin/challenges">
+                  <Pencil className="h-4 w-4" />
+                  Gerenciar Desafios
+                </Link>
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="text-center py-8">
           <p className="text-muted-foreground text-sm">
@@ -95,14 +104,26 @@ export function RecommendedChallenges({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <Sparkles className="h-5 w-5 text-primary" />
-          Desafios Recomendados Para Você
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Baseado nos seus objetivos: {uniqueTags.slice(0, 4).join(", ")}
-          {uniqueTags.length > 4 && ` +${uniqueTags.length - 4}`}
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Desafios Recomendados Para Você
+            </CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">
+              Baseado nos seus objetivos: {uniqueTags.slice(0, 4).join(", ")}
+              {uniqueTags.length > 4 && ` +${uniqueTags.length - 4}`}
+            </p>
+          </div>
+          {canEdit && (
+            <Button variant="ghost" size="sm" asChild className="gap-2">
+              <Link to="/admin/challenges">
+                <Pencil className="h-4 w-4" />
+                Gerenciar
+              </Link>
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {filteredChallenges.map((challenge) => (
@@ -115,7 +136,7 @@ export function RecommendedChallenges({
 
 function RecommendedChallengeCard({ challenge }: { challenge: DailyChallenge }) {
   const difficultyColors: Record<string, string> = {
-    iniciante: "bg-green-500/20 text-green-400 border-green-500/30",
+    iniciante: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
     intermediario: "bg-amber-500/20 text-amber-400 border-amber-500/30",
     avancado: "bg-red-500/20 text-red-400 border-red-500/30"
   };

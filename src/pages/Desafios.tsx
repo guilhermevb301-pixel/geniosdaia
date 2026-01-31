@@ -21,6 +21,7 @@ import { LEVEL_NAMES } from "@/lib/gamification";
 import { SubmitChallengeModal } from "@/components/challenges/SubmitChallengeModal";
 import { ObjectivesChecklist } from "@/components/challenges/ObjectivesChecklist";
 import { RecommendedChallenges } from "@/components/challenges/RecommendedChallenges";
+import { YourChallengesBanner } from "@/components/challenges/YourChallengesBanner";
 import { supabase } from "@/integrations/supabase/client";
 
 // ============= Utility Functions =============
@@ -529,6 +530,7 @@ export default function Desafios() {
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const userLevel = userXP?.current_level || 1;
+  const objectivesRef = useRef<HTMLDivElement>(null);
 
   // Carregar objetivos salvos do perfil
   useEffect(() => {
@@ -664,27 +666,43 @@ export default function Desafios() {
 
           {/* Tab: Active Challenge */}
           <TabsContent value="active" className="space-y-8">
-            {activeChallenge ? (
+            {/* Banner Personalizado "Seus Desafios" */}
+            <YourChallengesBanner
+              userTrack={mainTrack}
+              userLevel={userLevel}
+              recommendedCount={
+                allDailyChallenges.filter(c => {
+                  // Calcular tags dos objetivos selecionados
+                  const relevantTags = selectedObjectives;
+                  if (relevantTags.length === 0) return false;
+                  return relevantTags.some(tag => 
+                    c.track?.toLowerCase().includes(tag) || 
+                    c.title?.toLowerCase().includes(tag)
+                  );
+                }).length
+              }
+              selectedObjectivesCount={selectedObjectives.length}
+              onScrollToObjectives={() => {
+                objectivesRef.current?.scrollIntoView({ behavior: "smooth" });
+              }}
+            />
+            
+            {/* Checklist de Objetivos */}
+            <div ref={objectivesRef}>
+              <ObjectivesChecklist 
+                selectedObjectives={selectedObjectives}
+                onObjectivesChange={handleObjectivesChange}
+              />
+            </div>
+            
+            {/* Desafios Recomendados */}
+            <RecommendedChallenges 
+              selectedObjectives={selectedObjectives}
+              allChallenges={allDailyChallenges}
+            />
+            
+            {activeChallenge && (
               <>
-                <ActiveChallengeHero 
-                  challenge={activeChallenge} 
-                  submissionsCount={submissions.length}
-                  onSubmitSuccess={() => refetchSubmissions()}
-                  userTrack={mainTrack}
-                />
-                
-                {/* Checklist de Objetivos */}
-                <ObjectivesChecklist 
-                  selectedObjectives={selectedObjectives}
-                  onObjectivesChange={handleObjectivesChange}
-                />
-                
-                {/* Desafios Recomendados */}
-                <RecommendedChallenges 
-                  selectedObjectives={selectedObjectives}
-                  allChallenges={allDailyChallenges}
-                />
-                
                 <CommunitySubmissions 
                   submissions={sortedSubmissions}
                   onVote={handleVote}
@@ -694,12 +712,6 @@ export default function Desafios() {
                 />
                 <ChallengeRanking submissions={sortedSubmissions} />
               </>
-            ) : (
-              <Card className="p-12 text-center">
-                <Trophy className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold mb-2">Nenhum desafio ativo</h3>
-                <p className="text-muted-foreground">Volte em breve para novos desafios!</p>
-              </Card>
             )}
           </TabsContent>
 
