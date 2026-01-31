@@ -1,14 +1,9 @@
-import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Clock, CheckCircle2, Pencil, ExternalLink } from "lucide-react";
+import { Sparkles, Clock, CheckCircle2 } from "lucide-react";
 import { DailyChallenge } from "@/hooks/useDailyChallenges";
 import { cn } from "@/lib/utils";
 import { useObjectives } from "@/hooks/useObjectives";
-import { useIsAdmin } from "@/hooks/useIsAdmin";
-import { useIsMentor } from "@/hooks/useIsMentor";
-import { Link } from "react-router-dom";
 
 interface RecommendedChallengesProps {
   selectedObjectives: string[];
@@ -22,10 +17,6 @@ export function RecommendedChallenges({
   isLoading 
 }: RecommendedChallengesProps) {
   const { objectiveGroups } = useObjectives();
-  const { isAdmin } = useIsAdmin();
-  const { isMentor } = useIsMentor();
-  
-  const canEdit = isAdmin || isMentor;
 
   // Calcular tags relevantes baseadas nos objetivos selecionados
   const relevantTags = selectedObjectives.flatMap(objectiveKey => {
@@ -69,20 +60,10 @@ export function RecommendedChallenges({
     return (
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Sparkles className="h-5 w-5 text-primary" />
-              Desafios Recomendados Para Você
-            </CardTitle>
-            {canEdit && (
-              <Button variant="ghost" size="sm" asChild className="gap-2">
-                <Link to="/admin/challenges">
-                  <Pencil className="h-4 w-4" />
-                  Gerenciar Desafios
-                </Link>
-              </Button>
-            )}
-          </div>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Sparkles className="h-5 w-5 text-primary" />
+            Desafios Recomendados Para Você
+          </CardTitle>
         </CardHeader>
         <CardContent className="text-center py-8">
           <p className="text-muted-foreground text-sm">
@@ -104,25 +85,15 @@ export function RecommendedChallenges({
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Sparkles className="h-5 w-5 text-primary" />
-              Desafios Recomendados Para Você
-            </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              Baseado nos seus objetivos: {uniqueTags.slice(0, 4).join(", ")}
-              {uniqueTags.length > 4 && ` +${uniqueTags.length - 4}`}
-            </p>
-          </div>
-          {canEdit && (
-            <Button variant="ghost" size="sm" asChild className="gap-2">
-              <Link to="/admin/challenges">
-                <Pencil className="h-4 w-4" />
-                Gerenciar
-              </Link>
-            </Button>
-          )}
+        <div>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Sparkles className="h-5 w-5 text-primary" />
+            Desafios Recomendados Para Você
+          </CardTitle>
+          <p className="text-sm text-muted-foreground mt-1">
+            Baseado nos seus objetivos: {uniqueTags.slice(0, 4).join(", ")}
+            {uniqueTags.length > 4 && ` +${uniqueTags.length - 4}`}
+          </p>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
