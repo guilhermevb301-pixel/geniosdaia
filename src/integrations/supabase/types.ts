@@ -734,6 +734,42 @@ export type Database = {
           },
         ]
       }
+      objective_challenge_links: {
+        Row: {
+          created_at: string
+          daily_challenge_id: string
+          id: string
+          objective_item_id: string
+        }
+        Insert: {
+          created_at?: string
+          daily_challenge_id: string
+          id?: string
+          objective_item_id: string
+        }
+        Update: {
+          created_at?: string
+          daily_challenge_id?: string
+          id?: string
+          objective_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "objective_challenge_links_daily_challenge_id_fkey"
+            columns: ["daily_challenge_id"]
+            isOneToOne: false
+            referencedRelation: "daily_challenges"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "objective_challenge_links_objective_item_id_fkey"
+            columns: ["objective_item_id"]
+            isOneToOne: false
+            referencedRelation: "objective_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       objective_groups: {
         Row: {
           created_at: string
