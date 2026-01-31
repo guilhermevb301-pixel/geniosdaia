@@ -17,7 +17,8 @@ import {
   Trophy,
   Award,
   NotebookPen,
-  Bot
+  Bot,
+  Image
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -320,6 +321,19 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                   >
                     <Trophy className="h-4 w-4" />
                     Desafios
+                  </Link>
+                  <Link
+                    to="/admin/banners"
+                    onClick={handleClick}
+                    className={cn(
+                      "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                      isActive("/admin/banners")
+                        ? "text-primary bg-primary/10"
+                        : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
+                    )}
+                  >
+                    <Image className="h-4 w-4" />
+                    Banners
                   </Link>
                 </div>
               </CollapsibleContent>
