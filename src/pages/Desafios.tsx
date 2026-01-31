@@ -22,6 +22,7 @@ import { SubmitChallengeModal } from "@/components/challenges/SubmitChallengeMod
 import { ObjectivesChecklist } from "@/components/challenges/ObjectivesChecklist";
 import { RecommendedChallenges } from "@/components/challenges/RecommendedChallenges";
 import { YourChallengesBanner } from "@/components/challenges/YourChallengesBanner";
+import { ChallengeProgressSection } from "@/components/challenges/ChallengeProgressSection";
 import { supabase } from "@/integrations/supabase/client";
 
 // ============= Utility Functions =============
@@ -695,7 +696,10 @@ export default function Desafios() {
               />
             </div>
             
-            {/* Desafios Recomendados */}
+            {/* Progress Section - Active Challenge with Countdown */}
+            <ChallengeProgressSection selectedObjectives={selectedObjectives} />
+            
+            {/* Desafios Recomendados (fallback when no linked challenges) */}
             <RecommendedChallenges 
               selectedObjectives={selectedObjectives}
               allChallenges={allDailyChallenges}
