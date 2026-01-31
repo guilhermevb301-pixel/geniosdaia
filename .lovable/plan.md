@@ -1,91 +1,102 @@
 
-# Plano: Checklist Multi-Selecao com Dependencias Automaticas
+# Plano: Editar Arena dos Genios para Mentores + Corrigir Duplicacao
 
-## Resumo
+## Problema Identificado na Imagem
 
-Adicionar um checklist interativo de objetivos na aba "Desafio Ativo" da pagina `/desafios`. O checklist tera grupos tematicos, dependencias automaticas (ex: marcar "Criar Agente" obriga marcar "Infra do Agente"), e salvamento no perfil do usuario. Abaixo do checklist, mostrara "Desafios Recomendados Para Voce" filtrados pelos objetivos selecionados.
+A secao "Defina Seus Objetivos" esta aparecendo **duplicada multiplas vezes**. Isso provavelmente e um problema de renderizacao ou key duplicada no React.
 
 ---
 
-## Estrutura do Checklist
+## Resumo das Mudancas
+
+1. **Corrigir duplicacao** do checklist de objetivos
+2. **Substituir banner** "Desafio da Semana" por "Seus Desafios" (personalizado)
+3. **Permitir edicao** de objetivos por mentores/admins
+4. **Permitir edicao** do catalogo de desafios recomendados por mentores/admins
+5. **Persistencia** em tabelas do banco de dados
+6. **Controle de acesso**: so mentor/admin veem botoes de edicao
+
+---
+
+## Estrutura de Dados Proposta
+
+### Nova Tabela: `objective_groups`
+
+Para armazenar os grupos de objetivos (editaveis por mentor/admin):
+
+| Campo | Tipo | Descricao |
+|-------|------|-----------|
+| id | uuid | PK |
+| title | text | Titulo do grupo (ex: "A) Quero construir meu Agente") |
+| order_index | int | Ordenacao |
+| created_at | timestamp | Data de criacao |
+
+### Nova Tabela: `objective_items`
+
+Para armazenar os itens de cada grupo:
+
+| Campo | Tipo | Descricao |
+|-------|------|-----------|
+| id | uuid | PK |
+| group_id | uuid | FK para objective_groups |
+| label | text | Texto do objetivo |
+| objective_key | text | ID unico (ex: "criar_agente") |
+| requires_infra | bool | Se requer infra automaticamente |
+| is_infra | bool | Se e o item de infra |
+| order_index | int | Ordenacao |
+| tags | text[] | Tags para filtrar desafios |
+| created_at | timestamp | Data de criacao |
+
+---
+
+## Fluxo de Edicao para Mentor/Admin
 
 ```text
 +------------------------------------------+
-|  DEFINA SEUS OBJETIVOS                   |
+|  DEFINA SEUS OBJETIVOS    [Editar]       |  <- Botao visivel so para mentor/admin
 +------------------------------------------+
 |                                          |
-|  A) Quero construir meu Agente (produto) |
-|  [ ] Criar meu 1o Agente de IA do zero   |
+|  A) Quero construir meu Agente (produto) |  [Editar Grupo] [Adicionar Item]
+|  [x] Criar meu 1o Agente de IA do zero   |  [Editar] [Excluir]
 |                                          |
-|  B) Quero vender (dinheiro)              |
-|  [ ] Vender primeiro projeto de Agente   |
-|  [ ] Fechar clientes para Agentes        |
-|  [ ] Vender + Fechar clientes (combo)    |
-|  [ ] Criar proposta que vende            |
-|                                          |
-|  C) Quero crescer (audiencia)            |
-|  [ ] Viralizar nas redes                 |
-|  [ ] Criar conteudo que vende            |
-|  [ ] Criar Agentes + Viralizar (combo)   |
-|  [ ] Criar Agentes + Fechar + Viralizar  |
-|                                          |
-|  D) Infra obrigatoria (pre-requisito)    |
-|  [x] Infra do Agente (OBRIGATORIO)       |  <- auto-marcado se A ou combos de C
-|                                          |
-|  E) Ativos criativos                     |
-|  [ ] Criar videos incriveis              |
-|  [ ] Criar videos + Viralizar (combo)    |
-|  [ ] Criar fotos profissionais           |
-|  [ ] Fotos + portfolio pra vender        |
-|                                          |
-+------------------------------------------+
-|  DESAFIOS RECOMENDADOS PARA VOCE         |
-+------------------------------------------+
-|  [Card Desafio 1] [Card Desafio 2] ...   |
-|  OU                                      |
-|  "Marque seus objetivos acima para ver   |
-|   desafios personalizados"               |
+|  ... outros grupos ...                   |
 +------------------------------------------+
 ```
 
----
-
-## Logica de Dependencias
-
-| Quando o usuario marca... | Acao automatica |
-|---------------------------|-----------------|
-| "Criar meu 1o Agente de IA do zero" (grupo A) | Auto-marca "Infra do Agente" (grupo D) e bloqueia desmarcacao |
-| "Criar Agentes + Viralizar (combo)" (grupo C) | Auto-marca "Infra do Agente" (grupo D) e bloqueia desmarcacao |
-| "Criar Agentes + Fechar + Viralizar (combo completo)" (grupo C) | Auto-marca "Infra do Agente" (grupo D) e bloqueia desmarcacao |
-| Qualquer item de "Quero vender" (grupo B) | Mostra badge de sugestao: "Recomendamos: Criar proposta que vende" |
+Modal de edicao permitira:
+- Editar titulo do grupo
+- Adicionar/remover/editar itens
+- Definir regras de dependencia (requires_infra, is_infra)
+- Definir tags para filtragem de desafios
 
 ---
 
-## Armazenamento
+## Substituicao do Banner
 
-- Os objetivos serao salvos no campo `goals.selected_objectives` do `user_profiles` como array de strings
-- Exemplo: `["criar_agente", "infra_agente", "vender_projeto"]`
-- Ao carregar a pagina, restaura as marcacoes salvas
+Antes:
+```text
++------------------------------------------+
+|  DESAFIO DA SEMANA (banner gradiente)    |
+|  Titulo do desafio global                |
+|  Tempo restante, participantes, etc      |
++------------------------------------------+
+```
 
----
+Depois:
+```text
++------------------------------------------+
+|  SEUS DESAFIOS (banner personalizado)    |
+|  Baseado na sua trilha: Agentes          |
+|  X desafios para voce | Nivel: Y         |
++------------------------------------------+
+```
 
-## Filtragem de Desafios
-
-Cada objetivo tera tags associadas para filtrar os desafios:
-
-| Objetivo | Tags para filtrar |
-|----------|-------------------|
-| Criar Agente | agentes, n8n, automacao |
-| Vender projeto | vendas, comercial, propostas |
-| Fechar clientes | prospecao, clientes, vendas |
-| Criar proposta | propostas, comercial |
-| Viralizar | crescimento, redes, marketing |
-| Criar conteudo que vende | conteudo, marketing, vendas |
-| Criar videos | videos, producao |
-| Criar fotos | fotos, producao |
-| Infra do Agente | infra, n8n, vps, baserow |
-
-Os desafios personalizados (da tabela `daily_challenges`) serao filtrados por estas tags.
+O banner mostrara:
+- Titulo personalizado: "Seus Desafios"
+- Trilha principal do usuario
+- Quantidade de desafios recomendados
+- Nivel atual do usuario
+- Botao para ver todos os desafios
 
 ---
 
@@ -93,153 +104,125 @@ Os desafios personalizados (da tabela `daily_challenges`) serao filtrados por es
 
 | Arquivo | Mudancas |
 |---------|----------|
-| `src/pages/Desafios.tsx` | Adicionar novo componente `ObjectivesChecklist` na aba "Desafio Ativo", acima de `PersonalizedChallengesSection`. Adicionar secao "Desafios Recomendados Para Voce" |
-| `src/hooks/useUserProfile.ts` | Expandir tipo `goals` para incluir `selected_objectives: string[]` |
+| `src/pages/Desafios.tsx` | Remover duplicacao, substituir banner, adicionar botoes de edicao condicionais |
+| `src/components/challenges/ObjectivesChecklist.tsx` | Adicionar modo de edicao, carregar dados do banco |
+| `src/components/challenges/RecommendedChallenges.tsx` | Adicionar botao de edicao para mentor/admin |
+| Nova migracao SQL | Criar tabelas objective_groups e objective_items |
 
 ---
 
-## Novo Componente: ObjectivesChecklist
+## Componentes Novos
+
+### 1. `ObjectivesEditorModal.tsx`
+
+Modal para mentor/admin editar grupos e itens de objetivos:
+- Lista de grupos com drag-and-drop para reordenar
+- Formulario para adicionar/editar grupo
+- Formulario para adicionar/editar item
+- Campos: label, requires_infra, is_infra, tags
+
+### 2. `YourChallengesBanner.tsx`
+
+Banner personalizado substituindo o ActiveChallengeHero:
+- Mostra trilha do usuario
+- Quantidade de desafios recomendados
+- Nivel atual
+- Gradiente similar ao design atual
+
+---
+
+## Logica de Permissao
 
 ```tsx
-// Estrutura de dados para os objetivos
-const OBJECTIVES = {
-  grupo_a: {
-    title: "A) Quero construir meu Agente (produto)",
-    items: [
-      { id: "criar_agente", label: "Criar meu 1o Agente de IA do zero (rodando)", requiresInfra: true }
-    ]
-  },
-  grupo_b: {
-    title: "B) Quero vender (dinheiro)",
-    items: [
-      { id: "vender_projeto", label: "Vender primeiro projeto de Agente de IA" },
-      { id: "fechar_clientes", label: "Fechar clientes para Agentes" },
-      { id: "vender_fechar_combo", label: "Vender + Fechar clientes (combo)" },
-      { id: "criar_proposta", label: "Criar proposta que vende (1 pagina + 3 pacotes)" }
-    ],
-    suggestProposal: true
-  },
-  // ... outros grupos
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useIsMentor } from "@/hooks/useIsMentor";
+
+function ObjectivesChecklist() {
+  const { isAdmin } = useIsAdmin();
+  const { isMentor } = useIsMentor();
+  const canEdit = isAdmin || isMentor;
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle>Defina Seus Objetivos</CardTitle>
+          {canEdit && (
+            <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
+              <Pencil className="h-4 w-4 mr-2" />
+              Editar
+            </Button>
+          )}
+        </div>
+      </CardHeader>
+      {/* ... conteudo ... */}
+    </Card>
+  );
 }
 ```
 
 ---
 
-## Fluxo de Usuario
+## Correcao da Duplicacao
+
+O problema de duplicacao pode estar em:
+1. Multiplas renderizacoes do componente no `Desafios.tsx`
+2. Problema de key no map
+3. StrictMode do React (renderiza 2x em dev)
+
+Verificar e garantir que:
+- `ObjectivesChecklist` aparece apenas UMA VEZ
+- Keys unicas em todas as listas
+
+---
+
+## RLS Policies para Novas Tabelas
+
+```sql
+-- objective_groups
+CREATE POLICY "Anyone can read objective_groups"
+ON objective_groups FOR SELECT USING (true);
+
+CREATE POLICY "Mentors and admins can manage objective_groups"
+ON objective_groups FOR ALL
+USING (has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'mentor'))
+WITH CHECK (has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'mentor'));
+
+-- objective_items (mesmas policies)
+```
+
+---
+
+## Persistencia dos Dados
+
+1. **Objetivos do usuario**: ja salvo em `user_profiles.goals.selected_objectives` (array)
+2. **Grupos de objetivos**: nova tabela `objective_groups`
+3. **Itens de objetivos**: nova tabela `objective_items`
+4. **Desafios recomendados**: ja existe em `daily_challenges`
+
+---
+
+## Fluxo Completo
 
 1. Usuario acessa `/desafios`
-2. Na aba "Desafio Ativo", ve primeiro o card do Desafio da Semana (existente)
-3. Abaixo, ve o novo checklist "Defina Seus Objetivos"
-4. Marca opcoes - se marcar algo que requer Infra, auto-marca e bloqueia
-5. Escolhas sao salvas automaticamente (debounce de 500ms)
-6. Abaixo do checklist, ve "Desafios Recomendados Para Voce" filtrados
-7. Se nenhum objetivo marcado, ve estado vazio com instrucao
-
----
-
-## Detalhes Tecnicos
-
-### 1. Estado local e persistencia
-
-```tsx
-const [selectedObjectives, setSelectedObjectives] = useState<string[]>([]);
-
-// Ao carregar, restaura do profile.goals.selected_objectives
-useEffect(() => {
-  if (profile?.goals?.selected_objectives) {
-    setSelectedObjectives(profile.goals.selected_objectives);
-  }
-}, [profile]);
-
-// Ao mudar, salva com debounce
-useEffect(() => {
-  const timer = setTimeout(() => {
-    updateProfile({
-      goals: {
-        ...profile?.goals,
-        selected_objectives: selectedObjectives
-      }
-    });
-  }, 500);
-  return () => clearTimeout(timer);
-}, [selectedObjectives]);
-```
-
-### 2. Logica de dependencias
-
-```tsx
-const INFRA_REQUIRED_BY = ["criar_agente", "agentes_viralizar_combo", "agentes_fechar_viralizar_combo"];
-
-const toggleObjective = (id: string) => {
-  setSelectedObjectives(prev => {
-    let newSelection = prev.includes(id)
-      ? prev.filter(o => o !== id)
-      : [...prev, id];
-
-    // Se marcou algo que requer infra, adiciona infra
-    if (INFRA_REQUIRED_BY.includes(id) && !prev.includes(id)) {
-      if (!newSelection.includes("infra_agente")) {
-        newSelection.push("infra_agente");
-      }
-    }
-
-    // Se desmarcou tudo que requer infra, libera infra para desmarcacao
-    // (a infra so pode ser desmarcada se nenhum item que requer estiver marcado)
-
-    return newSelection;
-  });
-};
-
-const isInfraLocked = selectedObjectives.some(o => INFRA_REQUIRED_BY.includes(o));
-```
-
-### 3. Sugestao de proposta (grupo B)
-
-```tsx
-const showProposalSuggestion = 
-  selectedObjectives.some(o => ["vender_projeto", "fechar_clientes", "vender_fechar_combo"].includes(o)) &&
-  !selectedObjectives.includes("criar_proposta");
-```
-
-### 4. Filtragem de desafios
-
-```tsx
-const OBJECTIVE_TAGS: Record<string, string[]> = {
-  criar_agente: ["agentes", "n8n", "automacao"],
-  vender_projeto: ["vendas", "comercial", "propostas"],
-  // ...
-};
-
-const relevantTags = selectedObjectives.flatMap(o => OBJECTIVE_TAGS[o] || []);
-const filteredChallenges = dailyChallenges.filter(c => 
-  relevantTags.some(tag => c.track?.includes(tag) || c.title?.toLowerCase().includes(tag))
-);
-```
-
----
-
-## Resumo Visual
-
-A aba "Desafio Ativo" tera esta ordem:
-
-1. **Desafio da Semana** (card hero existente)
-2. **Defina Seus Objetivos** (NOVO - checklist com grupos A-E)
-3. **Desafios Recomendados Para Voce** (NOVO - lista filtrada)
-4. ~~Seu Desafio Personalizado (Hoje)~~ (sera substituido pelos recomendados)
-5. ~~Bonus da Semana~~ (sera substituido pelos recomendados)
-6. **Submissoes da Comunidade** (existente)
-7. **Ranking do Desafio** (existente)
+2. Ve banner "Seus Desafios" com info personalizada
+3. Abaixo, ve checklist de objetivos (carregado do banco)
+4. Marca objetivos (salvo no perfil)
+5. Ve desafios recomendados filtrados
+6. Se mentor/admin: ve botoes de edicao
+7. Mentor clica em "Editar Objetivos" -> abre modal
+8. Mentor edita grupos/itens -> salva no banco
+9. Mudancas refletem para todos os usuarios
 
 ---
 
 ## Criterios de Aceite
 
-- [x] Checklist multi-selecao com 5 grupos (A-E)
-- [x] Dependencia: marcar Agente/combos auto-marca Infra e bloqueia desmarcacao
-- [x] Sugestao visual ao marcar itens de venda (recomenda proposta)
-- [x] Salvamento automatico no campo `goals.selected_objectives`
-- [x] Restauracao das marcacoes ao recarregar pagina
-- [x] Secao "Desafios Recomendados" filtra por tags dos objetivos
-- [x] Estado vazio quando nenhum objetivo marcado
-- [x] Layout dark mantido, visual consistente
-- [x] Tudo em PT-BR
+- [ ] "Defina Seus Objetivos" aparece apenas uma vez (corrigir duplicacao)
+- [ ] Banner do topo e "Seus Desafios" (personalizado)
+- [ ] Mentor/admin ve botoes de edicao
+- [ ] Membro comum so ve e marca objetivos
+- [ ] Mentor consegue editar objetivos (itens, grupos, textos)
+- [ ] Mentor consegue editar catalogo de desafios recomendados
+- [ ] Tudo persistente ao recarregar
+- [ ] Visual dark consistente, sem placeholders
