@@ -17,6 +17,7 @@ export interface UserProfile {
     nicho?: string;
     plataforma?: string;
     monetizar?: string;
+    selected_objectives?: string[];
   };
   created_at: string;
   updated_at: string;
