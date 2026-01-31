@@ -1,53 +1,126 @@
 
+# Plano: Corrigir Selecao de Desafios e Adicionar Tempo Flexivel
 
-# Plano: Melhorar UX para Vincular Desafios aos Objetivos
+## Problemas Identificados
 
-## Problema Identificado
+### 1. Checkbox nao funciona no modal de vincular desafios
+Analisando a imagem e o codigo, o modal `ChallengeLinkingModal` esta aparecendo corretamente, mas os checkboxes nao estao respondendo aos cliques. Possivel causa:
+- O componente Checkbox do Radix UI pode ter problemas com propagacao de eventos quando usado dentro de um elemento clicavel
+- Conflito entre o `onClick` do container e o `onCheckedChange` do Checkbox
 
-O sistema atual ja tem a funcionalidade de vincular desafios aos objetivos, porem:
+### 2. Tempo estimado so suporta minutos
+O campo `estimated_minutes` e um INTEGER que so aceita minutos. Para desafios que demoram dias, semanas ou meses, precisamos de uma estrutura mais flexivel.
 
-1. A secao de "Desafios Vinculados" so aparece ao **editar** um item existente (nao ao criar)
-2. A tabela `objective_challenge_links` esta vazia - nenhum link foi salvo ainda
-3. A interface nao deixa claro que voce precisa clicar no icone de lapis para acessar os vinculos
+---
 
 ## Solucao Proposta
 
-Melhorar a experiencia de vinculacao com:
+### Parte 1: Corrigir a Interacao do Checkbox
 
-### 1. Adicionar Indicador Visual na Lista de Itens
+No `ChallengeLinkingModal.tsx`, modificar a estrutura para garantir que os cliques funcionem:
 
-Mostrar um contador de desafios vinculados diretamente na lista de objetivos:
-
-```text
-+------------------------------------------+
-|  A) Quero vender e viralizar             |
-+------------------------------------------+
-|  [icone] Viralizar nas redes...          |
-|          crescimento, redes, marketing   |
-|          [3 desafios vinculados]  <- NOVO|
-|                              [lapis][lixo]|
-+------------------------------------------+
+**Antes (problematico):**
+```tsx
+<div onClick={() => toggleChallenge(challenge.id)}>
+  <Checkbox 
+    checked={...}
+    onCheckedChange={() => toggleChallenge(challenge.id)}
+  />
+</div>
 ```
 
-### 2. Adicionar Botao Dedicado para Vincular Desafios
-
-Alem do botao de editar, adicionar um botao especifico "Vincular Desafios":
-
-```text
-[Link2] [Pencil] [Trash]
+**Depois (corrigido):**
+```tsx
+<div onClick={() => toggleChallenge(challenge.id)}>
+  <Checkbox 
+    checked={...}
+    onCheckedChange={() => toggleChallenge(challenge.id)}
+    onClick={(e) => e.stopPropagation()} // Evitar dupla execucao
+  />
+</div>
 ```
 
-### 3. Melhorar o Modal de Edicao
+Alem disso, adicionar `pointer-events-none` ao checkbox para deixar o container ser o unico responsavel pelo clique, ou usar apenas um dos dois metodos de clique.
 
-Reorganizar o modal para dar mais destaque aos desafios vinculados:
-- Mover a secao "Desafios Vinculados" para um local mais visivel
-- Adicionar badge mostrando quantos desafios estao vinculados no titulo
+### Parte 2: Tempo Estimado Flexivel
 
-### 4. Permitir Vincular ao Criar Novo Item
+Alterar o campo de tempo para suportar diferentes unidades (minutos, horas, dias, semanas).
 
-Atualmente so permite vincular ao editar. Solucao:
-- Criar o item primeiro
-- Depois abrir automaticamente para edicao com a secao de vinculos
+**Mudancas no Banco de Dados:**
+
+Adicionar nova coluna para armazenar a unidade de tempo:
+
+```sql
+ALTER TABLE daily_challenges 
+ADD COLUMN estimated_time_unit text DEFAULT 'minutes';
+-- Valores possiveis: 'minutes', 'hours', 'days', 'weeks'
+```
+
+**Mudancas na Interface:**
+
+Substituir o campo unico de minutos por dois campos:
+
+```text
++---------------------------+
+| Tempo Estimado            |
+| [  3  ] [  Dias     v  ]  |
++---------------------------+
+```
+
+**Componente de edicao modificado:**
+
+```tsx
+<div className="grid grid-cols-2 gap-2">
+  <div className="space-y-2">
+    <Label>Quantidade</Label>
+    <Input
+      type="number"
+      value={formData.estimated_time_value}
+      onChange={(e) => setFormData({
+        ...formData, 
+        estimated_time_value: parseInt(e.target.value)
+      })}
+    />
+  </div>
+  <div className="space-y-2">
+    <Label>Unidade</Label>
+    <Select
+      value={formData.estimated_time_unit}
+      onValueChange={(value) => setFormData({
+        ...formData, 
+        estimated_time_unit: value
+      })}
+    >
+      <SelectTrigger>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="minutes">Minutos</SelectItem>
+        <SelectItem value="hours">Horas</SelectItem>
+        <SelectItem value="days">Dias</SelectItem>
+        <SelectItem value="weeks">Semanas</SelectItem>
+      </SelectContent>
+    </Select>
+  </div>
+</div>
+```
+
+**Exibicao formatada:**
+
+```tsx
+function formatEstimatedTime(value: number, unit: string) {
+  const labels = {
+    minutes: { singular: 'minuto', plural: 'minutos', short: 'min' },
+    hours: { singular: 'hora', plural: 'horas', short: 'h' },
+    days: { singular: 'dia', plural: 'dias', short: 'd' },
+    weeks: { singular: 'semana', plural: 'semanas', short: 'sem' },
+  };
+  const label = labels[unit] || labels.minutes;
+  return `${value} ${value === 1 ? label.singular : label.plural}`;
+}
+
+// Uso: "3 dias", "1 semana", "45 minutos"
+```
 
 ---
 
@@ -55,170 +128,146 @@ Atualmente so permite vincular ao editar. Solucao:
 
 | Arquivo | Mudancas |
 |---------|----------|
-| `src/components/admin/ObjectivesEditor.tsx` | Adicionar indicador de vinculos na lista, botao dedicado, melhorar modal |
-| `src/hooks/useObjectiveChallengeLinks.ts` | Adicionar query para buscar contagem de links por item |
+| Nova migracao SQL | Adicionar coluna `estimated_time_unit` |
+| `src/components/admin/ChallengeLinkingModal.tsx` | Corrigir evento de clique do checkbox |
+| `src/components/admin/DailyChallengesEditor.tsx` | Adicionar seletor de unidade de tempo |
+| `src/hooks/useDailyChallengesAdmin.ts` | Atualizar interface para incluir unidade |
+| `src/hooks/useDailyChallenges.ts` | Atualizar tipo DailyChallenge |
+| `src/components/challenges/PersonalizedChallengeCard.tsx` | Formatar exibicao do tempo |
+| `src/components/challenges/RecommendedChallenges.tsx` | Formatar exibicao do tempo |
 
 ---
 
-## Alteracoes Detalhadas
+## Detalhes Tecnicos
 
-### ObjectivesEditor.tsx - Lista de Itens
+### Migracao SQL
 
-Adicionar badge com contagem de desafios vinculados:
+```sql
+-- Adicionar coluna para unidade de tempo
+ALTER TABLE public.daily_challenges 
+ADD COLUMN estimated_time_unit text DEFAULT 'minutes';
 
-```tsx
-// Na lista de itens (linha ~287-343)
-<div className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border">
-  <div className="flex-1 min-w-0">
-    <div className="flex items-center gap-2 flex-wrap">
-      <span className="text-sm font-medium">{item.label}</span>
-      {item.is_infra && (
-        <Badge variant="secondary" className="text-xs">INFRA</Badge>
-      )}
-    </div>
-    <div className="flex items-center gap-2 mt-1">
-      <code className="text-xs text-muted-foreground">{item.objective_key}</code>
-      {/* NOVO: Indicador de desafios vinculados */}
-      <Badge 
-        variant="outline" 
-        className="text-xs text-primary border-primary/30"
-      >
-        <Link2 className="h-3 w-3 mr-1" />
-        {linkedCount[item.id] || 0} desafios
-      </Badge>
-    </div>
-  </div>
-  <div className="flex items-center gap-1 shrink-0">
-    {/* NOVO: Botao especifico para vinculos */}
-    <Button
-      variant="ghost"
-      size="sm"
-      title="Vincular desafios"
-      onClick={() => openLinkingModal(item)}
-    >
-      <Link2 className="h-4 w-4 text-primary" />
-    </Button>
-    <Button variant="ghost" size="sm" onClick={() => handleOpenItemDialog(group.id, item)}>
-      <Pencil className="h-4 w-4" />
-    </Button>
-    <Button variant="ghost" size="sm" onClick={() => setDeleteTarget({ type: "item", id: item.id })}>
-      <Trash2 className="h-4 w-4 text-destructive" />
-    </Button>
-  </div>
-</div>
+-- Adicionar constraint para valores validos
+ALTER TABLE public.daily_challenges 
+ADD CONSTRAINT valid_time_unit 
+CHECK (estimated_time_unit IN ('minutes', 'hours', 'days', 'weeks'));
 ```
 
-### ObjectivesEditor.tsx - Modal de Vinculos
+### Funcao de Formatacao (utils)
 
-Criar um modal dedicado so para vincular desafios (mais focado):
+Criar em `src/lib/utils.ts` ou novo arquivo `src/lib/time.ts`:
 
 ```tsx
-// Novo modal so para vinculos
-<Dialog open={isLinkingModalOpen} onOpenChange={setIsLinkingModalOpen}>
-  <DialogContent className="max-w-2xl">
-    <DialogHeader>
-      <DialogTitle className="flex items-center gap-2">
-        <Link2 className="h-5 w-5 text-primary" />
-        Vincular Desafios ao Objetivo
-      </DialogTitle>
-      <DialogDescription>
-        "{linkingItem?.label}"
-      </DialogDescription>
-    </DialogHeader>
-    
-    <div className="py-4">
-      <Input
-        placeholder="Buscar desafios por titulo ou trilha..."
-        value={challengeSearchQuery}
-        onChange={(e) => setChallengeSearchQuery(e.target.value)}
-        className="mb-4"
-      />
-      
-      <div className="text-sm text-muted-foreground mb-2">
-        {selectedChallengeIds.length} desafio(s) selecionado(s)
-      </div>
-      
-      <ScrollArea className="h-[400px] border rounded-lg">
-        {filteredChallenges.map(challenge => (
-          <div
-            key={challenge.id}
-            className="flex items-center gap-3 p-3 border-b hover:bg-muted/50 cursor-pointer"
-            onClick={() => toggleChallengeLink(challenge.id)}
-          >
-            <Checkbox checked={selectedChallengeIds.includes(challenge.id)} />
-            <div className="flex-1 min-w-0">
-              <div className="font-medium text-sm">{challenge.title}</div>
-              <div className="text-xs text-muted-foreground">{challenge.objective}</div>
-            </div>
-            <div className="shrink-0 flex gap-2">
-              <Badge variant="secondary">{challenge.track}</Badge>
-              <Badge variant="outline">{challenge.difficulty}</Badge>
-              <span className="text-xs text-muted-foreground">
-                {challenge.estimated_minutes}min
-              </span>
-            </div>
-          </div>
-        ))}
-      </ScrollArea>
-    </div>
-    
-    <DialogFooter>
-      <Button variant="outline" onClick={() => setIsLinkingModalOpen(false)}>
-        Cancelar
-      </Button>
-      <Button onClick={handleSaveLinks} disabled={isSaving}>
-        Salvar Vinculos
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+export type TimeUnit = 'minutes' | 'hours' | 'days' | 'weeks';
+
+export function formatEstimatedTime(
+  value: number | null, 
+  unit: TimeUnit = 'minutes'
+): string {
+  if (!value) return '';
+  
+  const labels: Record<TimeUnit, { singular: string; plural: string; short: string }> = {
+    minutes: { singular: 'minuto', plural: 'minutos', short: 'min' },
+    hours: { singular: 'hora', plural: 'horas', short: 'h' },
+    days: { singular: 'dia', plural: 'dias', short: 'd' },
+    weeks: { singular: 'semana', plural: 'semanas', short: 'sem' },
+  };
+  
+  const label = labels[unit];
+  return `${value} ${value === 1 ? label.singular : label.plural}`;
+}
+
+export function formatEstimatedTimeShort(
+  value: number | null, 
+  unit: TimeUnit = 'minutes'
+): string {
+  if (!value) return '';
+  
+  const shorts: Record<TimeUnit, string> = {
+    minutes: 'min',
+    hours: 'h',
+    days: 'd',
+    weeks: 'sem',
+  };
+  
+  return `${value}${shorts[unit]}`;
+}
 ```
 
-### useObjectiveChallengeLinks.ts - Adicionar Contagem
+### Atualizacao da Interface DailyChallenge
 
 ```tsx
-// Adicionar query para contagem de links por item
-const { data: linkCounts = {} } = useQuery({
-  queryKey: ["objectiveLinkCounts"],
-  queryFn: async () => {
-    const { data, error } = await supabase
-      .from("objective_challenge_links")
-      .select("objective_item_id");
-    
-    if (error) throw error;
-    
-    // Contar por item
-    const counts: Record<string, number> = {};
-    data.forEach(link => {
-      counts[link.objective_item_id] = (counts[link.objective_item_id] || 0) + 1;
-    });
-    return counts;
-  },
-});
+export interface DailyChallenge {
+  id: string;
+  track: Track;
+  difficulty: string;
+  title: string;
+  objective: string;
+  steps: string[];
+  deliverable: string;
+  checklist: string[];
+  estimated_minutes: number | null; // Manter para compatibilidade
+  estimated_time_unit: 'minutes' | 'hours' | 'days' | 'weeks';
+  is_bonus: boolean;
+  created_at: string;
+}
 ```
 
 ---
 
-## Fluxo de Usuario Melhorado
+## Correcao do ChallengeLinkingModal
+
+Remover o conflito de eventos:
+
+```tsx
+{filteredChallenges.map((challenge) => (
+  <label
+    key={challenge.id}
+    className={`flex items-start gap-3 p-3 hover:bg-muted/50 cursor-pointer transition-colors ${
+      selectedIds.includes(challenge.id) ? "bg-primary/5" : ""
+    }`}
+    htmlFor={`challenge-${challenge.id}`}
+  >
+    <Checkbox
+      id={`challenge-${challenge.id}`}
+      checked={selectedIds.includes(challenge.id)}
+      onCheckedChange={() => toggleChallenge(challenge.id)}
+      className="mt-1"
+    />
+    <div className="flex-1 min-w-0">
+      {/* ... conteudo do card ... */}
+    </div>
+  </label>
+))}
+```
+
+Usar `<label>` como container garante que o clique em qualquer lugar acione o checkbox corretamente.
+
+---
+
+## Fluxo de Usuario
 
 1. Mentor acessa `/admin/challenges` > aba "Objetivos"
-2. Ve lista de grupos e itens com indicador de quantos desafios cada um tem
-3. Clica no icone de link (novo botao) em qualquer item
-4. Abre modal dedicado mostrando todos os desafios disponiveis
-5. Marca os desafios que devem aparecer para este objetivo
-6. Clica "Salvar Vinculos"
-7. Os vinculos sao salvos na tabela `objective_challenge_links`
-8. Alunos que marcarem este objetivo verao os desafios vinculados
+2. Clica no icone de link ou no badge de desafios
+3. Modal abre mostrando todos os desafios
+4. **Clica no checkbox ou em qualquer lugar da linha** - agora funciona!
+5. Seleciona os desafios desejados
+6. Salva os vinculos
+
+Para editar tempo:
+1. Mentor acessa aba "Desafios Recomendados"
+2. Edita um desafio existente ou cria novo
+3. Define tempo estimado como "3" e unidade como "Dias"
+4. Salva - o tempo e persistido como `estimated_minutes: 3, estimated_time_unit: 'days'`
+5. Alunos veem "3 dias" na interface
 
 ---
 
 ## Criterios de Aceite
 
-- [ ] Lista de objetivos mostra contagem de desafios vinculados
-- [ ] Botao dedicado de vincular (icone Link2) em cada item
-- [ ] Modal focado so em vincular desafios
-- [ ] Busca por titulo/trilha funciona no modal
-- [ ] Salvar persiste os vinculos no banco
-- [ ] Vinculos aparecem corretamente para alunos em /desafios
-- [ ] Toast de sucesso ao salvar
-
+- [ ] Checkbox no modal de vincular desafios funciona ao clicar
+- [ ] Clicar em qualquer parte da linha marca o checkbox
+- [ ] Campo de tempo tem seletor de unidade (minutos, horas, dias, semanas)
+- [ ] Tempo e exibido formatado corretamente ("3 dias", "2 semanas")
+- [ ] Dados sao salvos corretamente no banco
+- [ ] Compatibilidade com dados existentes (minutos como padrao)
