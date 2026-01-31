@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Track } from "./useUserProfile";
+import { TimeUnit } from "@/lib/utils";
 
 export interface DailyChallenge {
   id: string;
@@ -11,7 +12,8 @@ export interface DailyChallenge {
   steps: string[];
   deliverable: string;
   checklist: string[];
-  estimated_minutes: number;
+  estimated_minutes: number | null;
+  estimated_time_unit: TimeUnit;
   is_bonus: boolean;
   created_at: string;
 }

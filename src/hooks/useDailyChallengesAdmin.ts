@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { DailyChallenge } from "./useDailyChallenges";
+import { TimeUnit } from "@/lib/utils";
 
 export interface DailyChallengeFormData {
   title: string;
@@ -9,6 +10,7 @@ export interface DailyChallengeFormData {
   track: string;
   difficulty: string;
   estimated_minutes: number | null;
+  estimated_time_unit: TimeUnit;
   steps: string[];
   checklist: string[];
   deliverable: string;
@@ -40,6 +42,7 @@ export function useDailyChallengesAdmin() {
         track: data.track,
         difficulty: data.difficulty,
         estimated_minutes: data.estimated_minutes,
+        estimated_time_unit: data.estimated_time_unit,
         steps: data.steps,
         checklist: data.checklist,
         deliverable: data.deliverable,
@@ -68,6 +71,7 @@ export function useDailyChallengesAdmin() {
           track: data.track,
           difficulty: data.difficulty,
           estimated_minutes: data.estimated_minutes,
+          estimated_time_unit: data.estimated_time_unit,
           steps: data.steps,
           checklist: data.checklist,
           deliverable: data.deliverable,

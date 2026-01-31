@@ -281,6 +281,7 @@ export type Database = {
           deliverable: string
           difficulty: string
           estimated_minutes: number | null
+          estimated_time_unit: string | null
           id: string
           is_bonus: boolean | null
           objective: string
@@ -294,6 +295,7 @@ export type Database = {
           deliverable: string
           difficulty?: string
           estimated_minutes?: number | null
+          estimated_time_unit?: string | null
           id?: string
           is_bonus?: boolean | null
           objective: string
@@ -307,6 +309,7 @@ export type Database = {
           deliverable?: string
           difficulty?: string
           estimated_minutes?: number | null
+          estimated_time_unit?: string | null
           id?: string
           is_bonus?: boolean | null
           objective?: string

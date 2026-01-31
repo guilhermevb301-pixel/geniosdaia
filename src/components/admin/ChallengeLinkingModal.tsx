@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Link2, Clock, Target } from "lucide-react";
 import { useDailyChallengesAdmin } from "@/hooks/useDailyChallengesAdmin";
+import { formatEstimatedTimeShort } from "@/lib/utils";
 import { useObjectiveChallengeLinks } from "@/hooks/useObjectiveChallengeLinks";
 import { ObjectiveItem } from "@/hooks/useObjectives";
 import { toast } from "sonner";
@@ -146,14 +147,15 @@ export function ChallengeLinkingModal({
             ) : (
               <div className="divide-y">
                 {filteredChallenges.map((challenge) => (
-                  <div
+                  <label
                     key={challenge.id}
+                    htmlFor={`challenge-link-${challenge.id}`}
                     className={`flex items-start gap-3 p-3 hover:bg-muted/50 cursor-pointer transition-colors ${
                       selectedIds.includes(challenge.id) ? "bg-primary/5" : ""
                     }`}
-                    onClick={() => toggleChallenge(challenge.id)}
                   >
                     <Checkbox
+                      id={`challenge-link-${challenge.id}`}
                       checked={selectedIds.includes(challenge.id)}
                       onCheckedChange={() => toggleChallenge(challenge.id)}
                       className="mt-1"
@@ -180,7 +182,7 @@ export function ChallengeLinkingModal({
                         {challenge.estimated_minutes && (
                           <span className="text-xs text-muted-foreground flex items-center gap-1">
                             <Clock className="h-3 w-3" />
-                            {challenge.estimated_minutes}min
+                            {formatEstimatedTimeShort(challenge.estimated_minutes, challenge.estimated_time_unit)}
                           </span>
                         )}
                         {challenge.is_bonus && (
@@ -190,7 +192,7 @@ export function ChallengeLinkingModal({
                         )}
                       </div>
                     </div>
-                  </div>
+                  </label>
                 ))}
               </div>
             )}

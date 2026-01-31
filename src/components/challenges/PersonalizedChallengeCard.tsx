@@ -15,7 +15,7 @@ import {
   ChevronUp
 } from "lucide-react";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
+import { cn, formatEstimatedTime } from "@/lib/utils";
 import type { DailyChallenge } from "@/hooks/useDailyChallenges";
 import type { Track } from "@/hooks/useUserProfile";
 
@@ -78,7 +78,7 @@ export function PersonalizedChallengeCard({ challenge, isBonus = false }: Person
               )}
               <Badge variant="outline" className="text-xs">
                 <Clock className="h-3 w-3 mr-1" />
-                {challenge.estimated_minutes} min
+                {formatEstimatedTime(challenge.estimated_minutes, challenge.estimated_time_unit)}
               </Badge>
             </div>
             <CardTitle className="text-lg">{challenge.title}</CardTitle>
