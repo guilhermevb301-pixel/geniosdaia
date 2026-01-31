@@ -319,6 +319,45 @@ export type Database = {
         }
         Relationships: []
       }
+      dashboard_banners: {
+        Row: {
+          button_text: string | null
+          button_url: string
+          created_at: string | null
+          gradient: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          order_index: number | null
+          subtitle: string | null
+          title: string
+        }
+        Insert: {
+          button_text?: string | null
+          button_url: string
+          created_at?: string | null
+          gradient?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          order_index?: number | null
+          subtitle?: string | null
+          title: string
+        }
+        Update: {
+          button_text?: string | null
+          button_url?: string
+          created_at?: string | null
+          gradient?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          order_index?: number | null
+          subtitle?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       lesson_progress: {
         Row: {
           completed: boolean
