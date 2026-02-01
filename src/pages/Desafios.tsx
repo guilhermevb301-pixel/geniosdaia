@@ -21,7 +21,7 @@ import { LEVEL_NAMES } from "@/lib/gamification";
 import { SubmitChallengeModal } from "@/components/challenges/SubmitChallengeModal";
 import { ObjectivesModal } from "@/components/challenges/ObjectivesModal";
 import { ObjectivesSummary } from "@/components/challenges/ObjectivesSummary";
-import { RecommendedChallenges } from "@/components/challenges/RecommendedChallenges";
+
 import { YourChallengesBanner } from "@/components/challenges/YourChallengesBanner";
 import { ChallengeProgressSection } from "@/components/challenges/ChallengeProgressSection";
 import { useChallengeProgressData } from "@/hooks/useChallengeProgressData";
@@ -728,11 +728,6 @@ export default function Desafios() {
             {/* Progress Section - Active Challenge with Countdown */}
             <ChallengeProgressSection selectedObjectives={selectedObjectives} />
             
-            {/* Desafios Recomendados (fallback when no linked challenges) */}
-            <RecommendedChallenges 
-              selectedObjectives={selectedObjectives}
-              allChallenges={allDailyChallenges}
-            />
             
             {weeklyChallenge && (
               <>
