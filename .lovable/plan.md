@@ -1,190 +1,53 @@
 
 
-# Plano: Corrigir Checkboxes e Adicionar Reiniciar Desafio
+# Plano: Remover "Desafios Recomendados Para Você"
 
-## Problemas Identificados
+## Problema
 
-### 1. Checkboxes não funcionam no modal de objetivos
-O modal de seleção de objetivos (`ObjectivesModal.tsx`) tem um conflito de eventos:
-- O `<label>` captura o click via `onClick` e chama `toggleObjective`
-- O `Checkbox` tem `pointer-events-none` para evitar double-click
-- Porém, o Radix Checkbox espera controlar o estado via `onCheckedChange`
-- Resultado: cliques não registram consistentemente
+A seção "Desafios Recomendados Para Você" mostra todos os desafios vinculados aos objetivos do aluno de uma só vez, permitindo que ele veja tudo antes de completar os anteriores.
 
-### 2. Sem opção de reiniciar quando tempo esgota
-O card de desafio ativo (`ActiveChallengeCard.tsx`) mostra "Tempo esgotado!" quando o prazo expira, mas:
-- Não oferece botão para reiniciar o desafio
-- O usuário fica "preso" sem poder continuar
+O sistema correto (já implementado) é a **progressão sequencial**:
+- Apenas o desafio ativo é mostrado no `YourChallengesBanner`
+- Os desafios bloqueados aparecem em `ChallengeProgressSection`
+- Só libera o próximo quando o anterior é completado
 
----
+## Solução
 
-## Solução 1: Corrigir Checkboxes no Modal
+Remover a renderização do componente `RecommendedChallenges` da página `/desafios`.
 
-Mudar a estratégia de interação para usar apenas o `onCheckedChange` do Checkbox:
+| Arquivo | Mudança |
+|---------|---------|
+| `src/pages/Desafios.tsx` | Remover importação e uso do `RecommendedChallenges` |
 
-| Antes | Depois |
-|-------|--------|
-| `<label onClick={...}>` + `Checkbox pointer-events-none` | `<div>` sem onClick + `Checkbox onCheckedChange={...}` |
-
-O label continua fazendo a row inteira clicável via `htmlFor`, mas a lógica de toggle fica no `onCheckedChange` do próprio Checkbox.
-
-### Código Atualizado
+## Código a Remover
 
 ```tsx
-// ObjectivesModal.tsx - linha 117-164
-<div
-  key={item.id}
-  className={cn(
-    "flex items-center gap-3 p-4 rounded-lg transition-all cursor-pointer",
-    isChecked
-      ? "bg-primary/10 border border-primary/30"
-      : "bg-muted/30 border border-transparent hover:bg-muted/50",
-    isLocked && "cursor-not-allowed opacity-70"
-  )}
-  onClick={() => {
-    if (!isLocked) toggleObjective(item);
-  }}
->
-  <Checkbox
-    id={`modal-${item.objective_key}`}
-    checked={isChecked}
-    disabled={isLocked}
-    onCheckedChange={() => {
-      if (!isLocked) toggleObjective(item);
-    }}
-    onClick={(e) => e.stopPropagation()} // Evita double toggle
-  />
-  {/* ... resto do conteúdo */}
-</div>
+// Linha 24 - remover importação
+import { RecommendedChallenges } from "@/components/challenges/RecommendedChallenges";
+
+// Linhas 731-735 - remover componente
+<RecommendedChallenges 
+  selectedObjectives={selectedObjectives}
+  allChallenges={allDailyChallenges}
+/>
 ```
 
----
+## Fluxo Após a Mudança
 
-## Solução 2: Adicionar Botão de Reiniciar Desafio
+1. Aluno seleciona objetivos no modal
+2. Sistema inicializa progresso sequencial (primeiro desafio fica ativo)
+3. `YourChallengesBanner` mostra o desafio ativo com timer
+4. `ChallengeProgressSection` mostra desafios bloqueados com cadeado
+5. Aluno completa → próximo desbloqueia automaticamente
+6. **Nenhuma lista de "todos os desafios" é mostrada**
 
-Quando o tempo expira, mostrar um botão "Reiniciar Desafio" que:
-- Reseta o `started_at` para agora
-- Calcula novo `deadline` baseado na duração estimada
-- Mantém o status como `active`
+## Componente RecommendedChallenges
 
-### Hook: Nova mutation `restartChallenge`
+O arquivo `src/components/challenges/RecommendedChallenges.tsx` pode ser mantido no projeto (não precisa deletar) caso queira usar futuramente, ou pode ser removido para limpar o código.
 
-```typescript
-// useUserChallengeProgress.ts - nova mutation
+## Resultado
 
-const restartMutation = useMutation({
-  mutationFn: async (progressId: string) => {
-    // Buscar o progresso atual com dados do desafio
-    const { data: current, error: fetchError } = await supabase
-      .from("user_challenge_progress")
-      .select(`*, daily_challenges (*)`)
-      .eq("id", progressId)
-      .single();
-
-    if (fetchError) throw fetchError;
-
-    const challenge = current.daily_challenges;
-    const now = new Date().toISOString();
-
-    // Atualizar com novo deadline
-    const { error } = await supabase
-      .from("user_challenge_progress")
-      .update({
-        started_at: now,
-        deadline: calculateDeadline(
-          challenge?.estimated_minutes || 30,
-          challenge?.estimated_time_unit || "minutes"
-        ),
-      })
-      .eq("id", progressId);
-
-    if (error) throw error;
-  },
-  onSuccess: () => {
-    queryClient.invalidateQueries({ queryKey: ["userChallengeProgress"] });
-    toast.success("Desafio reiniciado! ⏱️");
-  },
-});
-```
-
-### UI: Botão de Reiniciar
-
-```tsx
-// ActiveChallengeCard.tsx - quando tempo expira
-
-{timeLeft.expired && (
-  <Button
-    onClick={onRestart}
-    variant="outline"
-    className="w-full border-amber-500 text-amber-500 hover:bg-amber-500/10"
-  >
-    <RotateCcw className="mr-2 h-5 w-5" />
-    Reiniciar Desafio
-  </Button>
-)}
-```
-
----
-
-## Arquivos a Modificar
-
-| Arquivo | Mudanças |
-|---------|----------|
-| `src/components/challenges/ObjectivesModal.tsx` | Corrigir handling de click para checkboxes |
-| `src/hooks/useUserChallengeProgress.ts` | Adicionar mutation `restartChallenge` |
-| `src/components/challenges/ActiveChallengeCard.tsx` | Adicionar botão de reiniciar + nova prop `onRestart` |
-| `src/hooks/useChallengeProgressData.ts` | Expor `restartChallenge` |
-| `src/components/challenges/YourChallengesBanner.tsx` | Passar `onRestart` para o card |
-
----
-
-## Interface Atualizada do ActiveChallengeCard
-
-```typescript
-interface ActiveChallengeCardProps {
-  progress: UserChallengeProgress;
-  challenge: DailyChallenge;
-  onComplete: () => void;
-  onRestart: () => void; // NOVO
-  isCompleting?: boolean;
-  isRestarting?: boolean; // NOVO
-}
-```
-
----
-
-## Fluxo do Usuário
-
-### Checkboxes Corrigidos
-1. Usuário abre modal de objetivos
-2. Clica em qualquer lugar da linha do objetivo
-3. Checkbox marca/desmarca corretamente
-4. Estado atualiza imediatamente
-
-### Reiniciar Desafio
-1. Tempo do desafio expira
-2. Card mostra "Tempo esgotado!" em vermelho
-3. Aparece botão "Reiniciar Desafio"
-4. Usuário clica no botão
-5. Timer reinicia com novo deadline
-6. Usuário pode tentar novamente
-
----
-
-## Resultado Esperado
-
-1. Checkboxes funcionam corretamente no modal de objetivos
-2. Quando tempo expira, usuário pode reiniciar o desafio
-3. O progresso do checklist local é resetado ao reiniciar
-4. Toast de confirmação ao reiniciar
-
----
-
-## Critérios de Aceite
-
-1. Marcar/desmarcar objetivos funciona em toda a área clicável
-2. Objetivos selecionados persistem corretamente
-3. Botão de reiniciar aparece quando tempo expira
-4. Reiniciar atualiza `started_at` e `deadline` no banco
-5. Timer começa a contar novamente após reiniciar
+- Aluno vê apenas o desafio ativo atual
+- Desafios futuros aparecem como bloqueados (com cadeado)
+- Progressão 100% sequencial, sem "spoilers"
 
