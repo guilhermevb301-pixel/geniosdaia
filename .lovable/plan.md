@@ -1,53 +1,152 @@
 
+# Plano: Remover Estrutura de Grupos dos Objetivos
 
-# Plano: Remover "Desafios Recomendados Para Você"
+## Situação Atual
 
-## Problema
+O sistema possui duas tabelas:
+- `objective_groups` - Grupos como "A) Quero vender sem viralizar", "B) Quero crescer", etc.
+- `objective_items` - Objetivos individuais com `group_id` vinculando a um grupo
 
-A seção "Desafios Recomendados Para Você" mostra todos os desafios vinculados aos objetivos do aluno de uma só vez, permitindo que ele veja tudo antes de completar os anteriores.
+No admin, você vê os grupos com títulos (A, B, C) e os objetivos dentro deles.
 
-O sistema correto (já implementado) é a **progressão sequencial**:
-- Apenas o desafio ativo é mostrado no `YourChallengesBanner`
-- Os desafios bloqueados aparecem em `ChallengeProgressSection`
-- Só libera o próximo quando o anterior é completado
+## Mudança Solicitada
+
+Eliminar a necessidade de grupos. Ter apenas uma lista simples de objetivos que você configura diretamente.
+
+---
 
 ## Solução
 
-Remover a renderização do componente `RecommendedChallenges` da página `/desafios`.
+### Opção Escolhida: Simplificar para Lista Plana (SEM grupos)
+
+Tornar o `group_id` opcional no banco e modificar a UI para:
+1. **Admin**: Lista plana de objetivos com CRUD simples
+2. **Aluno**: Lista plana de checkboxes sem divisões
+
+---
+
+## Mudanças Necessárias
+
+### 1. Banco de Dados
+Tornar `group_id` opcional em `objective_items`:
+
+```sql
+ALTER TABLE public.objective_items 
+ALTER COLUMN group_id DROP NOT NULL;
+```
+
+### 2. Admin - ObjectivesEditor.tsx
+Transformar de estrutura com grupos para lista simples:
+
+| Antes | Depois |
+|-------|--------|
+| Cards de grupos com itens aninhados | Lista única de objetivos |
+| Botão "Novo Grupo" | Removido |
+| Itens dentro de grupos | Itens na raiz |
+
+Interface final:
+- Header: "Gerenciar Objetivos" + botão "Novo Objetivo"
+- Lista de cards de objetivo (um por linha)
+- Cada card: label, key, tags, badges (Requer Infra, INFRA), botões de editar/excluir/vincular
+
+### 3. Hook - useObjectives.ts
+Simplificar para retornar lista plana de items:
+
+```typescript
+// Antes
+objectiveGroups: ObjectiveGroup[] // grupos com items aninhados
+
+// Depois  
+objectives: ObjectiveItem[] // lista plana
+```
+
+### 4. UI do Aluno - ObjectivesModal.tsx e ObjectivesChecklist.tsx
+Remover renderização de títulos de grupos:
+
+```tsx
+// Antes
+{objectiveGroups.map((group) => (
+  <div>
+    <h4>{group.title}</h4>  {/* "A) Quero vender..." */}
+    {group.items.map(item => ...)}
+  </div>
+))}
+
+// Depois
+{objectives.map((item) => (
+  <div>...</div>  // Lista plana, sem títulos de grupo
+))}
+```
+
+---
+
+## Arquivos a Modificar
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/pages/Desafios.tsx` | Remover importação e uso do `RecommendedChallenges` |
+| Migration SQL | Tornar `group_id` nullable |
+| `src/hooks/useObjectives.ts` | Retornar `objectives` como lista plana, remover mutations de grupo |
+| `src/components/admin/ObjectivesEditor.tsx` | Interface simplificada sem grupos |
+| `src/components/challenges/ObjectivesModal.tsx` | Renderizar lista plana |
+| `src/components/challenges/ObjectivesChecklist.tsx` | Renderizar lista plana |
+| `src/components/challenges/ObjectivesSummary.tsx` | Usar lista plana |
 
-## Código a Remover
+---
 
-```tsx
-// Linha 24 - remover importação
-import { RecommendedChallenges } from "@/components/challenges/RecommendedChallenges";
+## Interface do Admin (Nova)
 
-// Linhas 731-735 - remover componente
-<RecommendedChallenges 
-  selectedObjectives={selectedObjectives}
-  allChallenges={allDailyChallenges}
-/>
+```text
++--------------------------------------------------+
+| Gerenciar Objetivos               [+ Novo Objetivo]
+| Configure os objetivos disponíveis para alunos
++--------------------------------------------------+
+
++--------------------------------------------------+
+| :: | Vender primeiro projeto de Agente | Requer Infra |
+|    | vender_projeto | vendas, comercial |
+|                                  [vincular] [editar] [excluir]
++--------------------------------------------------+
+
++--------------------------------------------------+
+| :: | Viralizar nas redes | 
+|    | viralizar | crescimento, redes |
+|                                  [vincular] [editar] [excluir]
++--------------------------------------------------+
+
+... mais objetivos ...
 ```
 
-## Fluxo Após a Mudança
+---
 
-1. Aluno seleciona objetivos no modal
-2. Sistema inicializa progresso sequencial (primeiro desafio fica ativo)
-3. `YourChallengesBanner` mostra o desafio ativo com timer
-4. `ChallengeProgressSection` mostra desafios bloqueados com cadeado
-5. Aluno completa → próximo desbloqueia automaticamente
-6. **Nenhuma lista de "todos os desafios" é mostrada**
+## Interface do Aluno (Modal)
 
-## Componente RecommendedChallenges
+Antes:
+```text
+A) Quero vender sem viralizar
+  [ ] Vender primeiro projeto de Agente
 
-O arquivo `src/components/challenges/RecommendedChallenges.tsx` pode ser mantido no projeto (não precisa deletar) caso queira usar futuramente, ou pode ser removido para limpar o código.
+B) Quero crescer (audiência)
+  [ ] Viralizar nas redes
+```
 
-## Resultado
+Depois:
+```text
+[ ] Vender primeiro projeto de Agente
+[ ] Viralizar nas redes
+[ ] Criar vídeos incríveis
+... (lista simples sem divisões)
+```
 
-- Aluno vê apenas o desafio ativo atual
-- Desafios futuros aparecem como bloqueados (com cadeado)
-- Progressão 100% sequencial, sem "spoilers"
+---
 
+## Dados Existentes
+
+Os objetivos existentes serão mantidos. A coluna `group_id` continuará preenchida para compatibilidade, mas não será mais exibida na UI.
+
+---
+
+## Resultado Esperado
+
+1. Admin vê lista simples de objetivos para CRUD
+2. Aluno vê lista simples de checkboxes sem divisões A/B/C
+3. Todas as funcionalidades mantidas (vincular desafios, tags, requer infra)
