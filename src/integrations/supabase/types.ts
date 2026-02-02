@@ -839,7 +839,7 @@ export type Database = {
       objective_items: {
         Row: {
           created_at: string
-          group_id: string
+          group_id: string | null
           id: string
           is_infra: boolean
           label: string
@@ -850,7 +850,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          group_id: string
+          group_id?: string | null
           id?: string
           is_infra?: boolean
           label: string
@@ -861,7 +861,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          group_id?: string
+          group_id?: string | null
           id?: string
           is_infra?: boolean
           label?: string

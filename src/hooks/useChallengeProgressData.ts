@@ -8,13 +8,12 @@ import { TimeUnit } from "@/lib/utils";
 import { useEffect } from "react";
 
 export function useChallengeProgressData(selectedObjectives: string[]) {
-  const { objectiveGroups } = useObjectives();
+  const { objectives } = useObjectives();
   const { allLinks, isLoadingAllLinks } = useObjectiveChallengeLinks();
   const { challenges: allChallenges, isLoading: isLoadingChallenges } = useDailyChallengesAdmin();
 
   // Get objective item IDs from selected keys
-  const allObjectiveItems = objectiveGroups.flatMap((g) => g.items);
-  const selectedItemIds = allObjectiveItems
+  const selectedItemIds = objectives
     .filter((item) => selectedObjectives.includes(item.objective_key))
     .map((item) => item.id);
 

@@ -13,13 +13,10 @@ export function ObjectivesSummary({
   selectedObjectives,
   onEdit,
 }: ObjectivesSummaryProps) {
-  const { objectiveGroups, isLoading } = useObjectives();
-
-  // Flatten all items
-  const allItems: ObjectiveItem[] = objectiveGroups.flatMap((g) => g.items);
+  const { objectives, isLoading } = useObjectives();
 
   // Get selected items
-  const selectedItems = allItems.filter((item) =>
+  const selectedItems = objectives.filter((item) =>
     selectedObjectives.includes(item.objective_key)
   );
 
