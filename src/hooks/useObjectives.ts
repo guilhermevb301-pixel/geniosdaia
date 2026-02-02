@@ -4,7 +4,7 @@ import { toast } from "sonner";
 
 export interface ObjectiveItem {
   id: string;
-  group_id: string;
+  group_id: string | null;
   label: string;
   objective_key: string;
   requires_infra: boolean;
@@ -14,122 +14,39 @@ export interface ObjectiveItem {
   created_at: string;
 }
 
-export interface ObjectiveGroup {
-  id: string;
-  title: string;
-  order_index: number;
-  created_at: string;
-  items: ObjectiveItem[];
-}
-
 export function useObjectives() {
   const queryClient = useQueryClient();
 
-  // Fetch groups with items
-  const { data: objectiveGroups = [], isLoading } = useQuery({
-    queryKey: ["objectiveGroups"],
+  // Fetch all objectives as flat list
+  const { data: objectives = [], isLoading } = useQuery({
+    queryKey: ["objectives"],
     queryFn: async () => {
-      // Fetch groups
-      const { data: groups, error: groupsError } = await supabase
-        .from("objective_groups")
-        .select("*")
-        .order("order_index", { ascending: true });
-
-      if (groupsError) throw groupsError;
-
-      // Fetch items
-      const { data: items, error: itemsError } = await supabase
+      const { data: items, error } = await supabase
         .from("objective_items")
         .select("*")
         .order("order_index", { ascending: true });
 
-      if (itemsError) throw itemsError;
+      if (error) throw error;
 
-      // Map items to groups
-      const groupsWithItems: ObjectiveGroup[] = (groups || []).map(group => ({
-        ...group,
-        items: (items || [])
-          .filter(item => item.group_id === group.id)
-          .map(item => ({
-            ...item,
-            tags: item.tags || [],
-          })),
-      }));
-
-      return groupsWithItems;
+      return (items || []).map(item => ({
+        ...item,
+        tags: item.tags || [],
+      })) as ObjectiveItem[];
     },
   });
 
   // Get infra required IDs
-  const infraRequiredBy = objectiveGroups
-    .flatMap(g => g.items)
+  const infraRequiredBy = objectives
     .filter(item => item.requires_infra)
     .map(item => item.objective_key);
 
   // Get sales IDs for proposal suggestion
-  const salesObjectiveKeys = objectiveGroups
-    .flatMap(g => g.items)
+  const salesObjectiveKeys = objectives
     .filter(item => item.tags.includes("vendas"))
     .map(item => item.objective_key)
     .filter(key => key !== "criar_proposta");
 
-  // Mutations for mentor/admin
-  const updateGroupMutation = useMutation({
-    mutationFn: async ({ id, title, order_index }: { id: string; title: string; order_index?: number }) => {
-      const updates: Record<string, unknown> = { title };
-      if (order_index !== undefined) updates.order_index = order_index;
-      
-      const { error } = await supabase
-        .from("objective_groups")
-        .update(updates)
-        .eq("id", id);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["objectiveGroups"] });
-      toast.success("Grupo atualizado!");
-    },
-    onError: (error: Error) => {
-      toast.error("Erro ao atualizar grupo: " + error.message);
-    },
-  });
-
-  const addGroupMutation = useMutation({
-    mutationFn: async ({ title, order_index }: { title: string; order_index: number }) => {
-      const { error } = await supabase
-        .from("objective_groups")
-        .insert({ title, order_index });
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["objectiveGroups"] });
-      toast.success("Grupo criado!");
-    },
-    onError: (error: Error) => {
-      toast.error("Erro ao criar grupo: " + error.message);
-    },
-  });
-
-  const deleteGroupMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from("objective_groups")
-        .delete()
-        .eq("id", id);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["objectiveGroups"] });
-      toast.success("Grupo excluído!");
-    },
-    onError: (error: Error) => {
-      toast.error("Erro ao excluir grupo: " + error.message);
-    },
-  });
-
+  // Mutations
   const updateItemMutation = useMutation({
     mutationFn: async (item: Partial<ObjectiveItem> & { id: string }) => {
       const { error } = await supabase
@@ -140,11 +57,11 @@ export function useObjectives() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["objectiveGroups"] });
-      toast.success("Item atualizado!");
+      queryClient.invalidateQueries({ queryKey: ["objectives"] });
+      toast.success("Objetivo atualizado!");
     },
     onError: (error: Error) => {
-      toast.error("Erro ao atualizar item: " + error.message);
+      toast.error("Erro ao atualizar objetivo: " + error.message);
     },
   });
 
@@ -157,11 +74,11 @@ export function useObjectives() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["objectiveGroups"] });
-      toast.success("Item criado!");
+      queryClient.invalidateQueries({ queryKey: ["objectives"] });
+      toast.success("Objetivo criado!");
     },
     onError: (error: Error) => {
-      toast.error("Erro ao criar item: " + error.message);
+      toast.error("Erro ao criar objetivo: " + error.message);
     },
   });
 
@@ -175,29 +92,23 @@ export function useObjectives() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["objectiveGroups"] });
-      toast.success("Item excluído!");
+      queryClient.invalidateQueries({ queryKey: ["objectives"] });
+      toast.success("Objetivo excluído!");
     },
     onError: (error: Error) => {
-      toast.error("Erro ao excluir item: " + error.message);
+      toast.error("Erro ao excluir objetivo: " + error.message);
     },
   });
 
   return {
-    objectiveGroups,
+    objectives,
     isLoading,
     infraRequiredBy,
     salesObjectiveKeys,
-    updateGroup: updateGroupMutation.mutate,
-    addGroup: addGroupMutation.mutate,
-    deleteGroup: deleteGroupMutation.mutate,
     updateItem: updateItemMutation.mutate,
     addItem: addItemMutation.mutate,
     deleteItem: deleteItemMutation.mutate,
     isUpdating: 
-      updateGroupMutation.isPending || 
-      addGroupMutation.isPending || 
-      deleteGroupMutation.isPending ||
       updateItemMutation.isPending ||
       addItemMutation.isPending ||
       deleteItemMutation.isPending,

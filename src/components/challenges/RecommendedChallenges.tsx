@@ -17,14 +17,11 @@ export function RecommendedChallenges({
   allChallenges,
   isLoading 
 }: RecommendedChallengesProps) {
-  const { objectiveGroups } = useObjectives();
+  const { objectives } = useObjectives();
   const { allLinks, isLoadingAllLinks } = useObjectiveChallengeLinks();
 
-  // Get all objective items with their IDs
-  const allObjectiveItems = objectiveGroups.flatMap(g => g.items);
-
   // Get objective item IDs from selected keys
-  const selectedItemIds = allObjectiveItems
+  const selectedItemIds = objectives
     .filter(item => selectedObjectives.includes(item.objective_key))
     .map(item => item.id);
 
@@ -45,7 +42,7 @@ export function RecommendedChallenges({
     // Fallback to tag matching if no links found
     if (uniqueLinkedIds.length === 0) {
       const relevantTags = selectedObjectives.flatMap(objectiveKey => {
-        const item = allObjectiveItems.find(i => i.objective_key === objectiveKey);
+        const item = objectives.find(i => i.objective_key === objectiveKey);
         return item?.tags || [];
       });
       const uniqueTags = [...new Set(relevantTags)];

@@ -29,21 +29,17 @@ export function ObjectivesModal({
   onConfirm,
 }: ObjectivesModalProps) {
   const [localSelection, setLocalSelection] = useState<string[]>(selectedObjectives);
-  const { objectiveGroups, infraRequiredBy, isLoading } = useObjectives();
+  const { objectives, infraRequiredBy, salesObjectiveKeys, isLoading } = useObjectives();
 
   // Sync local selection when prop changes
   useEffect(() => {
     setLocalSelection(selectedObjectives);
   }, [selectedObjectives]);
 
-  // Flatten all items (no grouping by A, B, C)
-  const allItems = objectiveGroups.flatMap((g) => g.items);
-
   // Check if infra is locked (required by another selected objective)
   const isInfraLocked = localSelection.some((o) => infraRequiredBy.includes(o));
 
   // Check if we should suggest "criar_proposta"
-  const salesObjectiveKeys = ["vender_projeto", "fechar_clientes", "vender_fechar_combo"];
   const showProposalSuggestion =
     localSelection.some((o) => salesObjectiveKeys.includes(o)) &&
     !localSelection.includes("criar_proposta");
@@ -110,7 +106,7 @@ export function ObjectivesModal({
                 ))}
               </div>
             ) : (
-              allItems.map((item) => {
+              objectives.map((item) => {
                 const isChecked = localSelection.includes(item.objective_key);
                 const isLocked = item.is_infra && isInfraLocked;
 
