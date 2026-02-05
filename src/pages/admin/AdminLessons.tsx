@@ -29,7 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Edit, Trash2, ArrowLeft, Youtube, Download } from "lucide-react";
+import { Plus, Edit, Trash2, ArrowLeft, Youtube, Download, ArrowUp, ArrowDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 
@@ -154,6 +154,42 @@ export default function AdminLessons() {
     },
     onError: (error) => {
       toast({ variant: "destructive", title: "Erro ao excluir aula", description: error.message });
+    },
+  });
+
+  const reorderMutation = useMutation({
+    mutationFn: async ({ lessonId, direction }: { lessonId: string; direction: 'up' | 'down' }) => {
+      if (!lessons) return;
+      
+      const lesson = lessons.find(l => l.id === lessonId);
+      if (!lesson) return;
+      
+      // Filtra aulas do mesmo módulo e ordena
+      const moduleLessons = lessons
+        .filter(l => l.module_id === lesson.module_id)
+        .sort((a, b) => a.order_index - b.order_index);
+      
+      const currentIndex = moduleLessons.findIndex(l => l.id === lessonId);
+      const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+      
+      if (targetIndex < 0 || targetIndex >= moduleLessons.length) return;
+      
+      const targetLesson = moduleLessons[targetIndex];
+      
+      // Troca os order_index
+      const updates = [
+        supabase.from("lessons").update({ order_index: targetLesson.order_index }).eq("id", lesson.id),
+        supabase.from("lessons").update({ order_index: lesson.order_index }).eq("id", targetLesson.id),
+      ];
+      
+      const results = await Promise.all(updates);
+      results.forEach(r => { if (r.error) throw r.error; });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lessons"] });
+    },
+    onError: (error) => {
+      toast({ variant: "destructive", title: "Erro ao reordenar", description: error.message });
     },
   });
 
@@ -356,6 +392,7 @@ export default function AdminLessons() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-20">Ordem</TableHead>
                     <TableHead>Módulo</TableHead>
                     <TableHead>Título</TableHead>
                     <TableHead>Duração</TableHead>
@@ -364,8 +401,34 @@ export default function AdminLessons() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {lessons.map((lesson) => (
+                  {lessons.map((lesson, idx) => {
+                    const moduleLessons = lessons.filter(l => l.module_id === lesson.module_id).sort((a, b) => a.order_index - b.order_index);
+                    const lessonIndexInModule = moduleLessons.findIndex(l => l.id === lesson.id);
+                    const isFirst = lessonIndexInModule === 0;
+                    const isLast = lessonIndexInModule === moduleLessons.length - 1;
+                    
+                    return (
                     <TableRow key={lesson.id}>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            disabled={isFirst || reorderMutation.isPending}
+                            onClick={() => reorderMutation.mutate({ lessonId: lesson.id, direction: 'up' })}
+                          >
+                            <ArrowUp className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            disabled={isLast || reorderMutation.isPending}
+                            onClick={() => reorderMutation.mutate({ lessonId: lesson.id, direction: 'down' })}
+                          >
+                            <ArrowDown className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {getModuleName(lesson.module_id)}
                       </TableCell>
@@ -409,7 +472,8 @@ export default function AdminLessons() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                 </TableBody>
               </Table>
             ) : (

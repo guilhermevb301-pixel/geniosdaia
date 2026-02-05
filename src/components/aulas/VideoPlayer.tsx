@@ -2,6 +2,7 @@ import { useState } from "react";
 import { BookOpen, Play, PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LinkifyText } from "@/components/ui/linkify-text";
 
 interface Lesson {
   id: string;
@@ -130,7 +131,10 @@ export function VideoPlayer({ lesson, onMarkComplete }: VideoPlayerProps) {
         </div>
 
         {lesson.description && (
-          <p className="text-muted-foreground">{lesson.description}</p>
+          <LinkifyText 
+            text={lesson.description} 
+            className="text-muted-foreground whitespace-pre-wrap" 
+          />
         )}
       </div>
     </div>
