@@ -413,9 +413,10 @@ export default function AdminModules() {
                     {coverImageUrl ? (
                       <div className="relative">
                         <img
-                          src={coverImageUrl}
+                          src={getOptimizedImageUrl(coverImageUrl, { width: 400 }) || coverImageUrl}
                           alt="Capa do módulo"
                           className="w-full h-40 object-cover rounded-lg border"
+                          loading="lazy"
                         />
                         <Button
                           type="button"

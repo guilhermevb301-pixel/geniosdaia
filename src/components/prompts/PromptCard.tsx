@@ -267,9 +267,10 @@ export function PromptCard({ prompt }: PromptCardProps) {
                     {prompt.example_images.map((img, i) => (
                       <img
                         key={i}
-                        src={img}
+                        src={getOptimizedImageUrl(img, { width: 400 }) || img}
                         alt={`Exemplo ${i + 1}`}
                         className="w-full aspect-square object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                        loading="lazy"
                         onClick={() => setSelectedImage(img)}
                       />
                     ))}

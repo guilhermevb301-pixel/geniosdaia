@@ -493,10 +493,11 @@ export default function AdminPrompts() {
                         <div className="aspect-video bg-muted relative">
                           {prompt.thumbnail_url ? (
                             <img
-                              src={prompt.thumbnail_url}
+                              src={getOptimizedImageUrl(prompt.thumbnail_url, { width: 400 }) || prompt.thumbnail_url}
                               alt={prompt.title}
                               className="w-full h-full object-cover"
                               style={{ objectPosition: prompt.thumbnail_focus || 'center' }}
+                              loading="lazy"
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">

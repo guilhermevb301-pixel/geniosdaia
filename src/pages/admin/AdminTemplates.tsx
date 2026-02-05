@@ -34,6 +34,7 @@ import {
   ALLOWED_JSON_EXTENSIONS,
   ALLOWED_ZIP_EXTENSIONS 
 } from "@/lib/fileValidation";
+import { getOptimizedImageUrl } from "@/lib/imageOptimization";
 
 interface Template {
   id: string;

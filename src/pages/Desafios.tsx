@@ -178,7 +178,12 @@ function SubmissionCard({
       
       <div className="bg-muted h-32 flex items-center justify-center">
         {submission.image_url ? (
-          <img src={submission.image_url} alt={submission.title} className="w-full h-full object-cover" />
+          <ImageWithSkeleton
+            src={submission.image_url}
+            alt={submission.title}
+            containerClassName="w-full h-full"
+            optimizedWidth={400}
+          />
         ) : (
           <Bot className="h-12 w-12 text-muted-foreground/50" />
         )}

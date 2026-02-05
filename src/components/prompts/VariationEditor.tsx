@@ -232,9 +232,10 @@ export function VariationEditor({ variations, onChange, isUploading, category }:
                   {imageToShow ? (
                     <div className="relative group">
                       <img
-                        src={imageToShow}
+                        src={getOptimizedImageUrl(imageToShow, { width: 400 }) || imageToShow}
                         alt={`Variação ${index + 1}`}
                         className="w-full max-h-48 object-contain rounded bg-background"
+                        loading="lazy"
                       />
                       <Button
                         variant="destructive"
