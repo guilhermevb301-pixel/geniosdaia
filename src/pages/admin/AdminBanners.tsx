@@ -35,7 +35,7 @@ const defaultFormData: BannerFormData = {
   subtitle: "",
   image_url: "",
   gradient: "from-primary to-purple-600",
-  button_text: "Saiba Mais",
+  button_text: null,
   button_url: "",
   order_index: 0,
   is_active: true,
