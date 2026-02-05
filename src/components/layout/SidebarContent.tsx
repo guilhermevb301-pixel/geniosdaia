@@ -83,7 +83,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
               : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
           )}
         >
-          <Layout className="h-5 w-5" />
+          <Layout className="h-5 w-5 text-amber-400" />
           Dashboard
         </Link>
 
@@ -98,7 +98,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
               : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
           )}
         >
-          <BookOpen className="h-5 w-5" />
+          <BookOpen className="h-5 w-5 text-amber-400" />
           Aulas
         </Link>
 
