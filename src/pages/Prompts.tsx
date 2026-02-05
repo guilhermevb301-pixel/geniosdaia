@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { PromptCard } from "@/components/prompts/PromptCard";
 import { Skeleton } from "@/components/ui/skeleton";
 
-type PromptCategory = "video" | "image" | "agent";
+type PromptCategory = "video" | "image";
 
 interface Prompt {
   id: string;
