@@ -17,6 +17,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton";
 import { LEVEL_NAMES } from "@/lib/gamification";
 import { SubmitChallengeModal } from "@/components/challenges/SubmitChallengeModal";
 import { ObjectivesModal } from "@/components/challenges/ObjectivesModal";
