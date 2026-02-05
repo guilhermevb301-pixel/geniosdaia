@@ -392,6 +392,7 @@ export default function AdminLessons() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-20">Ordem</TableHead>
                     <TableHead>Módulo</TableHead>
                     <TableHead>Título</TableHead>
                     <TableHead>Duração</TableHead>
