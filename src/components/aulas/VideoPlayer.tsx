@@ -131,7 +131,10 @@ export function VideoPlayer({ lesson, onMarkComplete }: VideoPlayerProps) {
         </div>
 
         {lesson.description && (
-          <p className="text-muted-foreground">{lesson.description}</p>
+          <LinkifyText 
+            text={lesson.description} 
+            className="text-muted-foreground whitespace-pre-wrap" 
+          />
         )}
       </div>
     </div>
