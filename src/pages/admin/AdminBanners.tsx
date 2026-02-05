@@ -191,8 +191,7 @@ export default function AdminBanners() {
                   <TableRow>
                     <TableHead className="w-16">Ordem</TableHead>
                     <TableHead className="w-20">Preview</TableHead>
-                    <TableHead>Título</TableHead>
-                    <TableHead>Link</TableHead>
+                    <TableHead>Link de Destino</TableHead>
                     <TableHead className="w-20">Ativo</TableHead>
                     <TableHead className="w-24">Ações</TableHead>
                   </TableRow>
@@ -212,24 +211,14 @@ export default function AdminBanners() {
                           {banner.image_url && (
                             <img 
                               src={banner.image_url} 
-                              alt={banner.title}
+                              alt="Banner"
                               className="h-full w-full object-cover"
                             />
                           )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div>
-                          <p className="font-medium">{banner.title}</p>
-                          {banner.subtitle && (
-                            <p className="text-sm text-muted-foreground truncate max-w-[200px]">
-                              {banner.subtitle}
-                            </p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-muted-foreground truncate max-w-[150px] block">
+                        <span className="text-sm text-muted-foreground truncate max-w-[200px] block">
                           {banner.button_url}
                         </span>
                       </TableCell>
