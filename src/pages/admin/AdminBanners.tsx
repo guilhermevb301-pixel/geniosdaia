@@ -383,7 +383,7 @@ export default function AdminBanners() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="button_url">Link do Botão *</Label>
+                <Label htmlFor="button_url">Link de Destino *</Label>
                 <Input
                   id="button_url"
                   value={formData.button_url}
@@ -391,6 +391,9 @@ export default function AdminBanners() {
                   placeholder="/eventos ou https://exemplo.com"
                   required
                 />
+                <p className="text-xs text-muted-foreground">
+                  Para onde o usuário vai ao clicar no banner
+                </p>
               </div>
 
               <div className="flex items-center gap-2">
