@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,9 +21,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Plus, Pencil, Trash2, Image } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Image, Upload, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useDashboardBannersAdmin, DashboardBanner } from "@/hooks/useDashboardBanners";
+import { supabase } from "@/integrations/supabase/client";
+import { validateImageFile } from "@/lib/fileValidation";
+import { toast } from "sonner";
 
 type BannerFormData = Omit<DashboardBanner, "id" | "created_at">;
 
