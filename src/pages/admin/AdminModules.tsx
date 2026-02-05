@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { validateImageFile, ALLOWED_IMAGE_EXTENSIONS } from "@/lib/fileValidation";
 import { Badge } from "@/components/ui/badge";
+import { getOptimizedImageUrl } from "@/lib/imageOptimization";
 
 interface Module {
   id: string;
