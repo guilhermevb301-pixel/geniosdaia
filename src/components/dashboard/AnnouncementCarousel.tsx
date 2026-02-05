@@ -11,6 +11,7 @@ import {
 import Autoplay from "embla-carousel-autoplay";
 import { useDashboardBanners } from "@/hooks/useDashboardBanners";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getOptimizedImageUrl } from "@/lib/imageOptimization";
 
 export function AnnouncementCarousel() {
   const { banners, isLoading } = useDashboardBanners();
