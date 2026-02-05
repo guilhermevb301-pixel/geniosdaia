@@ -245,9 +245,10 @@ export function PromptCard({ prompt }: PromptCardProps) {
               {/* Thumbnail principal */}
               {prompt.thumbnail_url && (
                 <img
-                  src={prompt.thumbnail_url}
+                  src={getOptimizedImageUrl(prompt.thumbnail_url, { width: 800 }) || prompt.thumbnail_url}
                   alt={prompt.title}
                   className="w-full rounded-lg"
+                  loading="lazy"
                 />
               )}
 
