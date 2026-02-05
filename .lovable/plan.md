@@ -1,127 +1,108 @@
 
-# Plano: Melhorias nas Aulas
+# Plano: Drag-and-Drop para Aulas + Correção de Links
 
-## 1. Reordenação de Aulas pelo Mentor
+## Problema 1: Links não clicáveis
 
-### Problema
-Atualmente não há como o mentor/admin mudar a ordem das aulas - elas são ordenadas por `order_index` mas não há interface para alterar.
+Olhando a imagem, o texto mostra:
+```
+LINKS USADOS:
+- higgsfield.io
+```
+
+O regex atual só detecta URLs com `http://` ou `https://`. Links como "higgsfield.io" não são convertidos porque não têm protocolo.
 
 ### Solução
-Adicionar botões de seta (up/down) na tabela de aulas para reordenar, com atualização do `order_index` no banco.
-
-### Arquivos a modificar
-- `src/pages/admin/AdminLessons.tsx`
-  - Adicionar ícones `ArrowUp` e `ArrowDown`
-  - Criar mutation para atualizar `order_index`
-  - Agrupar aulas por módulo para reordenação correta
+Melhorar o regex do `LinkifyText` para detectar também:
+- URLs sem protocolo (ex: `higgsfield.io`, `www.google.com`)
+- Adicionar `https://` automaticamente quando o protocolo não estiver presente
 
 ---
 
-## 2. Carregamento Instantâneo de Imagens (Eager Loading)
+## Problema 2: Drag-and-Drop para Aulas
 
-### Problema
-As imagens ainda demoram a carregar, mesmo com otimização. Isso acontece porque:
-1. `ContinueLearning.tsx` usa `<img>` nativo sem otimização
-2. Falta `loading="eager"` nas imagens críticas
-3. Podemos adicionar **preload** para imagens importantes
+Atualmente existem botões de setas (ArrowUp/ArrowDown), mas você quer uma interface mais intuitiva.
 
 ### Solução
-- Aplicar otimização em `ContinueLearning.tsx`
-- Usar `loading="eager"` em imagens above-the-fold
-- Adicionar preload hints para thumbnails dos módulos
-
-### Arquivos a modificar
-- `src/components/dashboard/ContinueLearning.tsx`
-  - Importar `getOptimizedImageUrl`
-  - Aplicar otimização nas thumbnails (width: 300)
-
----
-
-## 3. Links Clicáveis na Descrição
-
-### Problema
-A descrição das aulas é exibida como texto puro, sem converter URLs em links clicáveis.
-
-### Solução
-Criar um componente utilitário `LinkifyText` que detecta URLs e converte em `<a>` clicáveis.
-
-### Arquivos a criar/modificar
-- `src/components/ui/linkify-text.tsx` (novo)
-  - Regex para detectar URLs
-  - Renderiza links com `target="_blank"`
-- `src/components/aulas/VideoPlayer.tsx`
-  - Usar `LinkifyText` no lugar de texto simples
+Instalar `@dnd-kit` (biblioteca leve e moderna para drag-and-drop em React) e implementar na tabela de aulas.
 
 ---
 
 ## Implementação Técnica
 
-### AdminLessons.tsx - Reordenação
+### 1. LinkifyText - Regex Melhorado
 
-```tsx
-// Adicionar imports
-import { ArrowUp, ArrowDown } from "lucide-react";
+```typescript
+// Novo regex que detecta URLs com ou sem protocolo
+const urlRegex = /((?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9][-a-zA-Z0-9]*(?:\.[a-zA-Z]{2,})+(?:\/[^\s]*)?)/gi;
 
-// Mutation para reordenar
-const reorderMutation = useMutation({
-  mutationFn: async ({ lessonId, direction }: { lessonId: string; direction: 'up' | 'down' }) => {
-    // Lógica de troca de order_index
+// Adiciona https:// se não tiver protocolo
+function ensureProtocol(url: string): string {
+  if (!/^https?:\/\//i.test(url)) {
+    return `https://${url}`;
   }
-});
-
-// Na tabela, adicionar coluna de ordem com botões
-<TableHead className="w-20">Ordem</TableHead>
-...
-<TableCell>
-  <div className="flex gap-1">
-    <Button size="icon" variant="ghost" onClick={() => reorder(lesson, 'up')}>
-      <ArrowUp className="h-4 w-4" />
-    </Button>
-    <Button size="icon" variant="ghost" onClick={() => reorder(lesson, 'down')}>
-      <ArrowDown className="h-4 w-4" />
-    </Button>
-  </div>
-</TableCell>
-```
-
-### ContinueLearning.tsx - Otimização
-
-```tsx
-import { getOptimizedImageUrl } from "@/lib/imageOptimization";
-
-// Na imagem
-<img
-  src={getOptimizedImageUrl(module.cover_image_url, { width: 300 }) || module.cover_image_url}
-  loading="eager"
-  ...
-/>
-```
-
-### LinkifyText.tsx - Novo Componente
-
-```tsx
-interface LinkifyTextProps {
-  text: string;
-  className?: string;
+  return url;
 }
+```
 
+### 2. Drag-and-Drop com @dnd-kit
+
+A biblioteca `@dnd-kit` é:
+- Leve (~10KB gzipped)
+- Acessível (keyboard support)
+- Performante (sem re-renders desnecessários)
+- Touch-friendly (mobile)
+
+```tsx
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+```
+
+---
+
+## Arquivos a Modificar
+
+| Arquivo | Mudança |
+|---------|---------|
+| `package.json` | Adicionar `@dnd-kit/core` e `@dnd-kit/sortable` |
+| `src/components/ui/linkify-text.tsx` | Melhorar regex para detectar URLs sem protocolo |
+| `src/pages/admin/AdminLessons.tsx` | Implementar drag-and-drop nas linhas da tabela |
+
+---
+
+## Detalhes da Implementação
+
+### LinkifyText Melhorado
+
+```typescript
 export function LinkifyText({ text, className }: LinkifyTextProps) {
-  // Regex para detectar URLs
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  // Regex mais robusto que detecta URLs com ou sem protocolo
+  const urlRegex = /((?:https?:\/\/)?(?:www\.)?[a-zA-Z0-9][-a-zA-Z0-9]*\.[a-zA-Z]{2,}(?:\/[^\s]*)?)/gi;
   
-  const parts = text.split(urlRegex);
+  function ensureProtocol(url: string): string {
+    if (!/^https?:\/\//i.test(url)) {
+      return `https://${url}`;
+    }
+    return url;
+  }
   
+  // Renderiza links com protocolo adicionado automaticamente
   return (
-    <span className={className}>
+    <span>
       {parts.map((part, i) => 
-        urlRegex.test(part) ? (
-          <a 
-            key={i} 
-            href={part} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-primary hover:underline"
-          >
+        isUrl(part) ? (
+          <a href={ensureProtocol(part)} target="_blank">
             {part}
           </a>
         ) : part
@@ -131,35 +112,52 @@ export function LinkifyText({ text, className }: LinkifyTextProps) {
 }
 ```
 
-### VideoPlayer.tsx - Usar LinkifyText
+### AdminLessons com Drag-and-Drop
 
 ```tsx
-import { LinkifyText } from "@/components/ui/linkify-text";
+// Componente SortableRow para cada linha da tabela
+function SortableRow({ lesson, ... }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+    id: lesson.id
+  });
+  
+  return (
+    <TableRow ref={setNodeRef} style={style}>
+      <TableCell>
+        <GripVertical {...listeners} className="cursor-grab" />
+      </TableCell>
+      {/* resto das células */}
+    </TableRow>
+  );
+}
 
-// Na descrição
-{lesson.description && (
-  <LinkifyText 
-    text={lesson.description} 
-    className="text-muted-foreground" 
-  />
-)}
+// DndContext envolvendo a tabela
+<DndContext onDragEnd={handleDragEnd}>
+  <SortableContext items={lessonIds}>
+    <TableBody>
+      {sortedLessons.map(lesson => (
+        <SortableRow key={lesson.id} lesson={lesson} />
+      ))}
+    </TableBody>
+  </SortableContext>
+</DndContext>
 ```
 
 ---
 
-## Arquivos a Modificar
+## Comportamento do Drag-and-Drop
 
-| Arquivo | Mudança |
-|---------|---------|
-| `src/pages/admin/AdminLessons.tsx` | Adicionar botões de reordenação |
-| `src/components/dashboard/ContinueLearning.tsx` | Aplicar otimização de imagem |
-| `src/components/ui/linkify-text.tsx` | Criar componente (novo) |
-| `src/components/aulas/VideoPlayer.tsx` | Usar LinkifyText na descrição |
+1. Ícone de "arrastar" (GripVertical) aparece em cada linha
+2. Usuário arrasta a aula para nova posição
+3. Ao soltar, `order_index` é atualizado no banco
+4. Só permite reordenar dentro do mesmo módulo
+5. Mantém os botões de seta como alternativa (acessibilidade)
 
 ---
 
 ## Resultado Esperado
 
-1. **Reordenação**: Mentor pode subir/descer aulas dentro de cada módulo
-2. **Imagens mais rápidas**: Otimização aplicada em todos os locais + eager loading
-3. **Links clicáveis**: URLs na descrição abrem em nova aba automaticamente
+1. **Links funcionando**: URLs como `higgsfield.io` serão clicáveis e abrirão com `https://`
+2. **Drag-and-drop intuitivo**: Arrastar aulas para reordenar visualmente
+3. **Botões mantidos**: Setas continuam disponíveis para quem preferir
+
