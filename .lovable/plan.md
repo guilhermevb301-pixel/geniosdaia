@@ -1,138 +1,165 @@
 
-# Plano: Otimização de Imagens em TODA a Plataforma
+# Plano: Melhorias nas Aulas
 
-## Problema Identificado
+## 1. Reordenação de Aulas pelo Mentor
 
-A otimização já foi implementada em alguns componentes (`PromptCard`, `ModuleCard`, `GptCard`, `Templates`), mas várias outras partes da plataforma ainda usam `<img>` nativo sem otimização:
+### Problema
+Atualmente não há como o mentor/admin mudar a ordem das aulas - elas são ordenadas por `order_index` mas não há interface para alterar.
 
-| Local | Componente/Arquivo | Status Atual |
-|-------|-------------------|--------------|
-| Prompts Grid | PromptCard.tsx | ✅ Otimizado |
-| Aulas Grid | ModuleCard.tsx | ✅ Otimizado |
-| Templates Grid | Templates.tsx | ✅ Otimizado |
-| GPTs Grid | GptCard.tsx | ✅ Otimizado |
-| Dashboard Banners | AnnouncementCarousel.tsx | ❌ Não otimizado |
-| Desafios (submissions) | Desafios.tsx | ❌ Não otimizado |
-| Modal de Prompt (variações) | PromptCard.tsx (modal) | ❌ Não otimizado |
-| Modal de Prompt (exemplos) | PromptCard.tsx (modal) | ❌ Não otimizado |
-| Admin - Módulos | AdminModules.tsx | ❌ Não otimizado |
-| Admin - Templates | AdminTemplates.tsx | ❌ Não otimizado |
-| Admin - Prompts | AdminPrompts.tsx | ❌ Não otimizado |
-| Admin - GPTs | AdminGpts.tsx | ❌ Não otimizado |
-| Variation Editor (preview) | VariationEditor.tsx | ❌ Não otimizado |
+### Solução
+Adicionar botões de seta (up/down) na tabela de aulas para reordenar, com atualização do `order_index` no banco.
+
+### Arquivos a modificar
+- `src/pages/admin/AdminLessons.tsx`
+  - Adicionar ícones `ArrowUp` e `ArrowDown`
+  - Criar mutation para atualizar `order_index`
+  - Agrupar aulas por módulo para reordenação correta
 
 ---
 
-## Solução
+## 2. Carregamento Instantâneo de Imagens (Eager Loading)
 
-Aplicar otimização usando `ImageWithSkeleton` ou `getOptimizedImageUrl()` em todos os locais identificados.
+### Problema
+As imagens ainda demoram a carregar, mesmo com otimização. Isso acontece porque:
+1. `ContinueLearning.tsx` usa `<img>` nativo sem otimização
+2. Falta `loading="eager"` nas imagens críticas
+3. Podemos adicionar **preload** para imagens importantes
 
-### Estratégia por Contexto:
+### Solução
+- Aplicar otimização em `ContinueLearning.tsx`
+- Usar `loading="eager"` em imagens above-the-fold
+- Adicionar preload hints para thumbnails dos módulos
 
-| Contexto | Width | Componente |
-|----------|-------|------------|
-| Thumbnails em grid (3 colunas) | 400px | ImageWithSkeleton |
-| Thumbnails pequenas em tabelas | 200px | getOptimizedImageUrl() |
-| Ícones pequenos | 100px | getOptimizedImageUrl() |
-| Imagens em modal (qualidade maior) | 800px | getOptimizedImageUrl() |
-| Banners hero | 800px | getOptimizedImageUrl() |
+### Arquivos a modificar
+- `src/components/dashboard/ContinueLearning.tsx`
+  - Importar `getOptimizedImageUrl`
+  - Aplicar otimização nas thumbnails (width: 300)
+
+---
+
+## 3. Links Clicáveis na Descrição
+
+### Problema
+A descrição das aulas é exibida como texto puro, sem converter URLs em links clicáveis.
+
+### Solução
+Criar um componente utilitário `LinkifyText` que detecta URLs e converte em `<a>` clicáveis.
+
+### Arquivos a criar/modificar
+- `src/components/ui/linkify-text.tsx` (novo)
+  - Regex para detectar URLs
+  - Renderiza links com `target="_blank"`
+- `src/components/aulas/VideoPlayer.tsx`
+  - Usar `LinkifyText` no lugar de texto simples
+
+---
+
+## Implementação Técnica
+
+### AdminLessons.tsx - Reordenação
+
+```tsx
+// Adicionar imports
+import { ArrowUp, ArrowDown } from "lucide-react";
+
+// Mutation para reordenar
+const reorderMutation = useMutation({
+  mutationFn: async ({ lessonId, direction }: { lessonId: string; direction: 'up' | 'down' }) => {
+    // Lógica de troca de order_index
+  }
+});
+
+// Na tabela, adicionar coluna de ordem com botões
+<TableHead className="w-20">Ordem</TableHead>
+...
+<TableCell>
+  <div className="flex gap-1">
+    <Button size="icon" variant="ghost" onClick={() => reorder(lesson, 'up')}>
+      <ArrowUp className="h-4 w-4" />
+    </Button>
+    <Button size="icon" variant="ghost" onClick={() => reorder(lesson, 'down')}>
+      <ArrowDown className="h-4 w-4" />
+    </Button>
+  </div>
+</TableCell>
+```
+
+### ContinueLearning.tsx - Otimização
+
+```tsx
+import { getOptimizedImageUrl } from "@/lib/imageOptimization";
+
+// Na imagem
+<img
+  src={getOptimizedImageUrl(module.cover_image_url, { width: 300 }) || module.cover_image_url}
+  loading="eager"
+  ...
+/>
+```
+
+### LinkifyText.tsx - Novo Componente
+
+```tsx
+interface LinkifyTextProps {
+  text: string;
+  className?: string;
+}
+
+export function LinkifyText({ text, className }: LinkifyTextProps) {
+  // Regex para detectar URLs
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  
+  const parts = text.split(urlRegex);
+  
+  return (
+    <span className={className}>
+      {parts.map((part, i) => 
+        urlRegex.test(part) ? (
+          <a 
+            key={i} 
+            href={part} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-primary hover:underline"
+          >
+            {part}
+          </a>
+        ) : part
+      )}
+    </span>
+  );
+}
+```
+
+### VideoPlayer.tsx - Usar LinkifyText
+
+```tsx
+import { LinkifyText } from "@/components/ui/linkify-text";
+
+// Na descrição
+{lesson.description && (
+  <LinkifyText 
+    text={lesson.description} 
+    className="text-muted-foreground" 
+  />
+)}
+```
 
 ---
 
 ## Arquivos a Modificar
 
-### 1. Dashboard - AnnouncementCarousel.tsx
-- Adicionar otimização às imagens dos banners
-- Width: 800px (banners são maiores)
-
-### 2. Desafios.tsx
-- Submissions usam `<img>` nativo
-- Substituir por `ImageWithSkeleton` com width 400px
-
-### 3. PromptCard.tsx (Modal interno)
-- Imagens dentro do modal de detalhes
-- Variações e exemplos usam `<img>` nativo
-- Aplicar `getOptimizedImageUrl()` com width 800px
-
-### 4. Admin - AdminModules.tsx
-- Grid de módulos usa `<img>` nativo
-- Aplicar `getOptimizedImageUrl()` com width 400px
-
-### 5. Admin - AdminTemplates.tsx
-- Tabela de templates usa `<img>` nativo
-- Aplicar `getOptimizedImageUrl()` com width 200px (thumbnail em tabela)
-
-### 6. Admin - AdminPrompts.tsx
-- Grid de cards usa `<img>` nativo
-- Aplicar `getOptimizedImageUrl()` com width 400px
-
-### 7. Admin - AdminGpts.tsx
-- Ícones na tabela usam `<img>` nativo
-- Aplicar `getOptimizedImageUrl()` com width 100px
-
-### 8. VariationEditor.tsx
-- Preview de imagens durante edição
-- Aplicar `getOptimizedImageUrl()` com width 400px
+| Arquivo | Mudança |
+|---------|---------|
+| `src/pages/admin/AdminLessons.tsx` | Adicionar botões de reordenação |
+| `src/components/dashboard/ContinueLearning.tsx` | Aplicar otimização de imagem |
+| `src/components/ui/linkify-text.tsx` | Criar componente (novo) |
+| `src/components/aulas/VideoPlayer.tsx` | Usar LinkifyText na descrição |
 
 ---
 
-## Mudanças Detalhadas
+## Resultado Esperado
 
-### AnnouncementCarousel.tsx
-```tsx
-// Antes
-<img src={banner.image_url} ... />
-
-// Depois
-import { getOptimizedImageUrl } from "@/lib/imageOptimization";
-...
-<img src={getOptimizedImageUrl(banner.image_url, { width: 800 }) || banner.image_url} ... />
-```
-
-### Desafios.tsx
-```tsx
-// Antes
-<img src={submission.image_url} alt={submission.title} className="w-full h-full object-cover" />
-
-// Depois
-import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton";
-...
-<ImageWithSkeleton
-  src={submission.image_url}
-  alt={submission.title}
-  containerClassName="w-full h-full"
-  optimizedWidth={400}
-/>
-```
-
-### PromptCard.tsx (modal)
-```tsx
-// Imagens de variação e exemplos no modal
-// Aplicar getOptimizedImageUrl com width 800px para qualidade no modal
-```
-
-### Admin pages
-- Todas usam `<img>` nativo
-- Aplicar `getOptimizedImageUrl()` diretamente nas URLs
-
----
-
-## Impacto Esperado
-
-| Página | Antes | Depois | Redução |
-|--------|-------|--------|---------|
-| Dashboard (banners) | ~10MB | ~200KB | ~98% |
-| Desafios (submissions) | ~20MB | ~500KB | ~97% |
-| Admin Módulos | ~45MB | ~1MB | ~98% |
-| Admin Templates | ~15MB | ~400KB | ~97% |
-| Admin Prompts | ~90MB | ~2MB | ~98% |
-
----
-
-## Resultado Final
-
-Após implementação:
-- Todas as páginas carregarão muito mais rápido
-- Menos consumo de dados para usuários mobile
-- Experiência mais fluida com skeleton loaders
-- Admin também se beneficia da otimização
+1. **Reordenação**: Mentor pode subir/descer aulas dentro de cada módulo
+2. **Imagens mais rápidas**: Otimização aplicada em todos os locais + eager loading
+3. **Links clicáveis**: URLs na descrição abrem em nova aba automaticamente
