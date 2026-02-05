@@ -1,82 +1,106 @@
 
-# Plano: Remover Estrutura de Grupos dos Objetivos
+# Plano: Otimização de Carregamento de Imagens
 
-## Situação Atual
+## Diagnóstico
 
-O sistema possui duas tabelas:
-- `objective_groups` - Grupos como "A) Quero vender sem viralizar", "B) Quero crescer", etc.
-- `objective_items` - Objetivos individuais com `group_id` vinculando a um grupo
+### Problema Identificado
+As imagens estão demorando para carregar porque:
 
-No admin, você vê os grupos com títulos (A, B, C) e os objetivos dentro deles.
+1. **Imagens muito grandes**: As thumbnails no bucket `prompts` têm em média **4.7 MB** cada, com algumas chegando a **9.6 MB**
+2. **Formato não otimizado**: Todas são PNG (sem compressão)
+3. **Sem redimensionamento**: Imagens são servidas em tamanho original mesmo para thumbnails pequenas
 
-## Mudança Solicitada
+### Dados do Banco
 
-Eliminar a necessidade de grupos. Ter apenas uma lista simples de objetivos que você configura diretamente.
+| Bucket | Arquivos | Tamanho Médio | Maior Arquivo | Total |
+|--------|----------|---------------|---------------|-------|
+| prompts | 43 | 4.6 MB | 9.6 MB | 199 MB |
+| modules | 10 | 4.5 MB | 7.5 MB | 45 MB |
+| templates | 15 | 1.3 MB | 18 MB | 19 MB |
 
----
-
-## Solução
-
-### Opção Escolhida: Simplificar para Lista Plana (SEM grupos)
-
-Tornar o `group_id` opcional no banco e modificar a UI para:
-1. **Admin**: Lista plana de objetivos com CRUD simples
-2. **Aluno**: Lista plana de checkboxes sem divisões
+**Exemplo**: Ao abrir a aba "Imagens" em `/prompts`, o navegador precisa baixar ~18 imagens × ~5 MB = **~90 MB de dados**!
 
 ---
 
-## Mudanças Necessárias
+## Solução: Image Transformations do Supabase
 
-### 1. Banco de Dados
-Tornar `group_id` opcional em `objective_items`:
+O Supabase Storage oferece transformações de imagem on-the-fly via query parameters. Podemos solicitar versões menores e otimizadas das imagens.
 
-```sql
-ALTER TABLE public.objective_items 
-ALTER COLUMN group_id DROP NOT NULL;
+### Sintaxe
+
+```
+URL_ORIGINAL?width=400&quality=80&format=webp
 ```
 
-### 2. Admin - ObjectivesEditor.tsx
-Transformar de estrutura com grupos para lista simples:
+### Parâmetros disponíveis:
+- `width` - Largura máxima em pixels
+- `height` - Altura máxima em pixels
+- `quality` - Qualidade (1-100, padrão 80)
+- `format` - webp, avif, jpeg, png
+- `resize` - cover, contain, fill
 
-| Antes | Depois |
-|-------|--------|
-| Cards de grupos com itens aninhados | Lista única de objetivos |
-| Botão "Novo Grupo" | Removido |
-| Itens dentro de grupos | Itens na raiz |
+---
 
-Interface final:
-- Header: "Gerenciar Objetivos" + botão "Novo Objetivo"
-- Lista de cards de objetivo (um por linha)
-- Cada card: label, key, tags, badges (Requer Infra, INFRA), botões de editar/excluir/vincular
+## Implementação
 
-### 3. Hook - useObjectives.ts
-Simplificar para retornar lista plana de items:
+### 1. Criar Helper de Otimização de URLs
+
+Novo arquivo `src/lib/imageOptimization.ts`:
 
 ```typescript
-// Antes
-objectiveGroups: ObjectiveGroup[] // grupos com items aninhados
+interface ImageOptions {
+  width?: number;
+  height?: number;
+  quality?: number;
+  format?: 'webp' | 'avif' | 'jpeg' | 'origin';
+}
 
-// Depois  
-objectives: ObjectiveItem[] // lista plana
+export function getOptimizedImageUrl(
+  url: string | null,
+  options: ImageOptions = {}
+): string | null {
+  if (!url) return null;
+  
+  // Só otimiza URLs do Supabase Storage
+  if (!url.includes('supabase.co/storage')) return url;
+  
+  const { 
+    width = 400, 
+    quality = 75, 
+    format = 'webp' 
+  } = options;
+  
+  const params = new URLSearchParams();
+  if (width) params.set('width', width.toString());
+  if (quality) params.set('quality', quality.toString());
+  if (format) params.set('format', format);
+  
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}${params.toString()}`;
+}
 ```
 
-### 4. UI do Aluno - ObjectivesModal.tsx e ObjectivesChecklist.tsx
-Remover renderização de títulos de grupos:
+### 2. Atualizar ImageWithSkeleton
 
-```tsx
-// Antes
-{objectiveGroups.map((group) => (
-  <div>
-    <h4>{group.title}</h4>  {/* "A) Quero vender..." */}
-    {group.items.map(item => ...)}
-  </div>
-))}
+Adicionar prop para tamanho otimizado:
 
-// Depois
-{objectives.map((item) => (
-  <div>...</div>  // Lista plana, sem títulos de grupo
-))}
+```typescript
+interface ImageWithSkeletonProps {
+  src: string;
+  alt: string;
+  optimizedWidth?: number; // Nova prop
+  // ... resto
+}
 ```
+
+### 3. Atualizar Componentes
+
+| Componente | Contexto | Width Recomendado |
+|------------|----------|-------------------|
+| `PromptCard` | Grid 3 colunas | 400px |
+| `ModuleCard` | Grid 5 colunas | 300px |
+| `TemplateCard` | Grid 3 colunas | 400px |
+| `GptCard` | Ícone pequeno | 100px |
 
 ---
 
@@ -84,69 +108,43 @@ Remover renderização de títulos de grupos:
 
 | Arquivo | Mudança |
 |---------|---------|
-| Migration SQL | Tornar `group_id` nullable |
-| `src/hooks/useObjectives.ts` | Retornar `objectives` como lista plana, remover mutations de grupo |
-| `src/components/admin/ObjectivesEditor.tsx` | Interface simplificada sem grupos |
-| `src/components/challenges/ObjectivesModal.tsx` | Renderizar lista plana |
-| `src/components/challenges/ObjectivesChecklist.tsx` | Renderizar lista plana |
-| `src/components/challenges/ObjectivesSummary.tsx` | Usar lista plana |
+| `src/lib/imageOptimization.ts` | Criar helper (novo) |
+| `src/components/ui/image-with-skeleton.tsx` | Adicionar otimização |
+| `src/components/prompts/PromptCard.tsx` | Usar imagem otimizada |
+| `src/components/aulas/ModuleCard.tsx` | Usar imagem otimizada |
+| `src/pages/Templates.tsx` | Usar imagem otimizada |
+| `src/components/gpts/GptCard.tsx` | Usar imagem otimizada |
 
 ---
 
-## Interface do Admin (Nova)
+## Impacto Esperado
 
-```text
-+--------------------------------------------------+
-| Gerenciar Objetivos               [+ Novo Objetivo]
-| Configure os objetivos disponíveis para alunos
-+--------------------------------------------------+
+### Antes (18 imagens de prompts)
+- Tamanho total: ~90 MB
+- Tempo estimado (3G): ~5 minutos
+- Tempo estimado (4G): ~45 segundos
 
-+--------------------------------------------------+
-| :: | Vender primeiro projeto de Agente | Requer Infra |
-|    | vender_projeto | vendas, comercial |
-|                                  [vincular] [editar] [excluir]
-+--------------------------------------------------+
+### Depois (mesmas 18 imagens otimizadas)
+- Tamanho total: ~1.5 MB (400px webp ~85KB cada)
+- Tempo estimado (3G): ~5 segundos
+- Tempo estimado (4G): ~1 segundo
 
-+--------------------------------------------------+
-| :: | Viralizar nas redes | 
-|    | viralizar | crescimento, redes |
-|                                  [vincular] [editar] [excluir]
-+--------------------------------------------------+
-
-... mais objetivos ...
-```
+**Redução de ~98% no tamanho dos downloads!**
 
 ---
 
-## Interface do Aluno (Modal)
+## Considerações Técnicas
 
-Antes:
-```text
-A) Quero vender sem viralizar
-  [ ] Vender primeiro projeto de Agente
-
-B) Quero crescer (audiência)
-  [ ] Viralizar nas redes
-```
-
-Depois:
-```text
-[ ] Vender primeiro projeto de Agente
-[ ] Viralizar nas redes
-[ ] Criar vídeos incríveis
-... (lista simples sem divisões)
-```
+1. **Primeira requisição**: Pode ser um pouco mais lenta (Supabase precisa gerar a versão otimizada)
+2. **Requisições subsequentes**: Muito rápidas (imagem cacheada no CDN)
+3. **Qualidade visual**: WebP 75% com 400px é imperceptível em thumbnails
+4. **Fallback**: Se a transformação falhar, usa imagem original
 
 ---
 
-## Dados Existentes
+## Resultado
 
-Os objetivos existentes serão mantidos. A coluna `group_id` continuará preenchida para compatibilidade, mas não será mais exibida na UI.
-
----
-
-## Resultado Esperado
-
-1. Admin vê lista simples de objetivos para CRUD
-2. Aluno vê lista simples de checkboxes sem divisões A/B/C
-3. Todas as funcionalidades mantidas (vincular desafios, tags, requer infra)
+1. Páginas `/prompts`, `/aulas`, `/templates` carregam muito mais rápido
+2. Menos consumo de dados para usuários mobile
+3. Melhor experiência de usuário com skeleton enquanto carrega
+4. Mantém imagem original disponível ao clicar (modal usa full-size)
