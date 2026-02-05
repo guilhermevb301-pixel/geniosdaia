@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,9 +21,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Plus, Pencil, Trash2, Image } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Image, Upload, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useDashboardBannersAdmin, DashboardBanner } from "@/hooks/useDashboardBanners";
+import { supabase } from "@/integrations/supabase/client";
+import { validateImageFile } from "@/lib/fileValidation";
+import { toast } from "sonner";
 
 type BannerFormData = Omit<DashboardBanner, "id" | "created_at">;
 
@@ -32,7 +35,7 @@ const defaultFormData: BannerFormData = {
   subtitle: "",
   image_url: "",
   gradient: "from-primary to-purple-600",
-  button_text: "Saiba Mais",
+  button_text: null,
   button_url: "",
   order_index: 0,
   is_active: true,
@@ -45,6 +48,8 @@ export default function AdminBanners() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBanner, setEditingBanner] = useState<DashboardBanner | null>(null);
   const [formData, setFormData] = useState<BannerFormData>(defaultFormData);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleOpenCreate = () => {
     setEditingBanner(null);
@@ -62,7 +67,7 @@ export default function AdminBanners() {
       subtitle: banner.subtitle || "",
       image_url: banner.image_url || "",
       gradient: banner.gradient || "from-primary to-purple-600",
-      button_text: banner.button_text || "Saiba Mais",
+      button_text: null,
       button_url: banner.button_url,
       order_index: banner.order_index,
       is_active: banner.is_active,
@@ -70,6 +75,45 @@ export default function AdminBanners() {
       width_type: banner.width_type || "half",
     });
     setIsModalOpen(true);
+  };
+
+  const handleImageUpload = async (file: File) => {
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+      toast.error(validation.error);
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+      const { error } = await supabase.storage
+        .from('banners')
+        .upload(fileName, file);
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('banners')
+        .getPublicUrl(fileName);
+
+      setFormData({ ...formData, image_url: publicUrl });
+      toast.success("Imagem carregada com sucesso!");
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast.error("Erro ao carregar imagem");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setFormData({ ...formData, image_url: "" });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -253,13 +297,71 @@ export default function AdminBanners() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="image_url">URL da Imagem</Label>
-                <Input
-                  id="image_url"
-                  value={formData.image_url || ""}
-                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                  placeholder="https://exemplo.com/imagem.jpg"
+                <Label>Imagem do Banner</Label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleImageUpload(file);
+                  }}
                 />
+                {formData.image_url ? (
+                  <div className="space-y-2">
+                    <div className="relative rounded-lg overflow-hidden border border-border">
+                      <img
+                        src={formData.image_url}
+                        alt="Preview"
+                        className="w-full h-32 object-cover"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Trocar Imagem
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRemoveImage}
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        Remover
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                  >
+                    {isUploading ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                        <span className="text-sm text-muted-foreground">Carregando...</span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-2">
+                        <Upload className="h-8 w-8 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">
+                          Clique para escolher uma imagem
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          JPG, PNG, WebP, GIF (máx. 10MB)
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
                 <p className="text-xs text-muted-foreground">
                   Se não houver imagem, será usado o gradiente abaixo
                 </p>
@@ -275,26 +377,15 @@ export default function AdminBanners() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="button_text">Texto do Botão</Label>
-                  <Input
-                    id="button_text"
-                    value={formData.button_text || ""}
-                    onChange={(e) => setFormData({ ...formData, button_text: e.target.value })}
-                    placeholder="Saiba Mais"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="order_index">Ordem</Label>
-                  <Input
-                    id="order_index"
-                    type="number"
-                    value={formData.order_index}
-                    onChange={(e) => setFormData({ ...formData, order_index: parseInt(e.target.value) || 0 })}
-                    min={0}
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="order_index">Ordem</Label>
+                <Input
+                  id="order_index"
+                  type="number"
+                  value={formData.order_index}
+                  onChange={(e) => setFormData({ ...formData, order_index: parseInt(e.target.value) || 0 })}
+                  min={0}
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
