@@ -1,178 +1,141 @@
 
-# Plano: Personalização de Banners + Notas Livres com Upload
+
+# Plano: Upload de Imagem para Banners + Remover Campo de Botão
 
 ## Resumo das Mudanças
 
-| Feature | Descrição |
+| Mudança | Descrição |
 |---------|-----------|
-| **1. Largura/Altura dos Banners** | Mentor pode definir dimensões customizadas para cada banner |
-| **2. Notas Livres no Caderno** | Alunos podem criar notas sem vínculo com aulas, com título e mídia |
+| **1. Upload de Imagem** | Substituir campo de URL por input de upload de arquivo |
+| **2. Remover Texto do Botão** | O banner inteiro é clicável, não precisa de texto separado |
+| **3. Bucket de Storage** | Criar bucket `banners` para armazenar as imagens |
 
 ---
 
-## 1. Banners Customizáveis (Altura/Largura)
+## 1. Criar Bucket de Storage
 
-### Problema Atual
-- Banners têm altura fixa (`h-44` = 176px)
-- Largura é `md:basis-1/2` (metade no desktop)
-- Não há como o mentor personalizar
-
-### Solução
-Adicionar campos `height` e `width` na tabela `dashboard_banners`:
-- **height**: Altura em pixels (ex: 176, 200, 250)
-- **width**: Tipo de layout (`half` = 50%, `full` = 100%, `third` = 33%)
-
-### Mudanças no Banco de Dados
+O projeto já tem buckets para `templates`, `prompts`, `modules` e `user-notes`. Vamos criar um para banners.
 
 ```sql
-ALTER TABLE dashboard_banners 
-ADD COLUMN height integer DEFAULT 176,
-ADD COLUMN width_type text DEFAULT 'half';
--- width_type: 'half' (50%), 'full' (100%), 'third' (33%)
-```
-
-### Mudanças no Código
-
-| Arquivo | Mudança |
-|---------|---------|
-| `AdminBanners.tsx` | Adicionar campos height e width_type no formulário |
-| `AnnouncementCarousel.tsx` | Usar valores dinâmicos ao invés de classes fixas |
-| `useDashboardBanners.ts` | Atualizar interface DashboardBanner |
-
-### Exemplo no Carrossel
-
-```tsx
-// AnnouncementCarousel.tsx
-const getWidthClass = (widthType: string) => {
-  switch (widthType) {
-    case 'full': return 'md:basis-full';
-    case 'third': return 'md:basis-1/3';
-    default: return 'md:basis-1/2';
-  }
-};
-
-<CarouselItem className={`pl-2 md:pl-4 ${getWidthClass(banner.width_type)}`}>
-  <div style={{ height: `${banner.height}px` }} className="...">
-```
-
----
-
-## 2. Notas Livres no "Meu Caderno"
-
-### Problema Atual
-- Notas só podem ser criadas vinculadas a aulas
-- Não há suporte para mídia (imagens/vídeos)
-
-### Solução
-1. Permitir notas sem `lesson_id` ou `prompt_id` (nota livre)
-2. Adicionar campos `title` e `media_urls` na tabela `user_notes`
-3. Criar bucket de storage para uploads
-4. Adicionar botão "Nova Nota" no MeuCaderno
-
-### Mudanças no Banco de Dados
-
-```sql
--- Adicionar campos na tabela user_notes
-ALTER TABLE user_notes 
-ADD COLUMN title text,
-ADD COLUMN media_urls text[] DEFAULT '{}';
-
--- Criar bucket para armazenar mídia das notas
 INSERT INTO storage.buckets (id, name, public)
-VALUES ('user-notes', 'user-notes', true);
+VALUES ('banners', 'banners', true);
 
--- RLS para o bucket
-CREATE POLICY "Users can upload own media"
+-- Permitir mentores e admins fazer upload
+CREATE POLICY "Admins and mentors can upload banners"
 ON storage.objects FOR INSERT TO authenticated
-WITH CHECK (bucket_id = 'user-notes' AND auth.uid()::text = (storage.foldername(name))[1]);
+WITH CHECK (
+  bucket_id = 'banners' AND 
+  (has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'mentor'))
+);
 
-CREATE POLICY "Users can view own media"
-ON storage.objects FOR SELECT TO authenticated
-USING (bucket_id = 'user-notes' AND auth.uid()::text = (storage.foldername(name))[1]);
+-- Permitir visualização pública
+CREATE POLICY "Anyone can view banners"
+ON storage.objects FOR SELECT TO public
+USING (bucket_id = 'banners');
 
-CREATE POLICY "Users can delete own media"
+-- Permitir exclusão por admins/mentores
+CREATE POLICY "Admins and mentors can delete banners"
 ON storage.objects FOR DELETE TO authenticated
-USING (bucket_id = 'user-notes' AND auth.uid()::text = (storage.foldername(name))[1]);
-```
-
-### Mudanças no Código
-
-| Arquivo | Mudança |
-|---------|---------|
-| `MeuCaderno.tsx` | Botão "Nova Nota", modal de criação com upload |
-| `useUserNotes.ts` | Suporte a title, media_urls, notas livres |
-| `useDashboardBanners.ts` | Atualizar interface |
-
-### Interface da Nova Nota
-
-```text
-┌──────────────────────────────────────────────────────┐
-│  + Nova Nota                                         │
-├──────────────────────────────────────────────────────┤
-│  Título: ____________________________________        │
-│                                                      │
-│  Conteúdo:                                           │
-│  ┌────────────────────────────────────────────────┐  │
-│  │                                                │  │
-│  │                                                │  │
-│  └────────────────────────────────────────────────┘  │
-│                                                      │
-│  Mídia: [📷 Imagem] [🎥 Vídeo]                       │
-│                                                      │
-│  Arquivos anexados:                                  │
-│  - imagem1.png [x]                                   │
-│  - video1.mp4 [x]                                    │
-│                                                      │
-│  [Cancelar]                    [Salvar Nota]         │
-└──────────────────────────────────────────────────────┘
+USING (
+  bucket_id = 'banners' AND 
+  (has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'mentor'))
+);
 ```
 
 ---
 
-## Arquivos a Criar/Modificar
+## 2. Mudanças no Formulário
 
-| Arquivo | Ação |
-|---------|------|
-| `supabase/migrations/new_migration.sql` | Adicionar campos e bucket |
-| `src/hooks/useDashboardBanners.ts` | Adicionar height, width_type na interface |
-| `src/pages/admin/AdminBanners.tsx` | Campos de altura e largura no form |
-| `src/components/dashboard/AnnouncementCarousel.tsx` | Usar dimensões dinâmicas |
-| `src/hooks/useUserNotes.ts` | Adicionar title, media_urls, createFreeNote |
-| `src/pages/MeuCaderno.tsx` | Modal de criação de nota livre com upload |
+### Antes (Atual)
+- Campo "URL da Imagem" (texto)
+- Campo "Texto do Botão"
 
----
-
-## Fluxo de Upload de Mídia
-
-1. Usuário clica em "Adicionar Imagem" ou "Adicionar Vídeo"
-2. Seleciona arquivo (validação: imagem até 10MB, vídeo até 50MB)
-3. Upload para `user-notes/{user_id}/{uuid}.ext`
-4. URL é adicionada ao array `media_urls`
-5. Ao salvar, todas as URLs são persistidas
+### Depois (Novo)
+- **Área de Upload** com preview da imagem
+- Remove campo "Texto do Botão" (banner inteiro é clicável)
 
 ---
 
-## Validação de Arquivos
+## 3. Implementação do Upload
 
 ```typescript
-// Imagens: JPEG, PNG, WebP, GIF - máx 10MB
-// Vídeos: MP4, WebM, MOV - máx 50MB
+// Lógica de upload
+const handleImageUpload = async (file: File) => {
+  const validation = validateImageFile(file);
+  if (!validation.valid) {
+    toast.error(validation.error);
+    return;
+  }
 
-const validateMedia = (file: File): boolean => {
-  const isImage = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type);
-  const isVideo = ['video/mp4', 'video/webm', 'video/quicktime'].includes(file.type);
-  
-  if (isImage && file.size > 10 * 1024 * 1024) return false;
-  if (isVideo && file.size > 50 * 1024 * 1024) return false;
-  
-  return isImage || isVideo;
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+  const { error } = await supabase.storage
+    .from('banners')
+    .upload(fileName, file);
+
+  if (error) throw error;
+
+  const { data: { publicUrl } } = supabase.storage
+    .from('banners')
+    .getPublicUrl(fileName);
+
+  setFormData({ ...formData, image_url: publicUrl });
 };
 ```
+
+---
+
+## 4. Interface do Upload
+
+```text
+┌─────────────────────────────────────────────┐
+│  Imagem do Banner                           │
+├─────────────────────────────────────────────┤
+│                                             │
+│    ┌─────────────────────────────────┐      │
+│    │                                 │      │
+│    │     [Preview da imagem]         │      │
+│    │                                 │      │
+│    └─────────────────────────────────┘      │
+│                                             │
+│    [📷 Escolher Imagem]  [🗑️ Remover]       │
+│                                             │
+│    Formatos: JPG, PNG, WebP, GIF            │
+│    Tamanho máximo: 10MB                     │
+└─────────────────────────────────────────────┘
+```
+
+---
+
+## Arquivos a Modificar
+
+| Arquivo | Mudança |
+|---------|---------|
+| `supabase/migrations/` | Criar bucket `banners` com RLS |
+| `src/pages/admin/AdminBanners.tsx` | Upload de imagem, remover campo de botão |
+| `src/hooks/useDashboardBanners.ts` | Remover `button_text` da interface (opcional) |
+
+---
+
+## Campos do Formulário (Final)
+
+1. **Título** - texto obrigatório
+2. **Subtítulo** - texto opcional
+3. **Imagem** - upload de arquivo (com preview)
+4. **Gradiente** - fallback se não houver imagem
+5. **Link de Destino** - URL obrigatória (banner clicável)
+6. **Altura** - em pixels
+7. **Largura** - half/third/full
+8. **Ordem** - número
+9. **Ativo** - switch
 
 ---
 
 ## Resultado Esperado
 
-1. **Banners**: Mentor pode ajustar altura (ex: 200px) e largura (50%, 100%, 33%) de cada banner
-2. **Notas Livres**: Alunos podem criar notas com título, texto e anexar imagens/vídeos
-3. **Mídia segura**: Arquivos são armazenados no bucket com RLS por usuário
+1. Mentor faz upload de imagem diretamente (qualquer tamanho de imagem)
+2. Preview aparece no formulário
+3. Não precisa mais copiar/colar URLs
+4. Banner inteiro é clicável (sem botão separado)
+
