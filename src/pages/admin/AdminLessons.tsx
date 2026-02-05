@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -24,14 +24,28 @@ import {
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Edit, Trash2, ArrowLeft, Youtube, Download, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, ArrowLeft, Youtube, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { SortableLessonRow } from "@/components/admin/SortableLessonRow";
 
 interface Lesson {
   id: string;
@@ -54,7 +68,6 @@ export default function AdminLessons() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
-  const [selectedModuleId, setSelectedModuleId] = useState<string>("");
   const [filterModuleId, setFilterModuleId] = useState<string>("all");
 
   // Form state
@@ -64,6 +77,14 @@ export default function AdminLessons() {
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [downloadUrl, setDownloadUrl] = useState("");
   const [duration, setDuration] = useState("");
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const { data: modules } = useQuery({
     queryKey: ["modules"],
@@ -94,6 +115,17 @@ export default function AdminLessons() {
       return data as Lesson[];
     },
   });
+
+  // Ordenar aulas por módulo e order_index
+  const sortedLessons = useMemo(() => {
+    if (!lessons) return [];
+    return [...lessons].sort((a, b) => {
+      if (a.module_id !== b.module_id) {
+        return a.module_id.localeCompare(b.module_id);
+      }
+      return a.order_index - b.order_index;
+    });
+  }, [lessons]);
 
   const createMutation = useMutation({
     mutationFn: async (newLesson: Omit<Lesson, "id">) => {
@@ -158,29 +190,34 @@ export default function AdminLessons() {
   });
 
   const reorderMutation = useMutation({
-    mutationFn: async ({ lessonId, direction }: { lessonId: string; direction: 'up' | 'down' }) => {
+    mutationFn: async ({ lessonId, newIndex, moduleId }: { lessonId: string; newIndex: number; moduleId: string }) => {
       if (!lessons) return;
       
-      const lesson = lessons.find(l => l.id === lessonId);
-      if (!lesson) return;
-      
-      // Filtra aulas do mesmo módulo e ordena
+      // Filtra aulas do mesmo módulo
       const moduleLessons = lessons
-        .filter(l => l.module_id === lesson.module_id)
+        .filter(l => l.module_id === moduleId)
         .sort((a, b) => a.order_index - b.order_index);
       
-      const currentIndex = moduleLessons.findIndex(l => l.id === lessonId);
-      const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-      
-      if (targetIndex < 0 || targetIndex >= moduleLessons.length) return;
-      
-      const targetLesson = moduleLessons[targetIndex];
-      
-      // Troca os order_index
-      const updates = [
-        supabase.from("lessons").update({ order_index: targetLesson.order_index }).eq("id", lesson.id),
-        supabase.from("lessons").update({ order_index: lesson.order_index }).eq("id", targetLesson.id),
-      ];
+      // Atualiza os order_index de todas as aulas do módulo
+      const updates = moduleLessons.map((lesson, idx) => {
+        let newOrderIndex = idx;
+        
+        if (lesson.id === lessonId) {
+          newOrderIndex = newIndex;
+        } else {
+          const oldIndex = moduleLessons.findIndex(l => l.id === lessonId);
+          if (oldIndex < newIndex && idx > oldIndex && idx <= newIndex) {
+            newOrderIndex = idx - 1;
+          } else if (oldIndex > newIndex && idx < oldIndex && idx >= newIndex) {
+            newOrderIndex = idx + 1;
+          }
+        }
+        
+        return supabase
+          .from("lessons")
+          .update({ order_index: newOrderIndex })
+          .eq("id", lesson.id);
+      });
       
       const results = await Promise.all(updates);
       results.forEach(r => { if (r.error) throw r.error; });
@@ -192,6 +229,39 @@ export default function AdminLessons() {
       toast({ variant: "destructive", title: "Erro ao reordenar", description: error.message });
     },
   });
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    
+    if (!over || active.id === over.id || !lessons) return;
+    
+    const activeLesson = lessons.find(l => l.id === active.id);
+    const overLesson = lessons.find(l => l.id === over.id);
+    
+    if (!activeLesson || !overLesson) return;
+    
+    // Só permite reordenar dentro do mesmo módulo
+    if (activeLesson.module_id !== overLesson.module_id) {
+      toast({ 
+        variant: "destructive", 
+        title: "Não é possível mover entre módulos",
+        description: "Você só pode reordenar aulas dentro do mesmo módulo."
+      });
+      return;
+    }
+    
+    const moduleLessons = lessons
+      .filter(l => l.module_id === activeLesson.module_id)
+      .sort((a, b) => a.order_index - b.order_index);
+    
+    const newIndex = moduleLessons.findIndex(l => l.id === over.id);
+    
+    reorderMutation.mutate({ 
+      lessonId: activeLesson.id, 
+      newIndex, 
+      moduleId: activeLesson.module_id 
+    });
+  }
 
   function resetForm() {
     setDialogOpen(false);
@@ -250,7 +320,7 @@ export default function AdminLessons() {
             </Link>
             <div>
               <h1 className="text-2xl font-bold">Gerenciar Aulas</h1>
-              <p className="text-muted-foreground">Adicione aulas do YouTube aos módulos</p>
+              <p className="text-muted-foreground">Adicione aulas do YouTube aos módulos. Arraste para reordenar.</p>
             </div>
           </div>
 
@@ -388,94 +458,41 @@ export default function AdminLessons() {
               <div className="flex items-center justify-center py-8">
                 <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
               </div>
-            ) : lessons && lessons.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-20">Ordem</TableHead>
-                    <TableHead>Módulo</TableHead>
-                    <TableHead>Título</TableHead>
-                    <TableHead>Duração</TableHead>
-                    <TableHead>YouTube</TableHead>
-                    <TableHead className="w-24">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {lessons.map((lesson, idx) => {
-                    const moduleLessons = lessons.filter(l => l.module_id === lesson.module_id).sort((a, b) => a.order_index - b.order_index);
-                    const lessonIndexInModule = moduleLessons.findIndex(l => l.id === lesson.id);
-                    const isFirst = lessonIndexInModule === 0;
-                    const isLast = lessonIndexInModule === moduleLessons.length - 1;
-                    
-                    return (
-                    <TableRow key={lesson.id}>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button 
-                            size="icon" 
-                            variant="ghost" 
-                            disabled={isFirst || reorderMutation.isPending}
-                            onClick={() => reorderMutation.mutate({ lessonId: lesson.id, direction: 'up' })}
-                          >
-                            <ArrowUp className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            size="icon" 
-                            variant="ghost" 
-                            disabled={isLast || reorderMutation.isPending}
-                            onClick={() => reorderMutation.mutate({ lessonId: lesson.id, direction: 'down' })}
-                          >
-                            <ArrowDown className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {getModuleName(lesson.module_id)}
-                      </TableCell>
-                      <TableCell className="font-medium">{lesson.title}</TableCell>
-                      <TableCell>{lesson.duration || "-"}</TableCell>
-                      <TableCell>
-                        {lesson.youtube_url ? (
-                          <a
-                            href={lesson.youtube_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-destructive hover:underline flex items-center gap-1"
-                          >
-                            <Youtube className="h-4 w-4" />
-                            Ver
-                          </a>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEdit(lesson)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              if (confirm("Tem certeza que deseja excluir esta aula?")) {
-                                deleteMutation.mutate(lesson.id);
-                              }
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </TableCell>
+            ) : sortedLessons && sortedLessons.length > 0 ? (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12"></TableHead>
+                      <TableHead>Módulo</TableHead>
+                      <TableHead>Título</TableHead>
+                      <TableHead>Duração</TableHead>
+                      <TableHead>YouTube</TableHead>
+                      <TableHead className="w-24">Ações</TableHead>
                     </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <SortableContext
+                    items={sortedLessons.map(l => l.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <TableBody>
+                      {sortedLessons.map((lesson) => (
+                        <SortableLessonRow
+                          key={lesson.id}
+                          lesson={lesson}
+                          moduleName={getModuleName(lesson.module_id)}
+                          onEdit={handleEdit}
+                          onDelete={(id) => deleteMutation.mutate(id)}
+                        />
+                      ))}
+                    </TableBody>
+                  </SortableContext>
+                </Table>
+              </DndContext>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 Nenhuma aula criada ainda. Clique em "Nova Aula" para começar.
