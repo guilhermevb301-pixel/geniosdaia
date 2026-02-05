@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FocalPointSelector } from "@/components/prompts/FocalPointSelector";
 import { VariationEditor, Variation } from "@/components/prompts/VariationEditor";
 import { validateImageFile, validateVideoFile, ALLOWED_IMAGE_EXTENSIONS, MAX_VIDEO_SIZE } from "@/lib/fileValidation";
+import { getOptimizedImageUrl } from "@/lib/imageOptimization";
 
 type PromptCategory = "video" | "image" | "agent";
 
