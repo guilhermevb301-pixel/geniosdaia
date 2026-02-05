@@ -8,6 +8,8 @@ export interface UserNote {
   lesson_id: string | null;
   prompt_id: string | null;
   content: string;
+  title: string | null;
+  media_urls: string[];
   created_at: string;
   updated_at: string;
 }

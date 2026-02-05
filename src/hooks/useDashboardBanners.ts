@@ -13,6 +13,8 @@ export interface DashboardBanner {
   order_index: number;
   is_active: boolean;
   created_at: string;
+  height: number;
+  width_type: string;
 }
 
 export function useDashboardBanners() {
