@@ -264,28 +264,6 @@ export default function AdminBanners() {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="title">Título *</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="Ex: Junte-se à Comunidade"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="subtitle">Subtítulo</Label>
-                <Textarea
-                  id="subtitle"
-                  value={formData.subtitle || ""}
-                  onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
-                  placeholder="Ex: Conecte-se com outros automatizadores"
-                  rows={2}
-                />
-              </div>
-
-              <div className="space-y-2">
                 <Label>Imagem do Banner</Label>
                 <input
                   ref={fileInputRef}
