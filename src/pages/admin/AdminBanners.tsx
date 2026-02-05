@@ -36,6 +36,8 @@ const defaultFormData: BannerFormData = {
   button_url: "",
   order_index: 0,
   is_active: true,
+  height: 176,
+  width_type: "half",
 };
 
 export default function AdminBanners() {
