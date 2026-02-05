@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getOptimizedImageUrl } from "@/lib/imageOptimization";
 
 interface ImageWithSkeletonProps {
   src: string;
@@ -10,6 +11,10 @@ interface ImageWithSkeletonProps {
   objectFit?: "cover" | "contain" | "fill";
   objectPosition?: string;
   fallbackIcon?: React.ReactNode;
+  /** Largura para otimização automática (apenas URLs do Supabase) */
+  optimizedWidth?: number;
+  /** Qualidade para otimização (1-100, padrão 75) */
+  optimizedQuality?: number;
 }
 
 export function ImageWithSkeleton({
@@ -20,9 +25,16 @@ export function ImageWithSkeleton({
   objectFit = "cover",
   objectPosition = "center",
   fallbackIcon,
+  optimizedWidth,
+  optimizedQuality = 75,
 }: ImageWithSkeletonProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
+
+  // Aplica otimização se width especificado
+  const optimizedSrc = optimizedWidth
+    ? getOptimizedImageUrl(src, { width: optimizedWidth, quality: optimizedQuality })
+    : src;
 
   return (
     <div className={cn("relative overflow-hidden", containerClassName)}>
@@ -40,7 +52,7 @@ export function ImageWithSkeleton({
 
       {/* Image with lazy loading */}
       <img
-        src={src}
+        src={optimizedSrc || src}
         alt={alt}
         loading="lazy"
         decoding="async"

@@ -40,6 +40,7 @@ export function ModuleCard({
                 className="transition-transform duration-300 group-hover:scale-105"
                 containerClassName="h-full w-full"
                 fallbackIcon={<BookOpen className="h-12 w-12 text-primary/40" />}
+                optimizedWidth={300}
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">

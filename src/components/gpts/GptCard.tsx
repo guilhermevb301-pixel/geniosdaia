@@ -24,6 +24,7 @@ export function GptCard({ gpt }: GptCardProps) {
               alt={gpt.title}
               className="h-8 w-8 rounded-lg"
               containerClassName="h-8 w-8"
+              optimizedWidth={100}
             />
           ) : (
             <Bot className="h-6 w-6 text-primary" />

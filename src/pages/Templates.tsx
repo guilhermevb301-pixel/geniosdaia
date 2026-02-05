@@ -127,6 +127,7 @@ export default function Templates() {
                       className="group-hover:scale-105 transition-transform duration-300"
                       containerClassName="w-full h-full"
                       fallbackIcon={<Sparkles className="h-12 w-12 text-muted-foreground/50" />}
+                      optimizedWidth={400}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
