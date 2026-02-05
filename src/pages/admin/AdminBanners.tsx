@@ -31,8 +31,8 @@ import { toast } from "sonner";
 type BannerFormData = Omit<DashboardBanner, "id" | "created_at">;
 
 const defaultFormData: BannerFormData = {
-  title: "",
-  subtitle: "",
+  title: "Banner",
+  subtitle: null,
   image_url: "",
   gradient: "from-primary to-purple-600",
   button_text: null,
@@ -63,8 +63,8 @@ export default function AdminBanners() {
   const handleOpenEdit = (banner: DashboardBanner) => {
     setEditingBanner(banner);
     setFormData({
-      title: banner.title,
-      subtitle: banner.subtitle || "",
+      title: banner.title || "Banner",
+      subtitle: null,
       image_url: banner.image_url || "",
       gradient: banner.gradient || "from-primary to-purple-600",
       button_text: null,
@@ -191,8 +191,7 @@ export default function AdminBanners() {
                   <TableRow>
                     <TableHead className="w-16">Ordem</TableHead>
                     <TableHead className="w-20">Preview</TableHead>
-                    <TableHead>Título</TableHead>
-                    <TableHead>Link</TableHead>
+                    <TableHead>Link de Destino</TableHead>
                     <TableHead className="w-20">Ativo</TableHead>
                     <TableHead className="w-24">Ações</TableHead>
                   </TableRow>
@@ -212,24 +211,14 @@ export default function AdminBanners() {
                           {banner.image_url && (
                             <img 
                               src={banner.image_url} 
-                              alt={banner.title}
+                              alt="Banner"
                               className="h-full w-full object-cover"
                             />
                           )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div>
-                          <p className="font-medium">{banner.title}</p>
-                          {banner.subtitle && (
-                            <p className="text-sm text-muted-foreground truncate max-w-[200px]">
-                              {banner.subtitle}
-                            </p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-muted-foreground truncate max-w-[150px] block">
+                        <span className="text-sm text-muted-foreground truncate max-w-[200px] block">
                           {banner.button_url}
                         </span>
                       </TableCell>
@@ -274,28 +263,6 @@ export default function AdminBanners() {
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Título *</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="Ex: Junte-se à Comunidade"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="subtitle">Subtítulo</Label>
-                <Textarea
-                  id="subtitle"
-                  value={formData.subtitle || ""}
-                  onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
-                  placeholder="Ex: Conecte-se com outros automatizadores"
-                  rows={2}
-                />
-              </div>
-
               <div className="space-y-2">
                 <Label>Imagem do Banner</Label>
                 <input
@@ -416,7 +383,7 @@ export default function AdminBanners() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="button_url">Link do Botão *</Label>
+                <Label htmlFor="button_url">Link de Destino *</Label>
                 <Input
                   id="button_url"
                   value={formData.button_url}
@@ -424,6 +391,9 @@ export default function AdminBanners() {
                   placeholder="/eventos ou https://exemplo.com"
                   required
                 />
+                <p className="text-xs text-muted-foreground">
+                  Para onde o usuário vai ao clicar no banner
+                </p>
               </div>
 
               <div className="flex items-center gap-2">
