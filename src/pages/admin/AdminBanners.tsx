@@ -66,6 +66,8 @@ export default function AdminBanners() {
       button_url: banner.button_url,
       order_index: banner.order_index,
       is_active: banner.is_active,
+      height: banner.height || 176,
+      width_type: banner.width_type || "half",
     });
     setIsModalOpen(true);
   };
