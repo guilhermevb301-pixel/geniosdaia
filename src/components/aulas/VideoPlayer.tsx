@@ -2,6 +2,7 @@ import { useState } from "react";
 import { BookOpen, Play, PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { LinkifyText } from "@/components/ui/linkify-text";
 
 interface Lesson {
   id: string;
