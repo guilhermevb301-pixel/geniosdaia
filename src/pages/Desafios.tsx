@@ -17,6 +17,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton";
 import { LEVEL_NAMES } from "@/lib/gamification";
 import { SubmitChallengeModal } from "@/components/challenges/SubmitChallengeModal";
 import { ObjectivesModal } from "@/components/challenges/ObjectivesModal";
@@ -177,7 +178,12 @@ function SubmissionCard({
       
       <div className="bg-muted h-32 flex items-center justify-center">
         {submission.image_url ? (
-          <img src={submission.image_url} alt={submission.title} className="w-full h-full object-cover" />
+          <ImageWithSkeleton
+            src={submission.image_url}
+            alt={submission.title}
+            containerClassName="w-full h-full"
+            optimizedWidth={400}
+          />
         ) : (
           <Bot className="h-12 w-12 text-muted-foreground/50" />
         )}

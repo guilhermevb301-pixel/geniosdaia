@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton";
+import { getOptimizedImageUrl } from "@/lib/imageOptimization";
 
 interface PromptVariation {
   id: string;
@@ -215,9 +216,10 @@ export function PromptCard({ prompt }: PromptCardProps) {
                   {/* Imagem da Variação (para categorias image/agent) */}
                   {!isVideoCategory && currentVariation.image_url && (
                     <img
-                      src={currentVariation.image_url}
+                      src={getOptimizedImageUrl(currentVariation.image_url, { width: 800 }) || currentVariation.image_url}
                       alt={`Resultado do Prompt ${currentVariationIndex + 1}`}
                       className="w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                      loading="lazy"
                       onClick={() => setSelectedImage(currentVariation.image_url)}
                     />
                   )}
@@ -243,9 +245,10 @@ export function PromptCard({ prompt }: PromptCardProps) {
               {/* Thumbnail principal */}
               {prompt.thumbnail_url && (
                 <img
-                  src={prompt.thumbnail_url}
+                  src={getOptimizedImageUrl(prompt.thumbnail_url, { width: 800 }) || prompt.thumbnail_url}
                   alt={prompt.title}
                   className="w-full rounded-lg"
+                  loading="lazy"
                 />
               )}
 
@@ -264,9 +267,10 @@ export function PromptCard({ prompt }: PromptCardProps) {
                     {prompt.example_images.map((img, i) => (
                       <img
                         key={i}
-                        src={img}
+                        src={getOptimizedImageUrl(img, { width: 400 }) || img}
                         alt={`Exemplo ${i + 1}`}
                         className="w-full aspect-square object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                        loading="lazy"
                         onClick={() => setSelectedImage(img)}
                       />
                     ))}

@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FocalPointSelector } from "@/components/prompts/FocalPointSelector";
 import { VariationEditor, Variation } from "@/components/prompts/VariationEditor";
 import { validateImageFile, validateVideoFile, ALLOWED_IMAGE_EXTENSIONS, MAX_VIDEO_SIZE } from "@/lib/fileValidation";
+import { getOptimizedImageUrl } from "@/lib/imageOptimization";
 
 type PromptCategory = "video" | "image" | "agent";
 
@@ -492,10 +493,11 @@ export default function AdminPrompts() {
                         <div className="aspect-video bg-muted relative">
                           {prompt.thumbnail_url ? (
                             <img
-                              src={prompt.thumbnail_url}
+                              src={getOptimizedImageUrl(prompt.thumbnail_url, { width: 400 }) || prompt.thumbnail_url}
                               alt={prompt.title}
                               className="w-full h-full object-cover"
                               style={{ objectPosition: prompt.thumbnail_focus || 'center' }}
+                              loading="lazy"
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">

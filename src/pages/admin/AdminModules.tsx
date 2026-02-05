@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { validateImageFile, ALLOWED_IMAGE_EXTENSIONS } from "@/lib/fileValidation";
 import { Badge } from "@/components/ui/badge";
+import { getOptimizedImageUrl } from "@/lib/imageOptimization";
 
 interface Module {
   id: string;
@@ -412,9 +413,10 @@ export default function AdminModules() {
                     {coverImageUrl ? (
                       <div className="relative">
                         <img
-                          src={coverImageUrl}
+                          src={getOptimizedImageUrl(coverImageUrl, { width: 400 }) || coverImageUrl}
                           alt="Capa do módulo"
                           className="w-full h-40 object-cover rounded-lg border"
+                          loading="lazy"
                         />
                         <Button
                           type="button"

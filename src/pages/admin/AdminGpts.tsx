@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/table";
 import { Plus, Pencil, Trash2, Bot, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { getOptimizedImageUrl } from "@/lib/imageOptimization";
 
 interface CustomGpt {
   id: string;
@@ -285,9 +286,10 @@ export default function AdminGpts() {
                           <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                             {gpt.icon_url ? (
                               <img
-                                src={gpt.icon_url}
+                                src={getOptimizedImageUrl(gpt.icon_url, { width: 100 }) || gpt.icon_url}
                                 alt={gpt.title}
                                 className="h-6 w-6 rounded"
+                                loading="lazy"
                               />
                             ) : (
                               <Bot className="h-5 w-5 text-primary" />
