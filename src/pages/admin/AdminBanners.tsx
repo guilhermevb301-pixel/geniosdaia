@@ -297,13 +297,71 @@ export default function AdminBanners() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="image_url">URL da Imagem</Label>
-                <Input
-                  id="image_url"
-                  value={formData.image_url || ""}
-                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                  placeholder="https://exemplo.com/imagem.jpg"
+                <Label>Imagem do Banner</Label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/gif"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleImageUpload(file);
+                  }}
                 />
+                {formData.image_url ? (
+                  <div className="space-y-2">
+                    <div className="relative rounded-lg overflow-hidden border border-border">
+                      <img
+                        src={formData.image_url}
+                        alt="Preview"
+                        className="w-full h-32 object-cover"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Trocar Imagem
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleRemoveImage}
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        Remover
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                  >
+                    {isUploading ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+                        <span className="text-sm text-muted-foreground">Carregando...</span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-2">
+                        <Upload className="h-8 w-8 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">
+                          Clique para escolher uma imagem
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          JPG, PNG, WebP, GIF (máx. 10MB)
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
                 <p className="text-xs text-muted-foreground">
                   Se não houver imagem, será usado o gradiente abaixo
                 </p>
@@ -319,26 +377,15 @@ export default function AdminBanners() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="button_text">Texto do Botão</Label>
-                  <Input
-                    id="button_text"
-                    value={formData.button_text || ""}
-                    onChange={(e) => setFormData({ ...formData, button_text: e.target.value })}
-                    placeholder="Saiba Mais"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="order_index">Ordem</Label>
-                  <Input
-                    id="order_index"
-                    type="number"
-                    value={formData.order_index}
-                    onChange={(e) => setFormData({ ...formData, order_index: parseInt(e.target.value) || 0 })}
-                    min={0}
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="order_index">Ordem</Label>
+                <Input
+                  id="order_index"
+                  type="number"
+                  value={formData.order_index}
+                  onChange={(e) => setFormData({ ...formData, order_index: parseInt(e.target.value) || 0 })}
+                  min={0}
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
