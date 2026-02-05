@@ -1,4 +1,21 @@
 import { useState } from "react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,7 +49,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Sparkles, Clock, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Sparkles, Clock, X, GripVertical } from "lucide-react";
 import { useDailyChallengesAdmin, DailyChallengeFormData } from "@/hooks/useDailyChallengesAdmin";
 import { DailyChallenge } from "@/hooks/useDailyChallenges";
 import { formatEstimatedTimeShort } from "@/lib/utils";
