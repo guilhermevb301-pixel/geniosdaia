@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Video, Image, Bot, Search } from "lucide-react";
+import { Video, Image, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { PromptCard } from "@/components/prompts/PromptCard";
 import { Skeleton } from "@/components/ui/skeleton";
 
-type PromptCategory = "video" | "image" | "agent";
+type PromptCategory = "video" | "image";
 
 interface Prompt {
   id: string;
@@ -61,7 +61,6 @@ export default function Prompts() {
   const tabItems = [
     { value: "video" as PromptCategory, label: "Vídeos", icon: Video },
     { value: "image" as PromptCategory, label: "Imagens", icon: Image },
-    { value: "agent" as PromptCategory, label: "Agentes de IA", icon: Bot },
   ];
 
   return (
