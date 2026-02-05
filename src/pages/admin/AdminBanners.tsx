@@ -67,7 +67,7 @@ export default function AdminBanners() {
       subtitle: banner.subtitle || "",
       image_url: banner.image_url || "",
       gradient: banner.gradient || "from-primary to-purple-600",
-      button_text: banner.button_text || "Saiba Mais",
+      button_text: null,
       button_url: banner.button_url,
       order_index: banner.order_index,
       is_active: banner.is_active,
@@ -75,6 +75,45 @@ export default function AdminBanners() {
       width_type: banner.width_type || "half",
     });
     setIsModalOpen(true);
+  };
+
+  const handleImageUpload = async (file: File) => {
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+      toast.error(validation.error);
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+      const { error } = await supabase.storage
+        .from('banners')
+        .upload(fileName, file);
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('banners')
+        .getPublicUrl(fileName);
+
+      setFormData({ ...formData, image_url: publicUrl });
+      toast.success("Imagem carregada com sucesso!");
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast.error("Erro ao carregar imagem");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setFormData({ ...formData, image_url: "" });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
