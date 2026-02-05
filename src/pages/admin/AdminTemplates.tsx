@@ -545,9 +545,10 @@ export default function AdminTemplates() {
                       <TableCell>
                         {template.image_url ? (
                           <img
-                            src={template.image_url}
+                            src={getOptimizedImageUrl(template.image_url, { width: 200 }) || template.image_url}
                             alt={template.title}
                             className="h-12 w-20 rounded object-cover"
+                            loading="lazy"
                           />
                         ) : (
                           <div className="h-12 w-20 rounded bg-muted flex items-center justify-center">
