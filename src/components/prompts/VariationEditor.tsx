@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { validateImageFile, validateVideoFile } from "@/lib/fileValidation";
+import { getOptimizedImageUrl } from "@/lib/imageOptimization";
 
 type PromptCategory = "video" | "image" | "agent";
 
