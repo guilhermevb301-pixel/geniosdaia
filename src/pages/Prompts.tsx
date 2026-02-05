@@ -61,7 +61,6 @@ export default function Prompts() {
   const tabItems = [
     { value: "video" as PromptCategory, label: "Vídeos", icon: Video },
     { value: "image" as PromptCategory, label: "Imagens", icon: Image },
-    { value: "agent" as PromptCategory, label: "Agentes de IA", icon: Bot },
   ];
 
   return (
