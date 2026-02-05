@@ -134,7 +134,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
               : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
           )}
         >
-          <Award className="h-5 w-5" />
+          <Award className="h-5 w-5 text-amber-400" />
           Certificados
         </Link>
 
@@ -148,7 +148,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
               : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
           )}
         >
-          <NotebookPen className="h-5 w-5" />
+          <NotebookPen className="h-5 w-5 text-amber-400" />
           Meu Caderno
         </Link>
 
@@ -163,7 +163,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
               : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
           )}
         >
-          <MessageSquare className="h-5 w-5" />
+          <MessageSquare className="h-5 w-5 text-amber-400" />
           Aplicar Mentoria
         </Link>
 
@@ -179,7 +179,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                 : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
             )}
           >
-            <GraduationCap className="h-5 w-5" />
+            <GraduationCap className="h-5 w-5 text-amber-400" />
             Minha Mentoria
           </Link>
         )}
