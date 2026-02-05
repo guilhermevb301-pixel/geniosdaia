@@ -216,9 +216,10 @@ export function PromptCard({ prompt }: PromptCardProps) {
                   {/* Imagem da Variação (para categorias image/agent) */}
                   {!isVideoCategory && currentVariation.image_url && (
                     <img
-                      src={currentVariation.image_url}
+                      src={getOptimizedImageUrl(currentVariation.image_url, { width: 800 }) || currentVariation.image_url}
                       alt={`Resultado do Prompt ${currentVariationIndex + 1}`}
                       className="w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                      loading="lazy"
                       onClick={() => setSelectedImage(currentVariation.image_url)}
                     />
                   )}
