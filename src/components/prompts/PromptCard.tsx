@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton";
+import { getOptimizedImageUrl } from "@/lib/imageOptimization";
 
 interface PromptVariation {
   id: string;
