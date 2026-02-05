@@ -48,6 +48,8 @@ export default function AdminBanners() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBanner, setEditingBanner] = useState<DashboardBanner | null>(null);
   const [formData, setFormData] = useState<BannerFormData>(defaultFormData);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleOpenCreate = () => {
     setEditingBanner(null);
