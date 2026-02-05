@@ -452,7 +452,7 @@ export function DailyChallengesEditor() {
                 )}
               </div>
 
-              {/* Checklist */}
+              {/* Checklist with Drag and Drop */}
               <div className="col-span-2 space-y-2">
                 <Label>Checklist</Label>
                 <div className="flex gap-2">
@@ -469,25 +469,11 @@ export function DailyChallengesEditor() {
                   </Button>
                 </div>
                 {formData.checklist.length > 0 && (
-                  <div className="space-y-1 mt-2">
-                    {formData.checklist.map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center gap-2 text-sm p-2 bg-muted/30 rounded"
-                      >
-                        <Checkbox disabled checked={false} />
-                        <span className="flex-1">{item}</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeChecklistItem(idx)}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
+                  <ChecklistDndWrapper
+                    items={formData.checklist}
+                    onReorder={(newOrder) => setFormData({ ...formData, checklist: newOrder })}
+                    onRemove={removeChecklistItem}
+                  />
                 )}
               </div>
             </div>
