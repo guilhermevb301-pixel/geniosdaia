@@ -115,7 +115,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                 : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
             )}
           >
-            <item.icon className="h-5 w-5" />
+            <item.icon className="h-5 w-5 text-amber-400" />
             {item.label}
           </Link>
         ))}
