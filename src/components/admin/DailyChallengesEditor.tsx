@@ -83,6 +83,121 @@ const initialFormData: DailyChallengeFormData = {
   is_bonus: false,
 };
 
+// Sortable Checklist Item Component
+function SortableChecklistItem({
+  id,
+  item,
+  index,
+  onRemove,
+}: {
+  id: string;
+  item: string;
+  index: number;
+  onRemove: (index: number) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-2 text-sm p-2 bg-muted/30 rounded"
+    >
+      <button
+        type="button"
+        className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded touch-none"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-4 w-4 text-muted-foreground" />
+      </button>
+      <Checkbox disabled checked={false} />
+      <span className="flex-1">{item}</span>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={() => onRemove(index)}
+      >
+        <X className="h-3 w-3" />
+      </Button>
+    </div>
+  );
+}
+
+// Wrapper for drag and drop context
+function ChecklistDndWrapper({
+  items,
+  onReorder,
+  onRemove,
+}: {
+  items: string[];
+  onReorder: (newOrder: string[]) => void;
+  onRemove: (index: number) => void;
+}) {
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Generate stable IDs for items
+  const itemsWithIds = items.map((item, index) => ({
+    id: `checklist-${index}-${item.slice(0, 10)}`,
+    item,
+    index,
+  }));
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = itemsWithIds.findIndex((i) => i.id === active.id);
+      const newIndex = itemsWithIds.findIndex((i) => i.id === over.id);
+      onReorder(arrayMove(items, oldIndex, newIndex));
+    }
+  };
+
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
+    >
+      <SortableContext
+        items={itemsWithIds.map((i) => i.id)}
+        strategy={verticalListSortingStrategy}
+      >
+        <div className="space-y-1 mt-2">
+          {itemsWithIds.map(({ id, item, index }) => (
+            <SortableChecklistItem
+              key={id}
+              id={id}
+              item={item}
+              index={index}
+              onRemove={onRemove}
+            />
+          ))}
+        </div>
+      </SortableContext>
+    </DndContext>
+  );
+}
+
 export function DailyChallengesEditor() {
   const {
     challenges,
