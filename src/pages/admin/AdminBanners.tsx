@@ -63,8 +63,8 @@ export default function AdminBanners() {
   const handleOpenEdit = (banner: DashboardBanner) => {
     setEditingBanner(banner);
     setFormData({
-      title: banner.title,
-      subtitle: banner.subtitle || "",
+      title: banner.title || "Banner",
+      subtitle: null,
       image_url: banner.image_url || "",
       gradient: banner.gradient || "from-primary to-purple-600",
       button_text: null,
