@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/table";
 import { Plus, Pencil, Trash2, Bot, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { getOptimizedImageUrl } from "@/lib/imageOptimization";
 
 interface CustomGpt {
   id: string;
