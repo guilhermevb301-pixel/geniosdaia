@@ -401,8 +401,34 @@ export default function AdminLessons() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {lessons.map((lesson) => (
+                  {lessons.map((lesson, idx) => {
+                    const moduleLessons = lessons.filter(l => l.module_id === lesson.module_id).sort((a, b) => a.order_index - b.order_index);
+                    const lessonIndexInModule = moduleLessons.findIndex(l => l.id === lesson.id);
+                    const isFirst = lessonIndexInModule === 0;
+                    const isLast = lessonIndexInModule === moduleLessons.length - 1;
+                    
+                    return (
                     <TableRow key={lesson.id}>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            disabled={isFirst || reorderMutation.isPending}
+                            onClick={() => reorderMutation.mutate({ lessonId: lesson.id, direction: 'up' })}
+                          >
+                            <ArrowUp className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            disabled={isLast || reorderMutation.isPending}
+                            onClick={() => reorderMutation.mutate({ lessonId: lesson.id, direction: 'down' })}
+                          >
+                            <ArrowDown className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {getModuleName(lesson.module_id)}
                       </TableCell>
