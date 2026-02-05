@@ -157,6 +157,42 @@ export default function AdminLessons() {
     },
   });
 
+  const reorderMutation = useMutation({
+    mutationFn: async ({ lessonId, direction }: { lessonId: string; direction: 'up' | 'down' }) => {
+      if (!lessons) return;
+      
+      const lesson = lessons.find(l => l.id === lessonId);
+      if (!lesson) return;
+      
+      // Filtra aulas do mesmo módulo e ordena
+      const moduleLessons = lessons
+        .filter(l => l.module_id === lesson.module_id)
+        .sort((a, b) => a.order_index - b.order_index);
+      
+      const currentIndex = moduleLessons.findIndex(l => l.id === lessonId);
+      const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+      
+      if (targetIndex < 0 || targetIndex >= moduleLessons.length) return;
+      
+      const targetLesson = moduleLessons[targetIndex];
+      
+      // Troca os order_index
+      const updates = [
+        supabase.from("lessons").update({ order_index: targetLesson.order_index }).eq("id", lesson.id),
+        supabase.from("lessons").update({ order_index: lesson.order_index }).eq("id", targetLesson.id),
+      ];
+      
+      const results = await Promise.all(updates);
+      results.forEach(r => { if (r.error) throw r.error; });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lessons"] });
+    },
+    onError: (error) => {
+      toast({ variant: "destructive", title: "Erro ao reordenar", description: error.message });
+    },
+  });
+
   function resetForm() {
     setDialogOpen(false);
     setEditingLesson(null);
