@@ -325,36 +325,42 @@ export type Database = {
           button_url: string
           created_at: string | null
           gradient: string | null
+          height: number | null
           id: string
           image_url: string | null
           is_active: boolean | null
           order_index: number | null
           subtitle: string | null
           title: string
+          width_type: string | null
         }
         Insert: {
           button_text?: string | null
           button_url: string
           created_at?: string | null
           gradient?: string | null
+          height?: number | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
           order_index?: number | null
           subtitle?: string | null
           title: string
+          width_type?: string | null
         }
         Update: {
           button_text?: string | null
           button_url?: string
           created_at?: string | null
           gradient?: string | null
+          height?: number | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
           order_index?: number | null
           subtitle?: string | null
           title?: string
+          width_type?: string | null
         }
         Relationships: []
       }
@@ -1133,7 +1139,9 @@ export type Database = {
           created_at: string
           id: string
           lesson_id: string | null
+          media_urls: string[] | null
           prompt_id: string | null
+          title: string | null
           updated_at: string
           user_id: string
         }
@@ -1142,7 +1150,9 @@ export type Database = {
           created_at?: string
           id?: string
           lesson_id?: string | null
+          media_urls?: string[] | null
           prompt_id?: string | null
+          title?: string | null
           updated_at?: string
           user_id: string
         }
@@ -1151,7 +1161,9 @@ export type Database = {
           created_at?: string
           id?: string
           lesson_id?: string | null
+          media_urls?: string[] | null
           prompt_id?: string | null
+          title?: string | null
           updated_at?: string
           user_id?: string
         }
