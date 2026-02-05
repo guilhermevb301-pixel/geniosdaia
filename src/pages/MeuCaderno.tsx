@@ -17,6 +17,8 @@ import { CreateNoteModal } from "@/components/notes/CreateNoteModal";
 function NotesTab() {
   const { notes, isLoading, deleteNote, isDeleting } = useUserNotes();
   const [searchQuery, setSearchQuery] = useState("");
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   // Fetch lessons for notes
   const { data: lessons } = useQuery({
@@ -36,14 +38,30 @@ function NotesTab() {
     enabled: notes.length > 0,
   });
 
-  const filteredNotes = notes.filter(note => 
-    note.content.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredNotes = notes.filter(note => {
+    const searchLower = searchQuery.toLowerCase();
+    return (
+      note.content.toLowerCase().includes(searchLower) ||
+      (note.title && note.title.toLowerCase().includes(searchLower))
+    );
+  });
+
+  // Separate free notes from lesson notes
+  const freeNotes = filteredNotes.filter(n => !n.lesson_id && !n.prompt_id);
+  const lessonNotes = filteredNotes.filter(n => n.lesson_id || n.prompt_id);
 
   const handleDelete = async (noteId: string) => {
     deleteNote(noteId, {
       onSuccess: () => toast({ title: "Nota excluída" }),
     });
+  };
+
+  const handleNoteCreated = () => {
+    queryClient.invalidateQueries({ queryKey: ["userNotes"] });
+  };
+
+  const isMediaImage = (url: string) => {
+    return /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
   };
 
   if (isLoading) {
@@ -58,21 +76,89 @@ function NotesTab() {
 
   return (
     <div className="space-y-4">
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Buscar nas notas..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9"
-        />
+      {/* Header with Create Button */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar nas notas..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Button onClick={() => setCreateModalOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Nova Nota
+        </Button>
       </div>
 
-      {/* Notes List */}
-      {filteredNotes.length > 0 ? (
+      {/* Free Notes Section */}
+      {freeNotes.length > 0 && (
         <div className="space-y-3">
-          {filteredNotes.map((note) => {
+          <h3 className="text-sm font-medium text-muted-foreground">Notas Livres</h3>
+          {freeNotes.map((note) => (
+            <Card key={note.id}>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    {note.title && (
+                      <h4 className="font-medium mb-1">{note.title}</h4>
+                    )}
+                    <p className="text-sm text-foreground whitespace-pre-wrap line-clamp-3">
+                      {note.content}
+                    </p>
+                    {/* Media Preview */}
+                    {note.media_urls && note.media_urls.length > 0 && (
+                      <div className="flex gap-2 mt-2 overflow-x-auto">
+                        {note.media_urls.slice(0, 4).map((url, idx) => (
+                          <div key={idx} className="flex-shrink-0">
+                            {isMediaImage(url) ? (
+                              <img
+                                src={url}
+                                alt=""
+                                className="h-16 w-16 object-cover rounded border"
+                              />
+                            ) : (
+                              <div className="h-16 w-16 flex items-center justify-center bg-muted rounded border">
+                                <Video className="h-6 w-6 text-muted-foreground" />
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                        {note.media_urls.length > 4 && (
+                          <div className="h-16 w-16 flex items-center justify-center bg-muted rounded border text-sm text-muted-foreground">
+                            +{note.media_urls.length - 4}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {new Date(note.updated_at).toLocaleDateString("pt-BR")}
+                    </p>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => handleDelete(note.id)}
+                    disabled={isDeleting}
+                  >
+                    <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Lesson Notes Section */}
+      {lessonNotes.length > 0 && (
+        <div className="space-y-3">
+          {freeNotes.length > 0 && (
+            <h3 className="text-sm font-medium text-muted-foreground">Notas de Aulas</h3>
+          )}
+          {lessonNotes.map((note) => {
             const lesson = lessons?.find(l => l.id === note.lesson_id);
             
             return (
@@ -110,15 +196,30 @@ function NotesTab() {
             );
           })}
         </div>
-      ) : (
+      )}
+
+      {/* Empty State */}
+      {filteredNotes.length === 0 && (
         <Card className="p-8 text-center">
           <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-medium">Nenhuma nota encontrada</h3>
-          <p className="text-muted-foreground">
-            {searchQuery ? "Tente uma busca diferente" : "Adicione notas nas aulas para vê-las aqui"}
+          <p className="text-muted-foreground mb-4">
+            {searchQuery ? "Tente uma busca diferente" : "Crie sua primeira nota livre ou adicione notas nas aulas"}
           </p>
+          {!searchQuery && (
+            <Button onClick={() => setCreateModalOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Criar Nota
+            </Button>
+          )}
         </Card>
       )}
+
+      <CreateNoteModal
+        open={createModalOpen}
+        onOpenChange={setCreateModalOpen}
+        onSuccess={handleNoteCreated}
+      />
     </div>
   );
 }
