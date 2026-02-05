@@ -1,66 +1,85 @@
 
-# Plano: Ícones Amarelos na Sidebar + Remover Aba Agentes de IA
+
+# Plano: Simplificar Banners (Apenas Imagem + Link)
 
 ## Resumo das Mudanças
 
-| Mudança | Arquivo | Descrição |
-|---------|---------|-----------|
-| **1. Ícones amarelos** | `SidebarContent.tsx` | Aplicar classe `text-amber-400` em todos os ícones da navegação |
-| **2. Remover aba Agentes de IA** | `Prompts.tsx` | Remover item "agent" do array de tabs e ajustar tipo |
+| Mudança | Descrição |
+|---------|-----------|
+| **1. Remover Título** | Tirar campo obrigatório de título do formulário |
+| **2. Remover Subtítulo** | Tirar campo de subtítulo do formulário |
+| **3. Renomear Link** | Campo "Link do Botão" vira "Link de Destino" |
+| **4. Atualizar Tabela** | Mostrar apenas Preview, Link, Ativo e Ações |
+| **5. Atualizar Carrossel** | Remover texto e botão do banner (só imagem clicável) |
 
 ---
 
-## 1. Ícones Amarelos na Sidebar
+## 1. Mudanças no Formulário (AdminBanners.tsx)
 
-Adicionar a classe `text-amber-400` (tom dourado) em todos os ícones da sidebar para combinar com o design mostrado na imagem.
+### Campos Atuais:
+- Título (obrigatório) ❌ **REMOVER**
+- Subtítulo ❌ **REMOVER**
+- Imagem do Banner ✅ mantém
+- Gradiente (fallback) ✅ mantém
+- Ordem ✅ mantém
+- Altura/Largura ✅ mantém
+- Link do Botão → **renomear para "Link de Destino"**
+- Banner Ativo ✅ mantém
 
-### Ícones afetados:
-- Dashboard (Layout)
-- Aulas (BookOpen)
-- Templates (Zap)
-- Banco de Prompts (Lightbulb)
-- Meus GPTs (MessageSquare)
-- Eventos (Calendar)
-- Desafios (Trophy)
-- Certificados (Award)
-- Meu Caderno (NotebookPen)
-- Aplicar Mentoria (MessageSquare)
-- Minha Mentoria (GraduationCap)
-
-### Código atual:
-```tsx
-<Layout className="h-5 w-5" />
-```
-
-### Código novo:
-```tsx
-<Layout className="h-5 w-5 text-amber-400" />
-```
+### Campos Finais:
+1. **Imagem do Banner** (upload)
+2. **Link de Destino** (obrigatório)
+3. **Altura** (px)
+4. **Largura** (half/third/full)
+5. **Ordem** 
+6. **Gradiente** (fallback)
+7. **Ativo** (switch)
 
 ---
 
-## 2. Remover Aba "Agentes de IA" do /prompts
+## 2. Atualizar Tabela de Listagem
 
 ### Antes:
-```typescript
-type PromptCategory = "video" | "image" | "agent";
+| Ordem | Preview | Título | Link | Ativo | Ações |
 
-const tabItems = [
-  { value: "video", label: "Vídeos", icon: Video },
-  { value: "image", label: "Imagens", icon: Image },
-  { value: "agent", label: "Agentes de IA", icon: Bot },  // remover
-];
+### Depois:
+| Ordem | Preview | Link de Destino | Ativo | Ações |
+
+---
+
+## 3. Atualizar Carrossel (AnnouncementCarousel.tsx)
+
+### Antes:
+```text
+┌──────────────────────────────────┐
+│  [Imagem de Fundo]               │
+│  ┌────────────────────────┐      │
+│  │ Título Grande          │      │
+│  │ Subtítulo pequeno      │      │
+│  │                        │      │
+│  │ [Botão: Saiba Mais →]  │      │
+│  └────────────────────────┘      │
+└──────────────────────────────────┘
 ```
 
 ### Depois:
-```typescript
-type PromptCategory = "video" | "image";
-
-const tabItems = [
-  { value: "video", label: "Vídeos", icon: Video },
-  { value: "image", label: "Imagens", icon: Image },
-];
+```text
+┌──────────────────────────────────┐
+│                                  │
+│       [Imagem Clicável]          │
+│                                  │
+└──────────────────────────────────┘
 ```
+
+O banner fica apenas com a imagem ocupando todo o espaço, sem sobreposição de texto ou botão.
+
+---
+
+## 4. Ajuste de Validação
+
+Como título não será mais obrigatório, ajustar:
+- `defaultFormData.title` → `"Banner"` (valor padrão para o banco)
+- Remover `required` do campo título
 
 ---
 
@@ -68,12 +87,14 @@ const tabItems = [
 
 | Arquivo | Mudança |
 |---------|---------|
-| `src/components/layout/SidebarContent.tsx` | Adicionar `text-amber-400` em todos os ícones de navegação |
-| `src/pages/Prompts.tsx` | Remover "agent" do tipo e do array de tabs |
+| `src/pages/admin/AdminBanners.tsx` | Remover campos título/subtítulo, ajustar tabela e labels |
+| `src/components/dashboard/AnnouncementCarousel.tsx` | Remover título, subtítulo e botão do render |
 
 ---
 
 ## Resultado Esperado
 
-1. Todos os ícones da sidebar ficam amarelos/dourados
-2. Página de Prompts mostra apenas 2 abas: "Vídeos" e "Imagens"
+1. Formulário simplificado: só imagem + link de destino + configurações de tamanho
+2. Tabela mostra apenas preview e link
+3. Carrossel exibe banners como imagens clicáveis puras (estilo banner de loja)
+
