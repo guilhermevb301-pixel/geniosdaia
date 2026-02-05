@@ -1,4 +1,21 @@
 import { useState } from "react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,7 +49,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Sparkles, Clock, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Sparkles, Clock, X, GripVertical } from "lucide-react";
 import { useDailyChallengesAdmin, DailyChallengeFormData } from "@/hooks/useDailyChallengesAdmin";
 import { DailyChallenge } from "@/hooks/useDailyChallenges";
 import { formatEstimatedTimeShort } from "@/lib/utils";
@@ -65,6 +82,121 @@ const initialFormData: DailyChallengeFormData = {
   deliverable: "",
   is_bonus: false,
 };
+
+// Sortable Checklist Item Component
+function SortableChecklistItem({
+  id,
+  item,
+  index,
+  onRemove,
+}: {
+  id: string;
+  item: string;
+  index: number;
+  onRemove: (index: number) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-2 text-sm p-2 bg-muted/30 rounded"
+    >
+      <button
+        type="button"
+        className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded touch-none"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-4 w-4 text-muted-foreground" />
+      </button>
+      <Checkbox disabled checked={false} />
+      <span className="flex-1">{item}</span>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={() => onRemove(index)}
+      >
+        <X className="h-3 w-3" />
+      </Button>
+    </div>
+  );
+}
+
+// Wrapper for drag and drop context
+function ChecklistDndWrapper({
+  items,
+  onReorder,
+  onRemove,
+}: {
+  items: string[];
+  onReorder: (newOrder: string[]) => void;
+  onRemove: (index: number) => void;
+}) {
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Generate stable IDs for items
+  const itemsWithIds = items.map((item, index) => ({
+    id: `checklist-${index}-${item.slice(0, 10)}`,
+    item,
+    index,
+  }));
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = itemsWithIds.findIndex((i) => i.id === active.id);
+      const newIndex = itemsWithIds.findIndex((i) => i.id === over.id);
+      onReorder(arrayMove(items, oldIndex, newIndex));
+    }
+  };
+
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
+    >
+      <SortableContext
+        items={itemsWithIds.map((i) => i.id)}
+        strategy={verticalListSortingStrategy}
+      >
+        <div className="space-y-1 mt-2">
+          {itemsWithIds.map(({ id, item, index }) => (
+            <SortableChecklistItem
+              key={id}
+              id={id}
+              item={item}
+              index={index}
+              onRemove={onRemove}
+            />
+          ))}
+        </div>
+      </SortableContext>
+    </DndContext>
+  );
+}
 
 export function DailyChallengesEditor() {
   const {
@@ -435,7 +567,7 @@ export function DailyChallengesEditor() {
                 )}
               </div>
 
-              {/* Checklist */}
+              {/* Checklist with Drag and Drop */}
               <div className="col-span-2 space-y-2">
                 <Label>Checklist</Label>
                 <div className="flex gap-2">
@@ -452,25 +584,11 @@ export function DailyChallengesEditor() {
                   </Button>
                 </div>
                 {formData.checklist.length > 0 && (
-                  <div className="space-y-1 mt-2">
-                    {formData.checklist.map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center gap-2 text-sm p-2 bg-muted/30 rounded"
-                      >
-                        <Checkbox disabled checked={false} />
-                        <span className="flex-1">{item}</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeChecklistItem(idx)}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
+                  <ChecklistDndWrapper
+                    items={formData.checklist}
+                    onReorder={(newOrder) => setFormData({ ...formData, checklist: newOrder })}
+                    onRemove={removeChecklistItem}
+                  />
                 )}
               </div>
             </div>
