@@ -115,6 +115,7 @@ export function PromptCard({ prompt }: PromptCardProps) {
               containerClassName="w-full h-full"
               objectPosition={prompt.thumbnail_focus || 'center'}
               fallbackIcon={<Icon className="h-12 w-12 text-muted-foreground/40" />}
+              optimizedWidth={400}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
