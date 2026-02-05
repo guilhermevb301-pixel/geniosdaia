@@ -5,13 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUserNotes } from "@/hooks/useUserNotes";
 import { useUserFavorites } from "@/hooks/useUserFavorites";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { BookOpen, Star, Search, FileText, Trash2, ExternalLink, Heart } from "lucide-react";
+import { BookOpen, Star, Search, FileText, Trash2, ExternalLink, Heart, Plus, Image, Video } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
+import { CreateNoteModal } from "@/components/notes/CreateNoteModal";
 
 function NotesTab() {
   const { notes, isLoading, deleteNote, isDeleting } = useUserNotes();

@@ -297,6 +297,33 @@ export default function AdminBanners() {
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="height">Altura (px)</Label>
+                  <Input
+                    id="height"
+                    type="number"
+                    value={formData.height}
+                    onChange={(e) => setFormData({ ...formData, height: parseInt(e.target.value) || 176 })}
+                    min={100}
+                    max={400}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="width_type">Largura</Label>
+                  <select
+                    id="width_type"
+                    value={formData.width_type}
+                    onChange={(e) => setFormData({ ...formData, width_type: e.target.value })}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    <option value="half">Metade (50%)</option>
+                    <option value="third">Um terço (33%)</option>
+                    <option value="full">Largura total (100%)</option>
+                  </select>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="button_url">Link do Botão *</Label>
                 <Input
