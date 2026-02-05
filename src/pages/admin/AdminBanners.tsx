@@ -31,8 +31,8 @@ import { toast } from "sonner";
 type BannerFormData = Omit<DashboardBanner, "id" | "created_at">;
 
 const defaultFormData: BannerFormData = {
-  title: "",
-  subtitle: "",
+  title: "Banner",
+  subtitle: null,
   image_url: "",
   gradient: "from-primary to-purple-600",
   button_text: null,
