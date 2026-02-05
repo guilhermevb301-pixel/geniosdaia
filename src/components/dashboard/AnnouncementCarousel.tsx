@@ -107,7 +107,7 @@ export function AnnouncementCarousel() {
           );
 
           return (
-            <CarouselItem key={banner.id} className="pl-2 md:pl-4 md:basis-1/2">
+            <CarouselItem key={banner.id} className={`pl-2 md:pl-4 ${getWidthClass(banner.width_type || 'half')}`}>
               {isExternal ? (
                 <a href={banner.button_url} target="_blank" rel="noopener noreferrer">
                   {CardContent}
