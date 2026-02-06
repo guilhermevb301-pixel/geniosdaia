@@ -179,6 +179,12 @@ export function ObjectivesEditor() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
                       <span className="text-sm font-medium">{item.label}</span>
+                      {item.active_slots > 1 && (
+                        <Badge variant="default" className="text-xs bg-primary/20 text-primary">
+                          <Users className="h-3 w-3 mr-1" />
+                          {item.active_slots} ativos
+                        </Badge>
+                      )}
                       {item.is_infra && (
                         <Badge variant="secondary" className="text-xs">
                           INFRA
