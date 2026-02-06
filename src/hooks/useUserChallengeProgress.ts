@@ -138,6 +138,7 @@ export function useUserChallengeProgress(objectiveItemIds?: string[]) {
         estimated_minutes: number | null;
         estimated_time_unit: TimeUnit;
         order_index: number;
+        is_initial_active?: boolean;
       }>;
       activeSlots?: number;
     }) => {
@@ -148,15 +149,31 @@ export function useUserChallengeProgress(objectiveItemIds?: string[]) {
       const sortedChallenges = [...challenges].sort((a, b) => a.order_index - b.order_index);
 
       const now = new Date().toISOString();
-      // Use activeSlots to determine how many challenges start as active
-      const records = sortedChallenges.map((ch, idx) => ({
-        user_id: user.id,
-        daily_challenge_id: ch.id,
-        objective_item_id: objectiveItemId,
-        status: idx < activeSlots ? "active" : "locked",
-        started_at: idx < activeSlots ? now : null,
-        deadline: idx < activeSlots ? calculateDeadline(ch.estimated_minutes, ch.estimated_time_unit) : null,
-      }));
+
+      // Check if any challenges are explicitly marked as initial active
+      const hasExplicitInitialActive = sortedChallenges.some((ch) => ch.is_initial_active);
+
+      // Determine which challenges should be active
+      const records = sortedChallenges.map((ch, idx) => {
+        let shouldBeActive = false;
+
+        if (hasExplicitInitialActive) {
+          // Use explicit is_initial_active flag
+          shouldBeActive = ch.is_initial_active === true;
+        } else {
+          // Fallback: activate the first N challenges based on activeSlots
+          shouldBeActive = idx < activeSlots;
+        }
+
+        return {
+          user_id: user.id,
+          daily_challenge_id: ch.id,
+          objective_item_id: objectiveItemId,
+          status: shouldBeActive ? "active" : "locked",
+          started_at: shouldBeActive ? now : null,
+          deadline: shouldBeActive ? calculateDeadline(ch.estimated_minutes, ch.estimated_time_unit) : null,
+        };
+      });
 
       const { error } = await supabase
         .from("user_challenge_progress")

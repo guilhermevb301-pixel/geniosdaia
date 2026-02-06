@@ -73,7 +73,7 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
       const existingProgress = progress.filter((p) => p.objective_item_id === itemId);
       if (existingProgress.length > 0) return;
 
-      // Prepare challenges with order info
+      // Prepare challenges with order info and initial active state
       const challengesWithOrder = linkedChallenges
         .map((link) => {
           const challenge = allChallenges.find((c) => c.id === link.challengeId);
@@ -83,6 +83,7 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
             estimated_minutes: challenge.estimated_minutes,
             estimated_time_unit: (challenge.estimated_time_unit || "minutes") as TimeUnit,
             order_index: link.orderIndex,
+            is_initial_active: link.isInitialActive,
           };
         })
         .filter(Boolean) as Array<{
@@ -90,6 +91,7 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
           estimated_minutes: number | null;
           estimated_time_unit: TimeUnit;
           order_index: number;
+          is_initial_active: boolean;
         }>;
 
       if (challengesWithOrder.length > 0) {
