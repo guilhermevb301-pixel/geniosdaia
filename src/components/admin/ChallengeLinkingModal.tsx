@@ -160,10 +160,16 @@ export function ChallengeLinkingModal({
   const handleSave = () => {
     if (!objectiveItem) return;
 
+    // Get IDs of challenges marked as initial active
+    const initialActiveIds = selectedChallenges
+      .filter((c) => c.is_initial_active)
+      .map((c) => c.id);
+
     saveLinks(
       {
         objectiveItemId: objectiveItem.id,
         challengeIds: selectedChallenges.map((c) => c.id),
+        initialActiveIds,
       },
       {
         onSuccess: () => {
