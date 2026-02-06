@@ -139,6 +139,7 @@ export function useUserChallengeProgress(objectiveItemIds?: string[]) {
         estimated_time_unit: TimeUnit;
         order_index: number;
         is_initial_active?: boolean;
+        predecessor_challenge_id?: string | null;
       }>;
       activeSlots?: number;
     }) => {
