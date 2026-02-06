@@ -9,12 +9,33 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function Register() {
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Format phone number to show only digits
+  const formatPhone = (value: string) => {
+    // Remove all non-digits
+    const digits = value.replace(/\D/g, "");
+    // Limit to 11 digits (Brazilian phone format)
+    return digits.slice(0, 11);
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPhone(formatPhone(e.target.value));
+  };
+
+  // Format phone for display (XX) XXXXX-XXXX
+  const formatPhoneDisplay = (value: string) => {
+    if (value.length === 0) return "";
+    if (value.length <= 2) return `(${value}`;
+    if (value.length <= 7) return `(${value.slice(0, 2)}) ${value.slice(2)}`;
+    return `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,8 +58,18 @@ export default function Register() {
       return;
     }
 
+    // Validate phone (must have at least 10 digits - DDD + number)
+    if (phone.length < 10) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Digite um número de telefone válido com DDD",
+      });
+      return;
+    }
+
     setLoading(true);
-    const { error } = await signUp(email, password);
+    const { error } = await signUp(email, password, { phone });
     setLoading(false);
 
     if (error) {
@@ -50,7 +81,7 @@ export default function Register() {
     } else {
       toast({
         title: "Conta criada com sucesso!",
-        description: "Você será redirecionado para o login.",
+        description: "Verifique seu email para confirmar o cadastro.",
       });
       navigate("/login");
     }
@@ -103,6 +134,19 @@ export default function Register() {
                 placeholder="seu@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                className="bg-background"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">Telefone (WhatsApp)</Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="(11) 99999-9999"
+                value={formatPhoneDisplay(phone)}
+                onChange={handlePhoneChange}
                 className="bg-background"
                 required
               />
