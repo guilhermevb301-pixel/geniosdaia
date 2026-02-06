@@ -562,7 +562,9 @@ export default function Desafios() {
   // Get challenge progress data for the banner
   const {
     activeChallengeData,
+    activeChallengesData,
     activeChallenge: activeProgress,
+    activeChallenges,
     completeChallenge,
     isCompleting,
     restartChallenge,
