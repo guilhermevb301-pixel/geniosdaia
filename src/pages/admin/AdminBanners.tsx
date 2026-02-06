@@ -524,7 +524,7 @@ export default function AdminBanners() {
                 />
                 {linkWarning && (
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 text-xs">
-                    <span className="text-yellow-600 dark:text-yellow-500">{linkWarning}</span>
+                    <span className="text-warning">{linkWarning}</span>
                     <Button 
                       type="button" 
                       variant="link" 
