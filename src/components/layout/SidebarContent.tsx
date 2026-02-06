@@ -194,7 +194,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                     "flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                     isAdminSection
                       ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
+                      : "text-sidebar-foreground/80 hover:bg-muted hover:text-sidebar-foreground"
                   )}
                 >
                   <div className="flex items-center gap-3">
