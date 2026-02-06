@@ -81,14 +81,14 @@ export function ContinueLearning() {
   if (isLoading) {
     return (
       <Card className="bg-card border-border">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-base font-medium">
+        <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-4 md:p-6 md:pb-2">
+          <CardTitle className="text-sm sm:text-base font-medium">
             Continuar de onde parou
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-3">
+        <CardContent className="grid gap-2 sm:gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 p-3 sm:p-4 md:p-6 pt-0">
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-32 rounded-lg" />
+            <Skeleton key={i} className="h-28 sm:h-32 rounded-lg" />
           ))}
         </CardContent>
       </Card>
