@@ -329,8 +329,9 @@ export function useUserChallengeProgress(objectiveItemIds?: string[]) {
     },
   });
 
-  // Derived state
-  const activeChallenge = progress.find((p) => p.status === "active");
+  // Derived state - now supports multiple active challenges
+  const activeChallenges = progress.filter((p) => p.status === "active");
+  const activeChallenge = activeChallenges[0]; // Keep for backward compatibility
   const completedChallenges = progress.filter((p) => p.status === "completed");
   const lockedChallenges = progress.filter((p) => p.status === "locked");
 
