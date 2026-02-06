@@ -1197,6 +1197,7 @@ export type Database = {
           goals: Json | null
           id: string
           main_track: string | null
+          phone: string | null
           updated_at: string | null
           user_id: string
         }
@@ -1206,6 +1207,7 @@ export type Database = {
           goals?: Json | null
           id?: string
           main_track?: string | null
+          phone?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -1215,6 +1217,7 @@ export type Database = {
           goals?: Json | null
           id?: string
           main_track?: string | null
+          phone?: string | null
           updated_at?: string | null
           user_id?: string
         }
