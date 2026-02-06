@@ -35,6 +35,7 @@ interface SelectedChallenge {
   estimated_minutes: number | null;
   estimated_time_unit: string;
   is_bonus: boolean;
+  is_initial_active: boolean;
 }
 
 export function ChallengeLinkingModal({
@@ -48,6 +49,12 @@ export function ChallengeLinkingModal({
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedChallenges, setSelectedChallenges] = useState<SelectedChallenge[]>([]);
+
+  // Get active_slots from objective item
+  const activeSlots = objectiveItem?.active_slots || 1;
+
+  // Count how many are marked as initial active
+  const initialActiveCount = selectedChallenges.filter((c) => c.is_initial_active).length;
 
   // Sync selected challenges when modal opens or links load
   useEffect(() => {
@@ -66,6 +73,7 @@ export function ChallengeLinkingModal({
             estimated_minutes: challenge.estimated_minutes,
             estimated_time_unit: challenge.estimated_time_unit || "minutes",
             is_bonus: challenge.is_bonus || false,
+            is_initial_active: link.is_initial_active || false,
           };
         })
         .filter(Boolean) as SelectedChallenge[];
@@ -105,8 +113,26 @@ export function ChallengeLinkingModal({
         estimated_minutes: challenge.estimated_minutes,
         estimated_time_unit: challenge.estimated_time_unit || "minutes",
         is_bonus: challenge.is_bonus || false,
+        is_initial_active: false,
       },
     ]);
+  }, []);
+
+  const toggleInitialActive = useCallback((id: string) => {
+    setSelectedChallenges((prev) => {
+      const challenge = prev.find((c) => c.id === id);
+      if (!challenge) return prev;
+
+      // If already active, toggle off
+      if (challenge.is_initial_active) {
+        return prev.map((c) => (c.id === id ? { ...c, is_initial_active: false } : c));
+      }
+
+      // If trying to activate, check slot limit
+      const currentActiveCount = prev.filter((c) => c.is_initial_active).length;
+      // Get activeSlots from closure - we need to check against the limit
+      return prev.map((c) => (c.id === id ? { ...c, is_initial_active: true } : c));
+    });
   }, []);
 
   const removeChallenge = useCallback((id: string) => {
@@ -134,10 +160,16 @@ export function ChallengeLinkingModal({
   const handleSave = () => {
     if (!objectiveItem) return;
 
+    // Get IDs of challenges marked as initial active
+    const initialActiveIds = selectedChallenges
+      .filter((c) => c.is_initial_active)
+      .map((c) => c.id);
+
     saveLinks(
       {
         objectiveItemId: objectiveItem.id,
         challengeIds: selectedChallenges.map((c) => c.id),
+        initialActiveIds,
       },
       {
         onSuccess: () => {
@@ -183,63 +215,74 @@ export function ChallengeLinkingModal({
                 Ordem de liberação ({selectedChallenges.length})
               </p>
               <div className="space-y-1 max-h-[200px] overflow-y-auto border rounded-lg p-2 bg-muted/30">
-                {selectedChallenges.map((challenge, index) => (
-                  <div
-                    key={challenge.id}
-                    className="flex items-center gap-2 p-2 bg-background rounded border"
-                  >
-                    <span className="w-6 h-6 flex items-center justify-center text-xs font-bold bg-primary/10 text-primary rounded">
-                      {index + 1}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{challenge.title}</p>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className="text-xs">
-                          {challenge.track}
-                        </Badge>
-                        {challenge.estimated_minutes && (
-                          <span className="text-xs text-muted-foreground">
-                            {formatEstimatedTimeShort(
-                              challenge.estimated_minutes,
-                              challenge.estimated_time_unit as "minutes" | "hours" | "days" | "weeks"
-                            )}
-                          </span>
-                        )}
+                {selectedChallenges.map((challenge, index) => {
+                  const canToggleActive = challenge.is_initial_active || initialActiveCount < activeSlots;
+                  return (
+                    <div
+                      key={challenge.id}
+                      className="flex items-center gap-2 p-2 bg-background rounded border"
+                    >
+                      <Checkbox
+                        id={`initial-active-${challenge.id}`}
+                        checked={challenge.is_initial_active}
+                        disabled={!canToggleActive}
+                        onCheckedChange={() => toggleInitialActive(challenge.id)}
+                        className="shrink-0"
+                      />
+                      <span className="w-6 h-6 flex items-center justify-center text-xs font-bold bg-primary/10 text-primary rounded shrink-0">
+                        {index + 1}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{challenge.title}</p>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="text-xs">
+                            {challenge.track}
+                          </Badge>
+                          {challenge.estimated_minutes && (
+                            <span className="text-xs text-muted-foreground">
+                              {formatEstimatedTimeShort(
+                                challenge.estimated_minutes,
+                                challenge.estimated_time_unit as "minutes" | "hours" | "days" | "weeks"
+                              )}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          onClick={() => moveUp(index)}
+                          disabled={index === 0}
+                        >
+                          <ArrowUp className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          onClick={() => moveDown(index)}
+                          disabled={index === selectedChallenges.length - 1}
+                        >
+                          <ArrowDown className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-destructive hover:text-destructive"
+                          onClick={() => removeChallenge(challenge.id)}
+                        >
+                          ×
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7"
-                        onClick={() => moveUp(index)}
-                        disabled={index === 0}
-                      >
-                        <ArrowUp className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7"
-                        onClick={() => moveDown(index)}
-                        disabled={index === selectedChallenges.length - 1}
-                      >
-                        <ArrowDown className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7 text-destructive hover:text-destructive"
-                        onClick={() => removeChallenge(challenge.id)}
-                      >
-                        ×
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               <p className="text-xs text-muted-foreground">
-                O primeiro desafio é liberado imediatamente. Os demais são desbloqueados após completar o anterior.
+                ☑️ Marque até <strong>{activeSlots}</strong> desafio(s) para iniciar ativos simultaneamente ({initialActiveCount}/{activeSlots} selecionados).
+                {initialActiveCount === 0 && " Se nenhum for marcado, o primeiro será ativado automaticamente."}
               </p>
             </div>
           )}

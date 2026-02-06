@@ -7,6 +7,7 @@ export interface ObjectiveChallengeLink {
   objective_item_id: string;
   daily_challenge_id: string;
   order_index: number;
+  is_initial_active: boolean;
   created_at: string;
 }
 
@@ -67,14 +68,16 @@ export function useObjectiveChallengeLinks(objectiveItemId?: string) {
   // Get linked challenge IDs for an objective (in order)
   const linkedChallengeIds = links.map(link => link.daily_challenge_id);
 
-  // Save links with order (replace all links for an objective)
+  // Save links with order and initial active state (replace all links for an objective)
   const saveLinksMutation = useMutation({
     mutationFn: async ({ 
       objectiveItemId, 
-      challengeIds 
+      challengeIds,
+      initialActiveIds = [],
     }: { 
       objectiveItemId: string; 
-      challengeIds: string[] 
+      challengeIds: string[];
+      initialActiveIds?: string[];
     }) => {
       // Delete existing links
       const { error: deleteError } = await supabase
@@ -84,12 +87,13 @@ export function useObjectiveChallengeLinks(objectiveItemId?: string) {
 
       if (deleteError) throw deleteError;
 
-      // Insert new links with order_index
+      // Insert new links with order_index and is_initial_active
       if (challengeIds.length > 0) {
         const newLinks = challengeIds.map((challengeId, index) => ({
           objective_item_id: objectiveItemId,
           daily_challenge_id: challengeId,
           order_index: index,
+          is_initial_active: initialActiveIds.includes(challengeId),
         }));
 
         const { error: insertError } = await supabase

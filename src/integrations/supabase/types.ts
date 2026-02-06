@@ -787,6 +787,7 @@ export type Database = {
           created_at: string
           daily_challenge_id: string
           id: string
+          is_initial_active: boolean
           objective_item_id: string
           order_index: number | null
         }
@@ -794,6 +795,7 @@ export type Database = {
           created_at?: string
           daily_challenge_id: string
           id?: string
+          is_initial_active?: boolean
           objective_item_id: string
           order_index?: number | null
         }
@@ -801,6 +803,7 @@ export type Database = {
           created_at?: string
           daily_challenge_id?: string
           id?: string
+          is_initial_active?: boolean
           objective_item_id?: string
           order_index?: number | null
         }

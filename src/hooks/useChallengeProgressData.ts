@@ -37,9 +37,9 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
     isRestarting,
   } = useUserChallengeProgress(selectedItemIds.length > 0 ? selectedItemIds : undefined);
 
-  // Get linked challenges with their order for each objective
+  // Get linked challenges with their order and initial active state for each objective
   const linkedChallengesMap = useMemo(() => {
-    const map: Record<string, Array<{ challengeId: string; orderIndex: number }>> = {};
+    const map: Record<string, Array<{ challengeId: string; orderIndex: number; isInitialActive: boolean }>> = {};
     
     allLinks.forEach((link) => {
       if (!map[link.objective_item_id]) {
@@ -47,7 +47,8 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
       }
       map[link.objective_item_id].push({
         challengeId: link.daily_challenge_id,
-        orderIndex: (link as unknown as { order_index: number }).order_index || 0,
+        orderIndex: link.order_index,
+        isInitialActive: link.is_initial_active || false,
       });
     });
 
@@ -72,7 +73,7 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
       const existingProgress = progress.filter((p) => p.objective_item_id === itemId);
       if (existingProgress.length > 0) return;
 
-      // Prepare challenges with order info
+      // Prepare challenges with order info and initial active state
       const challengesWithOrder = linkedChallenges
         .map((link) => {
           const challenge = allChallenges.find((c) => c.id === link.challengeId);
@@ -82,6 +83,7 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
             estimated_minutes: challenge.estimated_minutes,
             estimated_time_unit: (challenge.estimated_time_unit || "minutes") as TimeUnit,
             order_index: link.orderIndex,
+            is_initial_active: link.isInitialActive,
           };
         })
         .filter(Boolean) as Array<{
@@ -89,6 +91,7 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
           estimated_minutes: number | null;
           estimated_time_unit: TimeUnit;
           order_index: number;
+          is_initial_active: boolean;
         }>;
 
       if (challengesWithOrder.length > 0) {
