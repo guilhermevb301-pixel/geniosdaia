@@ -1,8 +1,8 @@
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Clock, Target } from "lucide-react";
+import { Clock, Target, Play, ListOrdered } from "lucide-react";
 import { formatEstimatedTimeShort } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +21,9 @@ interface ChallengeSearchListProps {
   challenges: Challenge[];
   isLoading: boolean;
   searchQuery: string;
-  onSelect: (challenge: Challenge) => void;
+  slotsAvailable: boolean;
+  onAddAsInitial: (challenge: Challenge) => void;
+  onAddAsSequential: (challenge: Challenge) => void;
 }
 
 const getDifficultyColor = (difficulty: string) => {
@@ -41,7 +43,9 @@ export function ChallengeSearchList({
   challenges,
   isLoading,
   searchQuery,
-  onSelect,
+  slotsAvailable,
+  onAddAsInitial,
+  onAddAsSequential,
 }: ChallengeSearchListProps) {
   if (isLoading) {
     return (
@@ -72,10 +76,8 @@ export function ChallengeSearchList({
         {challenges.map((challenge) => (
           <div
             key={challenge.id}
-            className="flex items-start gap-3 p-3 hover:bg-muted/50 cursor-pointer transition-colors"
-            onClick={() => onSelect(challenge)}
+            className="flex items-start gap-3 p-3 hover:bg-muted/30 transition-colors"
           >
-            <Checkbox checked={false} className="mt-1" />
             <div className="flex-1 min-w-0">
               <div className="font-medium text-sm leading-tight">
                 {challenge.title}
@@ -103,11 +105,32 @@ export function ChallengeSearchList({
                   </span>
                 )}
                 {challenge.is_bonus && (
-                  <Badge className="text-xs bg-amber-500/10 text-amber-600 border-amber-500/30">
+                  <Badge variant="outline" className="text-xs border-warning/30 bg-warning/10 text-warning-foreground">
                     Bônus
                   </Badge>
                 )}
               </div>
+            </div>
+            <div className="flex flex-col gap-1 shrink-0">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs gap-1"
+                disabled={!slotsAvailable}
+                onClick={() => onAddAsInitial(challenge)}
+              >
+                <Play className="h-3 w-3" />
+                Inicial
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs gap-1"
+                onClick={() => onAddAsSequential(challenge)}
+              >
+                <ListOrdered className="h-3 w-3" />
+                Sequência
+              </Button>
             </div>
           </div>
         ))}
