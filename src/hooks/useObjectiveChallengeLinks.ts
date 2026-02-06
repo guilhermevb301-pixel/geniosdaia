@@ -7,6 +7,7 @@ export interface ObjectiveChallengeLink {
   objective_item_id: string;
   daily_challenge_id: string;
   order_index: number;
+  is_initial_active: boolean;
   created_at: string;
 }
 
