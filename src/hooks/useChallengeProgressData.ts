@@ -37,9 +37,9 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
     isRestarting,
   } = useUserChallengeProgress(selectedItemIds.length > 0 ? selectedItemIds : undefined);
 
-  // Get linked challenges with their order for each objective
+  // Get linked challenges with their order and initial active state for each objective
   const linkedChallengesMap = useMemo(() => {
-    const map: Record<string, Array<{ challengeId: string; orderIndex: number }>> = {};
+    const map: Record<string, Array<{ challengeId: string; orderIndex: number; isInitialActive: boolean }>> = {};
     
     allLinks.forEach((link) => {
       if (!map[link.objective_item_id]) {
@@ -47,7 +47,8 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
       }
       map[link.objective_item_id].push({
         challengeId: link.daily_challenge_id,
-        orderIndex: (link as unknown as { order_index: number }).order_index || 0,
+        orderIndex: link.order_index,
+        isInitialActive: link.is_initial_active || false,
       });
     });
 
