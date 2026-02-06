@@ -172,9 +172,9 @@ export function useUserChallengeProgress(objectiveItemIds?: string[]) {
     },
   });
 
-  // Complete a challenge and unlock the next one
+  // Complete a challenge and unlock the next ones based on active_slots
   const completeMutation = useMutation({
-    mutationFn: async (progressId: string) => {
+    mutationFn: async ({ progressId, activeSlots = 1 }: { progressId: string; activeSlots?: number }) => {
       if (!user) throw new Error("User not authenticated");
 
       // Get the current progress record
@@ -197,8 +197,23 @@ export function useUserChallengeProgress(objectiveItemIds?: string[]) {
 
       if (updateError) throw updateError;
 
-      // Find the next locked challenge for this objective
-      const { data: allProgress, error: allError } = await supabase
+      // Count how many challenges are currently active for this objective
+      const { data: activeProgress, error: activeError } = await supabase
+        .from("user_challenge_progress")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("objective_item_id", current.objective_item_id)
+        .eq("status", "active");
+
+      if (activeError) throw activeError;
+
+      const currentActiveCount = activeProgress?.length || 0;
+      const slotsToFill = activeSlots - currentActiveCount;
+
+      if (slotsToFill <= 0) return; // Already have enough active challenges
+
+      // Find locked challenges to unlock
+      const { data: lockedProgress, error: lockedError } = await supabase
         .from("user_challenge_progress")
         .select(`
           *,
@@ -208,11 +223,11 @@ export function useUserChallengeProgress(objectiveItemIds?: string[]) {
         .eq("objective_item_id", current.objective_item_id)
         .eq("status", "locked");
 
-      if (allError) throw allError;
+      if (lockedError) throw lockedError;
 
-      if (allProgress && allProgress.length > 0) {
+      if (lockedProgress && lockedProgress.length > 0) {
         // Get order_index from links table for proper ordering
-        const challengeIds = allProgress.map((p) => p.daily_challenge_id);
+        const challengeIds = lockedProgress.map((p) => p.daily_challenge_id);
         const { data: links, error: linksError } = await supabase
           .from("objective_challenge_links")
           .select("daily_challenge_id, order_index")
@@ -223,25 +238,26 @@ export function useUserChallengeProgress(objectiveItemIds?: string[]) {
         if (linksError) throw linksError;
 
         if (links && links.length > 0) {
-          // Find the progress record with the lowest order_index
-          const nextChallengeId = links[0].daily_challenge_id;
-          const nextProgress = allProgress.find((p) => p.daily_challenge_id === nextChallengeId);
+          // Unlock as many challenges as needed to fill the slots
+          const challengesToUnlock = links.slice(0, slotsToFill);
+          const now = new Date().toISOString();
 
-          if (nextProgress) {
-            const challenge = nextProgress.daily_challenges;
-            const now = new Date().toISOString();
-
-            await supabase
-              .from("user_challenge_progress")
-              .update({
-                status: "active",
-                started_at: now,
-                deadline: calculateDeadline(
-                  challenge?.estimated_minutes || 30,
-                  (challenge?.estimated_time_unit as TimeUnit) || "minutes"
-                ),
-              })
-              .eq("id", nextProgress.id);
+          for (const link of challengesToUnlock) {
+            const progressToUnlock = lockedProgress.find((p) => p.daily_challenge_id === link.daily_challenge_id);
+            if (progressToUnlock) {
+              const challenge = progressToUnlock.daily_challenges;
+              await supabase
+                .from("user_challenge_progress")
+                .update({
+                  status: "active",
+                  started_at: now,
+                  deadline: calculateDeadline(
+                    challenge?.estimated_minutes || 30,
+                    (challenge?.estimated_time_unit as TimeUnit) || "minutes"
+                  ),
+                })
+                .eq("id", progressToUnlock.id);
+            }
           }
         }
       }
