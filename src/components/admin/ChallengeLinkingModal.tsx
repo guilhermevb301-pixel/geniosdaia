@@ -35,6 +35,7 @@ interface SelectedChallenge {
   estimated_minutes: number | null;
   estimated_time_unit: string;
   is_bonus: boolean;
+  is_initial_active: boolean;
 }
 
 export function ChallengeLinkingModal({
