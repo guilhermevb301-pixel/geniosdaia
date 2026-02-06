@@ -37,9 +37,14 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
     isRestarting,
   } = useUserChallengeProgress(selectedItemIds.length > 0 ? selectedItemIds : undefined);
 
-  // Get linked challenges with their order and initial active state for each objective
+  // Get linked challenges with their order, initial active state, and predecessor for each objective
   const linkedChallengesMap = useMemo(() => {
-    const map: Record<string, Array<{ challengeId: string; orderIndex: number; isInitialActive: boolean }>> = {};
+    const map: Record<string, Array<{ 
+      challengeId: string; 
+      orderIndex: number; 
+      isInitialActive: boolean;
+      predecessorChallengeId: string | null;
+    }>> = {};
     
     allLinks.forEach((link) => {
       if (!map[link.objective_item_id]) {
@@ -49,6 +54,7 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
         challengeId: link.daily_challenge_id,
         orderIndex: link.order_index,
         isInitialActive: link.is_initial_active || false,
+        predecessorChallengeId: link.predecessor_challenge_id || null,
       });
     });
 
@@ -73,7 +79,7 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
       const existingProgress = progress.filter((p) => p.objective_item_id === itemId);
       if (existingProgress.length > 0) return;
 
-      // Prepare challenges with order info and initial active state
+      // Prepare challenges with order info, initial active state, and predecessor
       const challengesWithOrder = linkedChallenges
         .map((link) => {
           const challenge = allChallenges.find((c) => c.id === link.challengeId);
@@ -84,6 +90,7 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
             estimated_time_unit: (challenge.estimated_time_unit || "minutes") as TimeUnit,
             order_index: link.orderIndex,
             is_initial_active: link.isInitialActive,
+            predecessor_challenge_id: link.predecessorChallengeId,
           };
         })
         .filter(Boolean) as Array<{
@@ -92,6 +99,7 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
           estimated_time_unit: TimeUnit;
           order_index: number;
           is_initial_active: boolean;
+          predecessor_challenge_id: string | null;
         }>;
 
       if (challengesWithOrder.length > 0) {

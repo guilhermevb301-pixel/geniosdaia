@@ -139,6 +139,7 @@ export function useUserChallengeProgress(objectiveItemIds?: string[]) {
         estimated_time_unit: TimeUnit;
         order_index: number;
         is_initial_active?: boolean;
+        predecessor_challenge_id?: string | null;
       }>;
       activeSlots?: number;
     }) => {
@@ -189,7 +190,7 @@ export function useUserChallengeProgress(objectiveItemIds?: string[]) {
     },
   });
 
-  // Complete a challenge and unlock the next ones based on active_slots
+  // Complete a challenge and unlock successors based on predecessor configuration
   const completeMutation = useMutation({
     mutationFn: async ({ progressId, activeSlots = 1 }: { progressId: string; activeSlots?: number }) => {
       if (!user) throw new Error("User not authenticated");
@@ -214,68 +215,46 @@ export function useUserChallengeProgress(objectiveItemIds?: string[]) {
 
       if (updateError) throw updateError;
 
-      // Count how many challenges are currently active for this objective
-      const { data: activeProgress, error: activeError } = await supabase
-        .from("user_challenge_progress")
-        .select("id")
-        .eq("user_id", user.id)
+      // Find challenges that have this challenge as their predecessor
+      const { data: successorLinks, error: successorError } = await supabase
+        .from("objective_challenge_links")
+        .select("daily_challenge_id")
         .eq("objective_item_id", current.objective_item_id)
-        .eq("status", "active");
+        .eq("predecessor_challenge_id", current.daily_challenge_id);
 
-      if (activeError) throw activeError;
+      if (successorError) throw successorError;
 
-      const currentActiveCount = activeProgress?.length || 0;
-      const slotsToFill = activeSlots - currentActiveCount;
+      const now = new Date().toISOString();
 
-      if (slotsToFill <= 0) return; // Already have enough active challenges
+      // Unlock all successors
+      if (successorLinks && successorLinks.length > 0) {
+        const successorIds = successorLinks.map((l) => l.daily_challenge_id);
 
-      // Find locked challenges to unlock
-      const { data: lockedProgress, error: lockedError } = await supabase
-        .from("user_challenge_progress")
-        .select(`
-          *,
-          daily_challenges (*)
-        `)
-        .eq("user_id", user.id)
-        .eq("objective_item_id", current.objective_item_id)
-        .eq("status", "locked");
-
-      if (lockedError) throw lockedError;
-
-      if (lockedProgress && lockedProgress.length > 0) {
-        // Get order_index from links table for proper ordering
-        const challengeIds = lockedProgress.map((p) => p.daily_challenge_id);
-        const { data: links, error: linksError } = await supabase
-          .from("objective_challenge_links")
-          .select("daily_challenge_id, order_index")
+        // Get locked progress records for successors
+        const { data: lockedSuccessors, error: lockedError } = await supabase
+          .from("user_challenge_progress")
+          .select(`*, daily_challenges (*)`)
+          .eq("user_id", user.id)
           .eq("objective_item_id", current.objective_item_id)
-          .in("daily_challenge_id", challengeIds)
-          .order("order_index", { ascending: true });
+          .eq("status", "locked")
+          .in("daily_challenge_id", successorIds);
 
-        if (linksError) throw linksError;
+        if (lockedError) throw lockedError;
 
-        if (links && links.length > 0) {
-          // Unlock as many challenges as needed to fill the slots
-          const challengesToUnlock = links.slice(0, slotsToFill);
-          const now = new Date().toISOString();
-
-          for (const link of challengesToUnlock) {
-            const progressToUnlock = lockedProgress.find((p) => p.daily_challenge_id === link.daily_challenge_id);
-            if (progressToUnlock) {
-              const challenge = progressToUnlock.daily_challenges;
-              await supabase
-                .from("user_challenge_progress")
-                .update({
-                  status: "active",
-                  started_at: now,
-                  deadline: calculateDeadline(
-                    challenge?.estimated_minutes || 30,
-                    (challenge?.estimated_time_unit as TimeUnit) || "minutes"
-                  ),
-                })
-                .eq("id", progressToUnlock.id);
-            }
-          }
+        // Unlock each successor
+        for (const progressToUnlock of lockedSuccessors || []) {
+          const challenge = progressToUnlock.daily_challenges;
+          await supabase
+            .from("user_challenge_progress")
+            .update({
+              status: "active",
+              started_at: now,
+              deadline: calculateDeadline(
+                challenge?.estimated_minutes || 30,
+                (challenge?.estimated_time_unit as TimeUnit) || "minutes"
+              ),
+            })
+            .eq("id", progressToUnlock.id);
         }
       }
     },

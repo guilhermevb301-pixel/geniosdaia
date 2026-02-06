@@ -13,7 +13,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Link2, Clock, Target, GripVertical, ArrowUp, ArrowDown } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Link2, Clock, Target, GripVertical, ArrowUp, ArrowDown, ChevronRight } from "lucide-react";
 import { useDailyChallengesAdmin } from "@/hooks/useDailyChallengesAdmin";
 import { formatEstimatedTimeShort } from "@/lib/utils";
 import { useObjectiveChallengeLinks } from "@/hooks/useObjectiveChallengeLinks";
@@ -36,6 +43,7 @@ interface SelectedChallenge {
   estimated_time_unit: string;
   is_bonus: boolean;
   is_initial_active: boolean;
+  predecessor_challenge_id: string | null;
 }
 
 export function ChallengeLinkingModal({
@@ -74,6 +82,7 @@ export function ChallengeLinkingModal({
             estimated_time_unit: challenge.estimated_time_unit || "minutes",
             is_bonus: challenge.is_bonus || false,
             is_initial_active: link.is_initial_active || false,
+            predecessor_challenge_id: link.predecessor_challenge_id || null,
           };
         })
         .filter(Boolean) as SelectedChallenge[];
@@ -114,6 +123,7 @@ export function ChallengeLinkingModal({
         estimated_time_unit: challenge.estimated_time_unit || "minutes",
         is_bonus: challenge.is_bonus || false,
         is_initial_active: false,
+        predecessor_challenge_id: null,
       },
     ]);
   }, []);
@@ -125,18 +135,40 @@ export function ChallengeLinkingModal({
 
       // If already active, toggle off
       if (challenge.is_initial_active) {
-        return prev.map((c) => (c.id === id ? { ...c, is_initial_active: false } : c));
+        return prev.map((c) => (c.id === id ? { ...c, is_initial_active: false, predecessor_challenge_id: null } : c));
       }
 
-      // If trying to activate, check slot limit
-      const currentActiveCount = prev.filter((c) => c.is_initial_active).length;
-      // Get activeSlots from closure - we need to check against the limit
-      return prev.map((c) => (c.id === id ? { ...c, is_initial_active: true } : c));
+      // If trying to activate, set predecessor to null (initial challenges have no predecessor)
+      return prev.map((c) => (c.id === id ? { ...c, is_initial_active: true, predecessor_challenge_id: null } : c));
     });
   }, []);
 
+  const setPredecessor = useCallback((id: string, predecessorId: string | null) => {
+    setSelectedChallenges((prev) =>
+      prev.map((c) => {
+        if (c.id === id) {
+          // If setting a predecessor, this challenge cannot be initial active
+          return {
+            ...c,
+            predecessor_challenge_id: predecessorId,
+            is_initial_active: predecessorId ? false : c.is_initial_active,
+          };
+        }
+        return c;
+      })
+    );
+  }, []);
+
   const removeChallenge = useCallback((id: string) => {
-    setSelectedChallenges((prev) => prev.filter((c) => c.id !== id));
+    setSelectedChallenges((prev) => {
+      // Also clear any references to this challenge as predecessor
+      return prev
+        .filter((c) => c.id !== id)
+        .map((c) => ({
+          ...c,
+          predecessor_challenge_id: c.predecessor_challenge_id === id ? null : c.predecessor_challenge_id,
+        }));
+    });
   }, []);
 
   const moveUp = useCallback((index: number) => {
@@ -165,11 +197,18 @@ export function ChallengeLinkingModal({
       .filter((c) => c.is_initial_active)
       .map((c) => c.id);
 
+    // Build predecessor map
+    const predecessorMap: Record<string, string | null> = {};
+    selectedChallenges.forEach((c) => {
+      predecessorMap[c.id] = c.predecessor_challenge_id;
+    });
+
     saveLinks(
       {
         objectiveItemId: objectiveItem.id,
         challengeIds: selectedChallenges.map((c) => c.id),
         initialActiveIds,
+        predecessorMap,
       },
       {
         onSuccess: () => {
@@ -193,6 +232,18 @@ export function ChallengeLinkingModal({
     }
   };
 
+  // Get possible predecessors for a challenge (all other selected challenges)
+  const getPossiblePredecessors = (currentId: string) => {
+    return selectedChallenges.filter((c) => c.id !== currentId);
+  };
+
+  // Get predecessor title for display
+  const getPredecessorTitle = (predecessorId: string | null) => {
+    if (!predecessorId) return null;
+    const predecessor = selectedChallenges.find((c) => c.id === predecessorId);
+    return predecessor?.title || null;
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
@@ -214,75 +265,105 @@ export function ChallengeLinkingModal({
                 <GripVertical className="h-4 w-4" />
                 Ordem de liberação ({selectedChallenges.length})
               </p>
-              <div className="space-y-1 max-h-[200px] overflow-y-auto border rounded-lg p-2 bg-muted/30">
+              <div className="space-y-1 max-h-[280px] overflow-y-auto border rounded-lg p-2 bg-muted/30">
                 {selectedChallenges.map((challenge, index) => {
                   const canToggleActive = challenge.is_initial_active || initialActiveCount < activeSlots;
+                  const hasPredecessor = !!challenge.predecessor_challenge_id;
+                  const possiblePredecessors = getPossiblePredecessors(challenge.id);
+
                   return (
                     <div
                       key={challenge.id}
-                      className="flex items-center gap-2 p-2 bg-background rounded border"
+                      className="flex flex-col gap-2 p-2 bg-background rounded border"
                     >
-                      <Checkbox
-                        id={`initial-active-${challenge.id}`}
-                        checked={challenge.is_initial_active}
-                        disabled={!canToggleActive}
-                        onCheckedChange={() => toggleInitialActive(challenge.id)}
-                        className="shrink-0"
-                      />
-                      <span className="w-6 h-6 flex items-center justify-center text-xs font-bold bg-primary/10 text-primary rounded shrink-0">
-                        {index + 1}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{challenge.title}</p>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary" className="text-xs">
-                            {challenge.track}
-                          </Badge>
-                          {challenge.estimated_minutes && (
-                            <span className="text-xs text-muted-foreground">
-                              {formatEstimatedTimeShort(
-                                challenge.estimated_minutes,
-                                challenge.estimated_time_unit as "minutes" | "hours" | "days" | "weeks"
-                              )}
-                            </span>
-                          )}
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id={`initial-active-${challenge.id}`}
+                          checked={challenge.is_initial_active}
+                          disabled={!canToggleActive || hasPredecessor}
+                          onCheckedChange={() => toggleInitialActive(challenge.id)}
+                          className="shrink-0"
+                        />
+                        <span className="w-6 h-6 flex items-center justify-center text-xs font-bold bg-primary/10 text-primary rounded shrink-0">
+                          {index + 1}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{challenge.title}</p>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="text-xs">
+                              {challenge.track}
+                            </Badge>
+                            {challenge.estimated_minutes && (
+                              <span className="text-xs text-muted-foreground">
+                                {formatEstimatedTimeShort(
+                                  challenge.estimated_minutes,
+                                  challenge.estimated_time_unit as "minutes" | "hours" | "days" | "weeks"
+                                )}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7"
+                            onClick={() => moveUp(index)}
+                            disabled={index === 0}
+                          >
+                            <ArrowUp className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7"
+                            onClick={() => moveDown(index)}
+                            disabled={index === selectedChallenges.length - 1}
+                          >
+                            <ArrowDown className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-destructive hover:text-destructive"
+                            onClick={() => removeChallenge(challenge.id)}
+                          >
+                            ×
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7"
-                          onClick={() => moveUp(index)}
-                          disabled={index === 0}
-                        >
-                          <ArrowUp className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7"
-                          onClick={() => moveDown(index)}
-                          disabled={index === selectedChallenges.length - 1}
-                        >
-                          <ArrowDown className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 text-destructive hover:text-destructive"
-                          onClick={() => removeChallenge(challenge.id)}
-                        >
-                          ×
-                        </Button>
-                      </div>
+
+                      {/* Predecessor selector - only show if not initial active */}
+                      {!challenge.is_initial_active && possiblePredecessors.length > 0 && (
+                        <div className="flex items-center gap-2 ml-8 text-xs">
+                          <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-muted-foreground whitespace-nowrap">Libera após:</span>
+                          <Select
+                            value={challenge.predecessor_challenge_id || "none"}
+                            onValueChange={(value) => setPredecessor(challenge.id, value === "none" ? null : value)}
+                          >
+                            <SelectTrigger className="h-7 text-xs flex-1 min-w-0">
+                              <SelectValue placeholder="Selecionar predecessor" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">
+                                <span className="text-muted-foreground">Nenhum (será bloqueado)</span>
+                              </SelectItem>
+                              {possiblePredecessors.map((pred) => (
+                                <SelectItem key={pred.id} value={pred.id}>
+                                  <span className="truncate">{pred.title}</span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
               </div>
               <p className="text-xs text-muted-foreground">
-                ☑️ Marque até <strong>{activeSlots}</strong> desafio(s) para iniciar ativos simultaneamente ({initialActiveCount}/{activeSlots} selecionados).
-                {initialActiveCount === 0 && " Se nenhum for marcado, o primeiro será ativado automaticamente."}
+                ☑️ Marque os desafios que iniciam <strong>ativos</strong>. Para os demais, defina qual desafio deve ser completado antes.
               </p>
             </div>
           )}
@@ -295,7 +376,7 @@ export function ChallengeLinkingModal({
           />
 
           {/* Available challenges */}
-          <ScrollArea className="h-[300px] border rounded-lg">
+          <ScrollArea className="h-[250px] border rounded-lg">
             {isLoadingChallenges ? (
               <div className="space-y-2 p-3">
                 {[1, 2, 3, 4, 5].map((i) => (

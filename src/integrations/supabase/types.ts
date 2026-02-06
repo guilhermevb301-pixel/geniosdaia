@@ -790,6 +790,7 @@ export type Database = {
           is_initial_active: boolean
           objective_item_id: string
           order_index: number | null
+          predecessor_challenge_id: string | null
         }
         Insert: {
           created_at?: string
@@ -798,6 +799,7 @@ export type Database = {
           is_initial_active?: boolean
           objective_item_id: string
           order_index?: number | null
+          predecessor_challenge_id?: string | null
         }
         Update: {
           created_at?: string
@@ -806,6 +808,7 @@ export type Database = {
           is_initial_active?: boolean
           objective_item_id?: string
           order_index?: number | null
+          predecessor_challenge_id?: string | null
         }
         Relationships: [
           {
@@ -820,6 +823,13 @@ export type Database = {
             columns: ["objective_item_id"]
             isOneToOne: false
             referencedRelation: "objective_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "objective_challenge_links_predecessor_challenge_id_fkey"
+            columns: ["predecessor_challenge_id"]
+            isOneToOne: false
+            referencedRelation: "daily_challenges"
             referencedColumns: ["id"]
           },
         ]
