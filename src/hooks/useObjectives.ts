@@ -11,6 +11,7 @@ export interface ObjectiveItem {
   is_infra: boolean;
   order_index: number;
   tags: string[];
+  active_slots: number;
   created_at: string;
 }
 
