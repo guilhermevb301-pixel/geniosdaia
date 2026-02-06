@@ -92,30 +92,30 @@ export function StatsCards() {
   ];
 
   return (
-    <div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-2 sm:gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
       {stats.map((stat) => (
         <Card
           key={stat.label}
           className="bg-card border-border hover:border-primary/30 transition-all duration-300 hover:scale-[1.02] group"
         >
-          <CardContent className="p-4 md:p-5">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
+          <CardContent className="p-3 sm:p-4 md:p-5">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
                 {stat.isLoading ? (
-                  <Skeleton className="h-8 w-16 mb-1" />
+                  <Skeleton className="h-6 sm:h-8 w-12 sm:w-16 mb-1" />
                 ) : (
-                  <p className="text-2xl md:text-3xl font-bold tabular-nums">
+                  <p className="text-lg sm:text-2xl md:text-3xl font-bold tabular-nums">
                     {stat.value?.toLocaleString("pt-BR")}
                   </p>
                 )}
-                <p className="text-xs md:text-sm text-muted-foreground mt-1">
+                <p className="text-[10px] sm:text-xs md:text-sm text-muted-foreground mt-0.5 sm:mt-1 truncate">
                   {stat.label}
                 </p>
               </div>
               <div
-                className={`h-10 w-10 md:h-12 md:w-12 rounded-xl ${stat.bgColor} flex items-center justify-center group-hover:scale-110 transition-transform`}
+                className={`h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 rounded-lg sm:rounded-xl ${stat.bgColor} flex items-center justify-center group-hover:scale-110 transition-transform shrink-0`}
               >
-                <stat.icon className={`h-5 w-5 md:h-6 md:w-6 ${stat.color}`} />
+                <stat.icon className={`h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 ${stat.color}`} />
               </div>
             </div>
           </CardContent>

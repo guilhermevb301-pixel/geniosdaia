@@ -40,21 +40,21 @@ export function HeroBanner() {
   };
 
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-accent/10 p-8 md:p-10">
+    <div className="relative overflow-hidden rounded-xl sm:rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-accent/10 p-4 sm:p-6 md:p-8 lg:p-10">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-1/2 -right-1/2 h-96 w-96 rounded-full bg-primary/10 blur-3xl animate-pulse" />
-        <div className="absolute -bottom-1/2 -left-1/2 h-96 w-96 rounded-full bg-accent/10 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute -top-1/2 -right-1/2 h-48 sm:h-72 md:h-96 w-48 sm:w-72 md:w-96 rounded-full bg-primary/10 blur-3xl animate-pulse" />
+        <div className="absolute -bottom-1/2 -left-1/2 h-48 sm:h-72 md:h-96 w-48 sm:w-72 md:w-96 rounded-full bg-accent/10 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
       </div>
 
       {/* Content */}
       <div className="relative z-10">
-        <p className="text-sm md:text-base text-muted-foreground mb-2">
+        <p className="text-xs sm:text-sm md:text-base text-muted-foreground mb-1 sm:mb-2">
           {getGreeting()}, <span className="text-foreground font-medium">{getUserName()}</span> 👋
         </p>
         
         <h1 
-          className={`text-2xl md:text-4xl lg:text-5xl font-bold leading-tight transition-all duration-300 ${
+          className={`text-lg sm:text-xl md:text-3xl lg:text-4xl xl:text-5xl font-bold leading-tight transition-all duration-300 ${
             isAnimating ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"
           }`}
         >
@@ -64,7 +64,7 @@ export function HeroBanner() {
         </h1>
 
         {/* Phrase indicators */}
-        <div className="flex gap-1.5 mt-6">
+        <div className="flex gap-1 sm:gap-1.5 mt-3 sm:mt-4 md:mt-6">
           {phrases.map((_, idx) => (
             <button
               key={idx}
@@ -75,10 +75,10 @@ export function HeroBanner() {
                   setIsAnimating(false);
                 }, 300);
               }}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
+              className={`h-1 sm:h-1.5 rounded-full transition-all duration-300 ${
                 idx === phraseIndex 
-                  ? "w-8 bg-primary" 
-                  : "w-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/50"
+                  ? "w-6 sm:w-8 bg-primary" 
+                  : "w-1 sm:w-1.5 bg-muted-foreground/30 hover:bg-muted-foreground/50"
               }`}
             />
           ))}

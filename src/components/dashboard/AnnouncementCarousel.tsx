@@ -53,27 +53,42 @@ export function AnnouncementCarousel() {
         {banners.map((banner) => {
           const isExternal = banner.button_url.startsWith("http");
           const bannerHeight = banner.height || 176;
+          // Mobile height is proportionally smaller
+          const mobileHeight = Math.max(120, Math.round(bannerHeight * 0.7));
+          
           const CardContent = (
             <div
-              style={{ height: `${bannerHeight}px` }}
               className="relative rounded-xl overflow-hidden group hover:scale-[1.02] transition-transform duration-300 cursor-pointer"
+              style={{ 
+                height: `${mobileHeight}px`,
+              }}
             >
-              {/* Background - Image or Gradient */}
-              {banner.image_url ? (
-                <img
-                  src={getOptimizedImageUrl(banner.image_url, { width: 800 }) || banner.image_url}
-                  alt="Banner"
-                  className="absolute inset-0 w-full h-full object-cover"
-                  loading="lazy"
-                />
-              ) : (
-                <div className={`absolute inset-0 bg-gradient-to-br ${banner.gradient}`} />
-              )}
+              {/* Use CSS for responsive height */}
+              <style>{`
+                @media (min-width: 768px) {
+                  [data-banner-id="${banner.id}"] {
+                    height: ${bannerHeight}px !important;
+                  }
+                }
+              `}</style>
+              <div data-banner-id={banner.id} className="absolute inset-0">
+                {/* Background - Image or Gradient */}
+                {banner.image_url ? (
+                  <img
+                    src={getOptimizedImageUrl(banner.image_url, { width: 800 }) || banner.image_url}
+                    alt="Banner"
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className={`w-full h-full bg-gradient-to-br ${banner.gradient}`} />
+                )}
+              </div>
             </div>
           );
 
           return (
-            <CarouselItem key={banner.id} className={`pl-2 md:pl-4 ${getWidthClass(banner.width_type || 'half')}`}>
+            <CarouselItem key={banner.id} className={`pl-2 md:pl-4 basis-full ${getWidthClass(banner.width_type || 'half')}`}>
               {isExternal ? (
                 <a href={banner.button_url} target="_blank" rel="noopener noreferrer">
                   {CardContent}
