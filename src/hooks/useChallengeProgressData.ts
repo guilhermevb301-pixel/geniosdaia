@@ -17,15 +17,21 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
     .filter((item) => selectedObjectives.includes(item.objective_key))
     .map((item) => item.id);
 
+  // Get selected objectives with their active_slots config
+  const selectedObjectivesData = objectives.filter((item) =>
+    selectedObjectives.includes(item.objective_key)
+  );
+
   // Get user progress for selected objectives
   const {
     progress,
     activeChallenge,
+    activeChallenges,
     completedChallenges,
     lockedChallenges,
     isLoading: isLoadingProgress,
     initProgress,
-    completeChallenge,
+    completeChallenge: rawCompleteChallenge,
     isCompleting,
     restartChallenge,
     isRestarting,
@@ -57,7 +63,8 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
   useEffect(() => {
     if (isLoadingAllLinks || isLoadingChallenges || isLoadingProgress) return;
 
-    selectedItemIds.forEach((itemId) => {
+    selectedObjectivesData.forEach((objective) => {
+      const itemId = objective.id;
       const linkedChallenges = linkedChallengesMap[itemId] || [];
       if (linkedChallenges.length === 0) return;
 
@@ -85,11 +92,16 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
         }>;
 
       if (challengesWithOrder.length > 0) {
-        initProgress({ objectiveItemId: itemId, challenges: challengesWithOrder });
+        // Use the objective's active_slots configuration
+        initProgress({
+          objectiveItemId: itemId,
+          challenges: challengesWithOrder,
+          activeSlots: objective.active_slots || 1,
+        });
       }
     });
   }, [
-    selectedItemIds,
+    selectedObjectivesData,
     linkedChallengesMap,
     allChallenges,
     progress,
@@ -99,14 +111,37 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
     initProgress,
   ]);
 
+  // Wrapper for completeChallenge that includes activeSlots
+  const completeChallenge = (progressId: string) => {
+    // Find the progress record to get its objective_item_id
+    const progressRecord = progress.find((p) => p.id === progressId);
+    if (!progressRecord) return;
+
+    // Find the objective to get its active_slots
+    const objective = selectedObjectivesData.find(
+      (o) => o.id === progressRecord.objective_item_id
+    );
+    const activeSlots = objective?.active_slots || 1;
+
+    rawCompleteChallenge({ progressId, activeSlots });
+  };
+
   const isLoading = isLoadingAllLinks || isLoadingChallenges || isLoadingProgress;
-  const activeChallengeData = activeChallenge?.daily_challenges as DailyChallenge | undefined;
+  
+  // Get active challenges data (for multiple active challenges support)
+  const activeChallengesData = activeChallenges
+    .map((p) => p.daily_challenges as DailyChallenge | undefined)
+    .filter(Boolean) as DailyChallenge[];
+  
+  const activeChallengeData = activeChallengesData[0]; // Keep for backward compatibility
 
   return {
     isLoading,
     progress,
     activeChallenge,
-    activeChallengeData,
+    activeChallenges, // All active progress records
+    activeChallengeData, // First active challenge data (backward compat)
+    activeChallengesData, // All active challenges data
     completedChallenges,
     lockedChallenges,
     completeChallenge,
@@ -114,5 +149,6 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
     restartChallenge,
     isRestarting,
     selectedItemIds,
+    selectedObjectivesData,
   };
 }
