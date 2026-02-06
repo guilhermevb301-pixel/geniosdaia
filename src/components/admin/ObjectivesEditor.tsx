@@ -70,6 +70,7 @@ export function ObjectivesEditor() {
         requires_infra: item.requires_infra,
         is_infra: item.is_infra,
         tags: item.tags.join(", "),
+        active_slots: item.active_slots || 1,
       });
     } else {
       setEditingItem(null);
@@ -79,6 +80,7 @@ export function ObjectivesEditor() {
         requires_infra: false,
         is_infra: false,
         tags: "",
+        active_slots: 1,
       });
     }
     setIsItemDialogOpen(true);
