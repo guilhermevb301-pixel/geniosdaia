@@ -140,6 +140,19 @@ export default function Register() {
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="phone">Telefone (WhatsApp)</Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="(11) 99999-9999"
+                value={formatPhoneDisplay(phone)}
+                onChange={handlePhoneChange}
+                className="bg-background"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
               <Input
                 id="password"

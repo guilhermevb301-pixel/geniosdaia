@@ -43,14 +43,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
+  const signUp = async (email: string, password: string, options?: SignUpOptions) => {
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: window.location.origin,
       },
     });
+
+    // If signup succeeded and we have extra data, create the user profile
+    if (!error && data.user && options?.phone) {
+      await supabase.from("user_profiles").upsert({
+        user_id: data.user.id,
+        phone: options.phone,
+        display_name: options.displayName || null,
+      }, { onConflict: "user_id" });
+    }
+
     return { error };
   };
 
