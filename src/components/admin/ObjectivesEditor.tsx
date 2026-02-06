@@ -102,6 +102,7 @@ export function ObjectivesEditor() {
         requires_infra: itemForm.requires_infra,
         is_infra: itemForm.is_infra,
         tags,
+        active_slots: itemForm.active_slots,
       });
     } else {
       const maxOrder = Math.max(...objectives.map(i => i.order_index), -1);
@@ -113,6 +114,7 @@ export function ObjectivesEditor() {
         is_infra: itemForm.is_infra,
         tags,
         order_index: maxOrder + 1,
+        active_slots: itemForm.active_slots,
       });
     }
     setIsItemDialogOpen(false);
