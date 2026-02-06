@@ -81,14 +81,14 @@ export function ContinueLearning() {
   if (isLoading) {
     return (
       <Card className="bg-card border-border">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-base font-medium">
+        <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-4 md:p-6 md:pb-2">
+          <CardTitle className="text-sm sm:text-base font-medium">
             Continuar de onde parou
           </CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-3">
+        <CardContent className="grid gap-2 sm:gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 p-3 sm:p-4 md:p-6 pt-0">
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-32 rounded-lg" />
+            <Skeleton key={i} className="h-28 sm:h-32 rounded-lg" />
           ))}
         </CardContent>
       </Card>
@@ -128,18 +128,18 @@ export function ContinueLearning() {
 
   return (
     <Card className="bg-card border-border">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-base font-medium">
+      <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-4 md:p-6 md:pb-2">
+        <CardTitle className="text-sm sm:text-base font-medium">
           Continuar de onde parou
         </CardTitle>
-        <Button variant="ghost" size="sm" asChild>
-          <Link to="/aulas" className="text-xs">
+        <Button variant="ghost" size="sm" asChild className="h-7 sm:h-8 text-xs">
+          <Link to="/aulas">
             Ver todas
             <ArrowRight className="ml-1 h-3 w-3" />
           </Link>
         </Button>
       </CardHeader>
-      <CardContent className="grid gap-3 md:grid-cols-3">
+      <CardContent className="grid gap-2 sm:gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 p-3 sm:p-4 md:p-6 pt-0">
         {modulesInProgress.map((module) => (
           <Link
             key={module.id}
@@ -147,7 +147,7 @@ export function ContinueLearning() {
             className="group relative overflow-hidden rounded-lg border border-border bg-muted/50 hover:border-primary/50 transition-all duration-300 hover:scale-[1.02]"
           >
             {/* Thumbnail */}
-            <div className="relative h-24 overflow-hidden">
+            <div className="relative h-20 sm:h-24 overflow-hidden">
               {module.cover_image_url ? (
                 <img
                   src={getOptimizedImageUrl(module.cover_image_url, { width: 300 }) || module.cover_image_url}
@@ -157,29 +157,29 @@ export function ContinueLearning() {
                 />
               ) : (
                 <div className="h-full w-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                  <BookOpen className="h-8 w-8 text-muted-foreground" />
+                  <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
                 </div>
               )}
               {/* Play overlay */}
               <div className="absolute inset-0 bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <div className="h-10 w-10 rounded-full bg-primary flex items-center justify-center">
-                  <Play className="h-5 w-5 text-primary-foreground ml-0.5" />
+                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-full bg-primary flex items-center justify-center">
+                  <Play className="h-4 w-4 sm:h-5 sm:w-5 text-primary-foreground ml-0.5" />
                 </div>
               </div>
             </div>
 
             {/* Info */}
-            <div className="p-3">
-              <h3 className="text-sm font-medium line-clamp-1 group-hover:text-primary transition-colors">
+            <div className="p-2 sm:p-3">
+              <h3 className="text-xs sm:text-sm font-medium line-clamp-1 group-hover:text-primary transition-colors">
                 {module.title}
               </h3>
-              <div className="mt-2 flex items-center gap-2">
-                <Progress value={module.progress} className="h-1.5 flex-1" />
-                <span className="text-xs text-muted-foreground tabular-nums">
+              <div className="mt-1.5 sm:mt-2 flex items-center gap-2">
+                <Progress value={module.progress} className="h-1 sm:h-1.5 flex-1" />
+                <span className="text-[10px] sm:text-xs text-muted-foreground tabular-nums">
                   {Math.round(module.progress)}%
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
                 {module.completedLessons}/{module.totalLessons} aulas
               </p>
             </div>

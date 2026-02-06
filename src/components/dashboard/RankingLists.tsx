@@ -74,47 +74,47 @@ export function RankingLists() {
   });
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2">
       {/* Top Templates */}
       <Card className="bg-card border-border">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-base font-medium flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-accent" />
+        <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-4 md:p-6 md:pb-2">
+          <CardTitle className="text-sm sm:text-base font-medium flex items-center gap-1.5 sm:gap-2">
+            <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-accent" />
             Top Templates
           </CardTitle>
-          <Button variant="ghost" size="sm" asChild>
-            <Link to="/templates" className="text-xs">
+          <Button variant="ghost" size="sm" asChild className="h-7 sm:h-8 text-xs">
+            <Link to="/templates">
               Ver todos
               <ArrowRight className="ml-1 h-3 w-3" />
             </Link>
           </Button>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="space-y-1.5 sm:space-y-2 p-3 sm:p-4 md:p-6 pt-0">
           {loadingTemplates ? (
             Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-12 rounded-lg" />
+              <Skeleton key={i} className="h-10 sm:h-12 rounded-lg" />
             ))
           ) : topTemplates && topTemplates.length > 0 ? (
             topTemplates.map((template, idx) => (
               <Link
                 key={template.id}
                 to="/templates"
-                className={`flex items-center gap-3 p-3 rounded-lg border transition-all hover:scale-[1.01] ${getMedalBg(idx)}`}
+                className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border transition-all hover:scale-[1.01] ${getMedalBg(idx)}`}
               >
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-background/50">
+                <div className="flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-background/50 shrink-0">
                   {getMedalIcon(idx)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{template.title}</p>
+                  <p className="text-xs sm:text-sm font-medium truncate">{template.title}</p>
                 </div>
-                <span className="text-xs text-muted-foreground tabular-nums">
-                  {template.downloads_count.toLocaleString("pt-BR")} downloads
+                <span className="text-[10px] sm:text-xs text-muted-foreground tabular-nums shrink-0 hidden xs:inline">
+                  {template.downloads_count.toLocaleString("pt-BR")}
                 </span>
               </Link>
             ))
           ) : (
-            <div className="py-8 text-center">
-              <p className="text-sm text-muted-foreground">
+            <div className="py-6 sm:py-8 text-center">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Nenhum template disponível ainda
               </p>
             </div>
@@ -124,44 +124,44 @@ export function RankingLists() {
 
       {/* Recent Prompts */}
       <Card className="bg-card border-border">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-base font-medium flex items-center gap-2">
-            <MessageSquare className="h-4 w-4 text-blue-500" />
+        <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-4 md:p-6 md:pb-2">
+          <CardTitle className="text-sm sm:text-base font-medium flex items-center gap-1.5 sm:gap-2">
+            <MessageSquare className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-500" />
             Prompts Recentes
           </CardTitle>
-          <Button variant="ghost" size="sm" asChild>
-            <Link to="/prompts" className="text-xs">
+          <Button variant="ghost" size="sm" asChild className="h-7 sm:h-8 text-xs">
+            <Link to="/prompts">
               Ver todos
               <ArrowRight className="ml-1 h-3 w-3" />
             </Link>
           </Button>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="space-y-1.5 sm:space-y-2 p-3 sm:p-4 md:p-6 pt-0">
           {loadingPrompts ? (
             Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-12 rounded-lg" />
+              <Skeleton key={i} className="h-10 sm:h-12 rounded-lg" />
             ))
           ) : recentPrompts && recentPrompts.length > 0 ? (
             recentPrompts.map((prompt, idx) => (
               <Link
                 key={prompt.id}
                 to="/prompts"
-                className={`flex items-center gap-3 p-3 rounded-lg border transition-all hover:scale-[1.01] ${getMedalBg(idx)}`}
+                className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border transition-all hover:scale-[1.01] ${getMedalBg(idx)}`}
               >
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-background/50">
+                <div className="flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-background/50 shrink-0">
                   {getMedalIcon(idx)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{prompt.title}</p>
+                  <p className="text-xs sm:text-sm font-medium truncate">{prompt.title}</p>
                 </div>
-                <span className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                <span className="rounded bg-muted px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs text-muted-foreground shrink-0 hidden xs:inline">
                   {prompt.category}
                 </span>
               </Link>
             ))
           ) : (
-            <div className="py-8 text-center">
-              <p className="text-sm text-muted-foreground">
+            <div className="py-6 sm:py-8 text-center">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Nenhum prompt disponível ainda
               </p>
             </div>
