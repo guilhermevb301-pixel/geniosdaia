@@ -702,15 +702,15 @@ export default function Desafios() {
             <YourChallengesBanner
               userTrack={mainTrack}
               userLevel={userLevel}
-              recommendedCount={lockedChallenges.length + (activeProgress ? 1 : 0)}
+              recommendedCount={lockedChallenges.length + (activeChallenges?.length || 0)}
               selectedObjectivesCount={selectedObjectives.length}
               onScrollToObjectives={() => {
                 objectivesRef.current?.scrollIntoView({ behavior: "smooth" });
               }}
-              activeChallenge={activeChallengeData}
-              activeProgress={activeProgress}
-              onCompleteChallenge={() => activeProgress && completeChallenge(activeProgress.id)}
-              onRestartChallenge={() => activeProgress && restartChallenge(activeProgress.id)}
+              activeChallenges={activeChallengesData}
+              activeProgressList={activeChallenges}
+              onCompleteChallenge={(progressId) => completeChallenge(progressId)}
+              onRestartChallenge={(progressId) => restartChallenge(progressId)}
               isCompleting={isCompleting}
               isRestarting={isRestarting}
             />
