@@ -50,6 +50,12 @@ export function ChallengeLinkingModal({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedChallenges, setSelectedChallenges] = useState<SelectedChallenge[]>([]);
 
+  // Get active_slots from objective item
+  const activeSlots = objectiveItem?.active_slots || 1;
+
+  // Count how many are marked as initial active
+  const initialActiveCount = selectedChallenges.filter((c) => c.is_initial_active).length;
+
   // Sync selected challenges when modal opens or links load
   useEffect(() => {
     if (open && links) {
@@ -67,6 +73,7 @@ export function ChallengeLinkingModal({
             estimated_minutes: challenge.estimated_minutes,
             estimated_time_unit: challenge.estimated_time_unit || "minutes",
             is_bonus: challenge.is_bonus || false,
+            is_initial_active: link.is_initial_active || false,
           };
         })
         .filter(Boolean) as SelectedChallenge[];
