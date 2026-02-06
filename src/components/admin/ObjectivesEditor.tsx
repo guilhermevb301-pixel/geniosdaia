@@ -58,6 +58,7 @@ export function ObjectivesEditor() {
     requires_infra: false,
     is_infra: false,
     tags: "",
+    active_slots: 1,
   });
 
   const handleOpenItemDialog = (item?: ObjectiveItem) => {
