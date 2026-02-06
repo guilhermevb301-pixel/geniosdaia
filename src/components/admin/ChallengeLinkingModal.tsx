@@ -322,20 +322,15 @@ export function ChallengeLinkingModal({
                 challenges={filteredChallenges}
                 isLoading={isLoadingChallenges}
                 searchQuery={searchQuery}
-                onSelect={(challenge) => {
-                  // If we have slots available, add as initial; otherwise sequential
-                  if (slotsUsed < activeSlots) {
-                    addAsInitial(challenge);
-                  } else {
-                    addAsSequential(challenge);
-                  }
-                }}
+                slotsAvailable={slotsUsed < activeSlots}
+                onAddAsInitial={addAsInitial}
+                onAddAsSequential={addAsSequential}
               />
             </div>
 
             <p className="text-xs text-muted-foreground">
-              💡 Clique em um desafio para adicioná-lo. Se houver slots disponíveis,
-              será adicionado como inicial; caso contrário, como sequencial.
+              💡 Use <strong>Inicial</strong> para desafios ativos desde o início. 
+              Use <strong>Sequência</strong> para desafios liberados após completar outros.
             </p>
           </div>
         </div>
