@@ -113,8 +113,26 @@ export function ChallengeLinkingModal({
         estimated_minutes: challenge.estimated_minutes,
         estimated_time_unit: challenge.estimated_time_unit || "minutes",
         is_bonus: challenge.is_bonus || false,
+        is_initial_active: false,
       },
     ]);
+  }, []);
+
+  const toggleInitialActive = useCallback((id: string) => {
+    setSelectedChallenges((prev) => {
+      const challenge = prev.find((c) => c.id === id);
+      if (!challenge) return prev;
+
+      // If already active, toggle off
+      if (challenge.is_initial_active) {
+        return prev.map((c) => (c.id === id ? { ...c, is_initial_active: false } : c));
+      }
+
+      // If trying to activate, check slot limit
+      const currentActiveCount = prev.filter((c) => c.is_initial_active).length;
+      // Get activeSlots from closure - we need to check against the limit
+      return prev.map((c) => (c.id === id ? { ...c, is_initial_active: true } : c));
+    });
   }, []);
 
   const removeChallenge = useCallback((id: string) => {
