@@ -339,7 +339,8 @@ export function useUserChallengeProgress(objectiveItemIds?: string[]) {
     progress,
     isLoading,
     refetch,
-    activeChallenge,
+    activeChallenge, // Keep for backward compatibility
+    activeChallenges, // New: array of all active challenges
     completedChallenges,
     lockedChallenges,
     initProgress: initProgressMutation.mutate,

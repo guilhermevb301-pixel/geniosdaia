@@ -304,6 +304,35 @@ export function ObjectivesEditor() {
                 Separadas por vírgula. Usadas para recomendar desafios relacionados.
               </p>
             </div>
+            {/* Active Slots selector */}
+            <div className="space-y-3 p-4 bg-muted/50 rounded-lg border">
+              <Label className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                Desafios Ativos Simultâneos
+              </Label>
+              <ToggleGroup
+                type="single"
+                value={String(itemForm.active_slots)}
+                onValueChange={(value) => {
+                  if (value) setItemForm({ ...itemForm, active_slots: parseInt(value) });
+                }}
+                className="justify-start"
+              >
+                {[1, 2, 3, 4].map((num) => (
+                  <ToggleGroupItem
+                    key={num}
+                    value={String(num)}
+                    className="w-10 h-10 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                  >
+                    {num}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+              <p className="text-xs text-muted-foreground">
+                Quantos desafios podem estar ativos ao mesmo tempo para alunos neste objetivo.
+              </p>
+            </div>
+
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
                 <Checkbox
