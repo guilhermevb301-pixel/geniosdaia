@@ -5,7 +5,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +26,7 @@ import { useDashboardBannersAdmin, DashboardBanner } from "@/hooks/useDashboardB
 import { supabase } from "@/integrations/supabase/client";
 import { validateImageFile } from "@/lib/fileValidation";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type BannerFormData = Omit<DashboardBanner, "id" | "created_at">;
 
@@ -43,13 +43,90 @@ const defaultFormData: BannerFormData = {
   width_type: "half",
 };
 
+// Mobile card component for banner list
+function BannerCard({ 
+  banner, 
+  onEdit, 
+  onDelete, 
+  onToggleActive 
+}: { 
+  banner: DashboardBanner;
+  onEdit: () => void;
+  onDelete: () => void;
+  onToggleActive: () => void;
+}) {
+  return (
+    <div className="border border-border rounded-lg p-3 space-y-3">
+      {/* Preview + Order */}
+      <div className="flex items-start gap-3">
+        <div 
+          className={`h-16 w-24 rounded-lg overflow-hidden flex-shrink-0 ${
+            banner.image_url 
+              ? "" 
+              : `bg-gradient-to-br ${banner.gradient}`
+          }`}
+        >
+          {banner.image_url && (
+            <img 
+              src={banner.image_url} 
+              alt="Banner"
+              className="h-full w-full object-cover"
+            />
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-medium text-foreground">
+            Ordem: {banner.order_index}
+          </div>
+          <p className="text-xs text-muted-foreground truncate mt-1">
+            {banner.button_url}
+          </p>
+        </div>
+      </div>
+
+      {/* Actions row */}
+      <div className="flex items-center justify-between pt-2 border-t border-border">
+        <div className="flex items-center gap-2">
+          <Switch
+            checked={banner.is_active}
+            onCheckedChange={onToggleActive}
+          />
+          <span className="text-xs text-muted-foreground">
+            {banner.is_active ? "Ativo" : "Inativo"}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onEdit}
+          >
+            <Pencil className="h-4 w-4 mr-1" />
+            Editar
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onDelete}
+            className="text-destructive hover:text-destructive"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminBanners() {
   const { banners, isLoading, createBanner, updateBanner, deleteBanner } = useDashboardBannersAdmin();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBanner, setEditingBanner] = useState<DashboardBanner | null>(null);
   const [formData, setFormData] = useState<BannerFormData>(defaultFormData);
   const [isUploading, setIsUploading] = useState(false);
+  const [linkWarning, setLinkWarning] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isMobile = useIsMobile();
 
   const handleOpenCreate = () => {
     setEditingBanner(null);
@@ -57,6 +134,7 @@ export default function AdminBanners() {
       ...defaultFormData,
       order_index: banners.length + 1,
     });
+    setLinkWarning(null);
     setIsModalOpen(true);
   };
 
@@ -74,6 +152,7 @@ export default function AdminBanners() {
       height: banner.height || 176,
       width_type: banner.width_type || "half",
     });
+    setLinkWarning(null);
     setIsModalOpen(true);
   };
 
@@ -116,6 +195,41 @@ export default function AdminBanners() {
     }
   };
 
+  const validateAndFixLink = (url: string): string => {
+    const trimmed = url.trim();
+    
+    // If empty, return as is (required field will catch it)
+    if (!trimmed) return trimmed;
+    
+    // If it's an external URL, it's fine
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+      setLinkWarning(null);
+      return trimmed;
+    }
+    
+    // If it starts with /, it's a valid internal route
+    if (trimmed.startsWith("/")) {
+      setLinkWarning(null);
+      return trimmed;
+    }
+    
+    // Otherwise, show warning and suggest fix
+    setLinkWarning(`Parece um link interno. Você quis dizer "/${trimmed}"?`);
+    return trimmed;
+  };
+
+  const handleLinkChange = (value: string) => {
+    const validated = validateAndFixLink(value);
+    setFormData({ ...formData, button_url: validated });
+  };
+
+  const handleApplyLinkFix = () => {
+    if (formData.button_url && !formData.button_url.startsWith("/") && !formData.button_url.startsWith("http")) {
+      setFormData({ ...formData, button_url: `/${formData.button_url}` });
+      setLinkWarning(null);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -134,6 +248,7 @@ export default function AdminBanners() {
     setIsModalOpen(false);
     setEditingBanner(null);
     setFormData(defaultFormData);
+    setLinkWarning(null);
   };
 
   const handleDelete = async (id: string) => {
@@ -151,29 +266,29 @@ export default function AdminBanners() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+      <div className="space-y-4 sm:space-y-6">
+        {/* Header - responsive */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3 sm:gap-4">
             <Link to="/">
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="shrink-0">
                 <ArrowLeft className="h-5 w-5" />
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Gerenciar Banners</h1>
-              <p className="text-muted-foreground">
-                Edite os banners do carrossel do Dashboard
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground">Gerenciar Banners</h1>
+              <p className="text-sm text-muted-foreground">
+                Edite os banners do carrossel
               </p>
             </div>
           </div>
-          <Button onClick={handleOpenCreate}>
+          <Button onClick={handleOpenCreate} className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Novo Banner
           </Button>
         </div>
 
-        {/* Table */}
+        {/* Content */}
         <Card>
           <CardContent className="p-0">
             {isLoading ? (
@@ -185,7 +300,21 @@ export default function AdminBanners() {
                 <Image className="h-8 w-8 mb-2" />
                 <p>Nenhum banner cadastrado</p>
               </div>
+            ) : isMobile ? (
+              // Mobile: Card list
+              <div className="p-3 space-y-3">
+                {banners.map((banner) => (
+                  <BannerCard
+                    key={banner.id}
+                    banner={banner}
+                    onEdit={() => handleOpenEdit(banner)}
+                    onDelete={() => handleDelete(banner.id)}
+                    onToggleActive={() => handleToggleActive(banner)}
+                  />
+                ))}
+              </div>
             ) : (
+              // Desktop: Table
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -254,9 +383,9 @@ export default function AdminBanners() {
           </CardContent>
         </Card>
 
-        {/* Modal */}
+        {/* Modal - responsive */}
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="w-[calc(100vw-2rem)] max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingBanner ? "Editar Banner" : "Novo Banner"}
@@ -284,13 +413,14 @@ export default function AdminBanners() {
                         className="w-full h-32 object-cover"
                       />
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => fileInputRef.current?.click()}
                         disabled={isUploading}
+                        className="flex-1 sm:flex-none"
                       >
                         <Upload className="h-4 w-4 mr-2" />
                         Trocar Imagem
@@ -300,6 +430,7 @@ export default function AdminBanners() {
                         variant="outline"
                         size="sm"
                         onClick={handleRemoveImage}
+                        className="flex-1 sm:flex-none"
                       >
                         <X className="h-4 w-4 mr-2" />
                         Remover
@@ -309,7 +440,7 @@ export default function AdminBanners() {
                 ) : (
                   <div
                     onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
+                    className="border-2 border-dashed border-border rounded-lg p-4 sm:p-6 text-center cursor-pointer hover:border-primary/50 transition-colors"
                   >
                     {isUploading ? (
                       <div className="flex flex-col items-center gap-2">
@@ -355,7 +486,7 @@ export default function AdminBanners() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="height">Altura (px)</Label>
                   <Input
@@ -387,10 +518,24 @@ export default function AdminBanners() {
                 <Input
                   id="button_url"
                   value={formData.button_url}
-                  onChange={(e) => setFormData({ ...formData, button_url: e.target.value })}
+                  onChange={(e) => handleLinkChange(e.target.value)}
                   placeholder="/eventos ou https://exemplo.com"
                   required
                 />
+                {linkWarning && (
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 text-xs">
+                    <span className="text-yellow-600 dark:text-yellow-500">{linkWarning}</span>
+                    <Button 
+                      type="button" 
+                      variant="link" 
+                      size="sm" 
+                      className="h-auto p-0 text-xs"
+                      onClick={handleApplyLinkFix}
+                    >
+                      Corrigir
+                    </Button>
+                  </div>
+                )}
                 <p className="text-xs text-muted-foreground">
                   Para onde o usuário vai ao clicar no banner
                 </p>
@@ -405,13 +550,19 @@ export default function AdminBanners() {
                 <Label htmlFor="is_active">Banner ativo</Label>
               </div>
 
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)}>
+              <DialogFooter className="flex-col sm:flex-row gap-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsModalOpen(false)}
+                  className="w-full sm:w-auto"
+                >
                   Cancelar
                 </Button>
                 <Button 
                   type="submit" 
                   disabled={createBanner.isPending || updateBanner.isPending}
+                  className="w-full sm:w-auto"
                 >
                   {editingBanner ? "Salvar Alterações" : "Criar Banner"}
                 </Button>
