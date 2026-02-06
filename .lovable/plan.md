@@ -1,20 +1,17 @@
 
-
-# Plano: Permitir Múltiplos Desafios Ativos Simultâneos
+# Plano: Permitir que o Mentor Escolha Quais Desafios Ficam Ativos Simultaneamente
 
 ## Problema Identificado
 
-Atualmente, quando um mentor vincula vários desafios a um objetivo:
-- Apenas o **primeiro desafio** (order_index=0) é liberado como "ativo"
-- Os demais ficam bloqueados até o anterior ser completado
+Atualmente, quando o mentor configura `active_slots = 2` (ou mais), o sistema libera automaticamente os **primeiros N desafios** baseado na ordem (`order_index`).
 
-O mentor precisa poder configurar **quantos desafios são liberados por vez** (ex: 2 ou 3 ativos simultaneamente).
+O mentor quer poder **selecionar especificamente quais desafios** vão estar ativos ao mesmo tempo, independente da ordem na lista.
 
 ---
 
 ## Solução Proposta
 
-Adicionar um campo `active_slots` na tabela `objective_items` que define quantos desafios podem ficar ativos ao mesmo tempo.
+Adicionar um campo `is_initial_active` na tabela `objective_challenge_links` que indica se aquele desafio deve iniciar como ativo quando o aluno selecionar o objetivo.
 
 ---
 
@@ -22,165 +19,128 @@ Adicionar um campo `active_slots` na tabela `objective_items` que define quantos
 
 ### 1. Alterar Banco de Dados
 
-| Tabela | Campo Novo | Tipo | Default | Descrição |
+| Tabela | Campo Novo | Tipo | Default | Descricao |
 |--------|------------|------|---------|-----------|
-| `objective_items` | `active_slots` | integer | 1 | Número de desafios ativos simultaneamente |
+| `objective_challenge_links` | `is_initial_active` | boolean | false | Indica se o desafio inicia como ativo |
 
 ```text
 SQL:
-ALTER TABLE objective_items 
-ADD COLUMN active_slots integer DEFAULT 1 NOT NULL;
+ALTER TABLE public.objective_challenge_links 
+ADD COLUMN is_initial_active boolean DEFAULT false NOT NULL;
 ```
 
 ---
 
-### 2. Atualizar Interface do Admin (ObjectivesEditor)
+### 2. Atualizar Interface do ChallengeLinkingModal
 
-No formulário de criar/editar objetivo, adicionar:
+No modal de vinculacao de desafios, adicionar checkbox para marcar quais desafios devem iniciar como ativos:
 
 ```text
-+------------------------------------------+
-| Desafios Ativos Simultâneos              |
-| [1] [2] [3] [4] (botões de seleção)      |
-| Quantos desafios podem estar ativos ao   |
-| mesmo tempo para este objetivo.          |
-+------------------------------------------+
++---------------------------------------------------------------+
+| Ordem de liberacao (3)                                        |
++---------------------------------------------------------------+
+|  [*] 1  Criar agente basico          [^] [v] [x]              |
+|      2  Integrar com WhatsApp        [^] [v] [x]              |
+|  [*] 3  Fazer primeira venda         [^] [v] [x]              |
++---------------------------------------------------------------+
+| [*] = Checkbox "Iniciar Ativo"                                |
+| Selecione ate 4 desafios para iniciar ativos                  |
++---------------------------------------------------------------+
 ```
 
 **Comportamento:**
-- Default: 1 (comportamento atual)
-- Valores permitidos: 1 a 4
-- Interface: botões tipo "toggle group"
+- Checkbox ao lado de cada desafio vinculado
+- O numero maximo de selecoes = `active_slots` do objetivo
+- Se nenhum for marcado, o primeiro da lista e ativado (comportamento padrao)
+- Validacao: nao permitir mais selecoes que `active_slots`
 
 ---
 
-### 3. Ajustar Lógica de Inicialização de Progresso
+### 3. Atualizar Hook useObjectiveChallengeLinks
+
+- Incluir `is_initial_active` na interface
+- Salvar o campo ao vincular desafios
+- Atualizar queries para retornar o novo campo
+
+---
+
+### 4. Ajustar Logica de Inicializacao de Progresso
 
 **Arquivo:** `src/hooks/useUserChallengeProgress.ts`
 
-Atualmente (linha 149-155):
+Atualmente:
 ```typescript
+// Ativa os primeiros N baseado em order_index
 const records = sortedChallenges.map((ch, idx) => ({
-  status: idx === 0 ? "active" : "locked",  // Só o primeiro é ativo
-  ...
+  status: idx < activeSlots ? "active" : "locked",
 }));
 ```
 
-**Novo comportamento:**
+Novo comportamento:
 ```typescript
-// Recebe activeSlots do objetivo
-const records = sortedChallenges.map((ch, idx) => ({
-  status: idx < activeSlots ? "active" : "locked",  // Primeiros N são ativos
-  started_at: idx < activeSlots ? now : null,
-  deadline: idx < activeSlots ? calculateDeadline(...) : null,
+// Verifica quais desafios estao marcados como is_initial_active
+const records = sortedChallenges.map((ch) => ({
+  status: ch.is_initial_active ? "active" : "locked",
+  started_at: ch.is_initial_active ? now : null,
+  deadline: ch.is_initial_active ? calculateDeadline(...) : null,
 }));
 ```
 
 ---
 
-### 4. Ajustar Lógica de Completar Desafio
+### 5. Atualizar useChallengeProgressData
 
-**Arquivo:** `src/hooks/useUserChallengeProgress.ts` - `completeMutation`
-
-Atualmente: quando um desafio é completado, o próximo `locked` vira `active`.
-
-**Novo comportamento:**
-- Contar quantos desafios estão `active` após a conclusão
-- Se for menor que `active_slots`, liberar o próximo `locked`
-- Isso mantém sempre N desafios ativos (quando disponíveis)
-
-```text
-Exemplo com active_slots=2:
-1. Início: Desafio 1 (ativo), Desafio 2 (ativo), Desafio 3 (locked), Desafio 4 (locked)
-2. Completa Desafio 1: Desafio 1 (completed), Desafio 2 (ativo), Desafio 3 (ativo), Desafio 4 (locked)
-3. Completa Desafio 2: Desafio 1 (completed), Desafio 2 (completed), Desafio 3 (ativo), Desafio 4 (ativo)
-```
-
----
-
-### 5. Atualizar Interface do Aluno
-
-**Arquivos:** 
-- `src/components/challenges/ChallengeProgressSection.tsx`
-- `src/components/challenges/YourChallengesBanner.tsx`
-
-**Mudanças:**
-- Mostrar **todos os desafios ativos** (não apenas o primeiro)
-- Alterar de "activeChallenge" (singular) para "activeChallenges" (array)
-- O banner pode mostrar grid de cards se houver mais de 1 ativo
+Passar o campo `is_initial_active` para a mutacao de inicializacao.
 
 ---
 
 ## Fluxo Visual do Mentor
 
 ```text
-┌─────────────────────────────────────────────────────────────────┐
-│ Editar Objetivo: "Vender agentes de IA + Viralizar"            │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│ Texto do Objetivo *                                             │
-│ [Vender agentes de IA + Viralizar_________________]             │
-│                                                                 │
-│ Chave Única *                                                   │
-│ [agentes_fechar_viralizar_combo___________________]             │
-│                                                                 │
-│ Tags                                                            │
-│ [agentes, vendas, crescimento_____________________]             │
-│                                                                 │
-│ ┌──────────────────────────────────────────────────┐            │
-│ │ Desafios Ativos Simultâneos                      │            │
-│ │                                                  │            │
-│ │    [1]   [●2]   [3]   [4]                        │ ◄── NOVO   │
-│ │                                                  │            │
-│ │ Quantos desafios podem estar ativos ao mesmo    │            │
-│ │ tempo para alunos neste objetivo.               │            │
-│ └──────────────────────────────────────────────────┘            │
-│                                                                 │
-│ [x] Requer Infra    [ ] É item de Infra                         │
-│                                                                 │
-│                         [Cancelar]  [Salvar]                    │
-└─────────────────────────────────────────────────────────────────┘
++---------------------------------------------------------------+
+| Vincular Desafios ao Objetivo                                 |
+| "Vender agentes de IA + Viralizar" (2 ativos simultaneos)     |
++---------------------------------------------------------------+
+|                                                               |
+| Ordem de liberacao (4 desafios)                               |
+| +---------------------------------------------------------+   |
+| | [x] 1 | Criar agente basico           | 2 dias | [^][v]|   |
+| | [ ] 2 | Configurar WhatsApp           | 1 dia  | [^][v]|   |
+| | [x] 3 | Fazer primeira venda          | 3 dias | [^][v]|   |
+| | [ ] 4 | Escalar para 10 clientes      | 1 sem  | [^][v]|   |
+| +---------------------------------------------------------+   |
+|                                                               |
+| * Checkbox [x] = Desafio inicia ativo                         |
+| * Voce pode selecionar ate 2 desafios (active_slots)          |
+|                                                               |
+| [Cancelar]                                    [Salvar (4)]    |
++---------------------------------------------------------------+
 ```
 
 ---
 
-## Fluxo Visual do Aluno (com 2 desafios ativos)
+## Logica de Validacao
 
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│ 🎯 Seus Desafios Ativos                                        │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  ┌──────────────────────┐  ┌──────────────────────┐             │
-│  │ DESAFIO ATIVO        │  │ DESAFIO ATIVO        │             │
-│  │ Criar agente básico  │  │ Fazer 1º venda       │             │
-│  │                      │  │                      │             │
-│  │ ⏱️ 2d 5h restantes   │  │ ⏱️ 3d 12h restantes  │             │
-│  │ [Completar]          │  │ [Completar]          │             │
-│  └──────────────────────┘  └──────────────────────┘             │
-│                                                                 │
-│  🔒 Próximos: Desafio 3, Desafio 4 (bloqueados)                │
-└─────────────────────────────────────────────────────────────────┘
-```
+1. **Maximo de selecoes**: O numero de desafios marcados como "inicial ativo" nao pode exceder `active_slots` do objetivo
+2. **Fallback**: Se nenhum desafio for marcado, o primeiro da lista (menor `order_index`) e ativado automaticamente
+3. **Interface**: Desabilitar checkboxes adicionais quando o limite for atingido
 
 ---
 
 ## Arquivos a Modificar
 
-| Arquivo | Mudança |
+| Arquivo | Mudanca |
 |---------|---------|
-| **Migração SQL** | Adicionar coluna `active_slots` |
-| `src/hooks/useObjectives.ts` | Incluir `active_slots` na interface |
-| `src/components/admin/ObjectivesEditor.tsx` | Adicionar campo de seleção de slots |
-| `src/hooks/useUserChallengeProgress.ts` | Ajustar init e complete para respeitar slots |
-| `src/components/challenges/ChallengeProgressSection.tsx` | Suportar múltiplos ativos |
-| `src/components/challenges/YourChallengesBanner.tsx` | Mostrar grid de desafios ativos |
+| **Migracao SQL** | Adicionar coluna `is_initial_active` |
+| `src/hooks/useObjectiveChallengeLinks.ts` | Incluir campo na interface e salvar |
+| `src/components/admin/ChallengeLinkingModal.tsx` | Adicionar checkboxes de selecao inicial |
+| `src/hooks/useUserChallengeProgress.ts` | Usar `is_initial_active` ao inicializar |
+| `src/hooks/useChallengeProgressData.ts` | Passar campo para inicializacao |
 
 ---
 
-## Benefícios
+## Beneficios
 
-1. **Flexibilidade para mentores**: configurar progressão mais rápida ou mais lenta
-2. **Experiência do aluno**: pode trabalhar em paralelo em desafios complementares
-3. **Retrocompatível**: default=1 mantém comportamento atual para objetivos existentes
-
+1. **Flexibilidade total**: Mentor escolhe exatamente quais desafios rodam em paralelo
+2. **Contexto pedagogico**: Pode selecionar desafios complementares que fazem sentido juntos
+3. **Retrocompatibilidade**: Objetivos sem selecao usam o primeiro desafio automaticamente
