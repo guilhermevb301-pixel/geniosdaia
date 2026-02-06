@@ -844,6 +844,7 @@ export type Database = {
       }
       objective_items: {
         Row: {
+          active_slots: number
           created_at: string
           group_id: string | null
           id: string
@@ -855,6 +856,7 @@ export type Database = {
           tags: string[] | null
         }
         Insert: {
+          active_slots?: number
           created_at?: string
           group_id?: string | null
           id?: string
@@ -866,6 +868,7 @@ export type Database = {
           tags?: string[] | null
         }
         Update: {
+          active_slots?: number
           created_at?: string
           group_id?: string | null
           id?: string

@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import {
   Dialog,
   DialogContent,
@@ -24,7 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Trash2, GripVertical, Target, Link2 } from "lucide-react";
+import { Plus, Pencil, Trash2, GripVertical, Target, Link2, Users } from "lucide-react";
 import { useObjectives, ObjectiveItem } from "@/hooks/useObjectives";
 import { useObjectiveChallengeLinks } from "@/hooks/useObjectiveChallengeLinks";
 import { ChallengeLinkingModal } from "./ChallengeLinkingModal";
@@ -57,6 +58,7 @@ export function ObjectivesEditor() {
     requires_infra: false,
     is_infra: false,
     tags: "",
+    active_slots: 1,
   });
 
   const handleOpenItemDialog = (item?: ObjectiveItem) => {
@@ -68,6 +70,7 @@ export function ObjectivesEditor() {
         requires_infra: item.requires_infra,
         is_infra: item.is_infra,
         tags: item.tags.join(", "),
+        active_slots: item.active_slots || 1,
       });
     } else {
       setEditingItem(null);
@@ -77,6 +80,7 @@ export function ObjectivesEditor() {
         requires_infra: false,
         is_infra: false,
         tags: "",
+        active_slots: 1,
       });
     }
     setIsItemDialogOpen(true);
@@ -98,6 +102,7 @@ export function ObjectivesEditor() {
         requires_infra: itemForm.requires_infra,
         is_infra: itemForm.is_infra,
         tags,
+        active_slots: itemForm.active_slots,
       });
     } else {
       const maxOrder = Math.max(...objectives.map(i => i.order_index), -1);
@@ -109,6 +114,7 @@ export function ObjectivesEditor() {
         is_infra: itemForm.is_infra,
         tags,
         order_index: maxOrder + 1,
+        active_slots: itemForm.active_slots,
       });
     }
     setIsItemDialogOpen(false);
@@ -173,6 +179,12 @@ export function ObjectivesEditor() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
                       <span className="text-sm font-medium">{item.label}</span>
+                      {item.active_slots > 1 && (
+                        <Badge variant="default" className="text-xs bg-primary/20 text-primary">
+                          <Users className="h-3 w-3 mr-1" />
+                          {item.active_slots} ativos
+                        </Badge>
+                      )}
                       {item.is_infra && (
                         <Badge variant="secondary" className="text-xs">
                           INFRA
@@ -292,6 +304,35 @@ export function ObjectivesEditor() {
                 Separadas por vírgula. Usadas para recomendar desafios relacionados.
               </p>
             </div>
+            {/* Active Slots selector */}
+            <div className="space-y-3 p-4 bg-muted/50 rounded-lg border">
+              <Label className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                Desafios Ativos Simultâneos
+              </Label>
+              <ToggleGroup
+                type="single"
+                value={String(itemForm.active_slots)}
+                onValueChange={(value) => {
+                  if (value) setItemForm({ ...itemForm, active_slots: parseInt(value) });
+                }}
+                className="justify-start"
+              >
+                {[1, 2, 3, 4].map((num) => (
+                  <ToggleGroupItem
+                    key={num}
+                    value={String(num)}
+                    className="w-10 h-10 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                  >
+                    {num}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+              <p className="text-xs text-muted-foreground">
+                Quantos desafios podem estar ativos ao mesmo tempo para alunos neste objetivo.
+              </p>
+            </div>
+
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
                 <Checkbox

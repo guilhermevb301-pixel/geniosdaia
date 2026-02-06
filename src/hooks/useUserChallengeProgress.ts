@@ -130,6 +130,7 @@ export function useUserChallengeProgress(objectiveItemIds?: string[]) {
     mutationFn: async ({
       objectiveItemId,
       challenges,
+      activeSlots = 1,
     }: {
       objectiveItemId: string;
       challenges: Array<{
@@ -138,6 +139,7 @@ export function useUserChallengeProgress(objectiveItemIds?: string[]) {
         estimated_time_unit: TimeUnit;
         order_index: number;
       }>;
+      activeSlots?: number;
     }) => {
       if (!user) throw new Error("User not authenticated");
       if (challenges.length === 0) return;
@@ -146,13 +148,14 @@ export function useUserChallengeProgress(objectiveItemIds?: string[]) {
       const sortedChallenges = [...challenges].sort((a, b) => a.order_index - b.order_index);
 
       const now = new Date().toISOString();
+      // Use activeSlots to determine how many challenges start as active
       const records = sortedChallenges.map((ch, idx) => ({
         user_id: user.id,
         daily_challenge_id: ch.id,
         objective_item_id: objectiveItemId,
-        status: idx === 0 ? "active" : "locked",
-        started_at: idx === 0 ? now : null,
-        deadline: idx === 0 ? calculateDeadline(ch.estimated_minutes, ch.estimated_time_unit) : null,
+        status: idx < activeSlots ? "active" : "locked",
+        started_at: idx < activeSlots ? now : null,
+        deadline: idx < activeSlots ? calculateDeadline(ch.estimated_minutes, ch.estimated_time_unit) : null,
       }));
 
       const { error } = await supabase
@@ -169,9 +172,9 @@ export function useUserChallengeProgress(objectiveItemIds?: string[]) {
     },
   });
 
-  // Complete a challenge and unlock the next one
+  // Complete a challenge and unlock the next ones based on active_slots
   const completeMutation = useMutation({
-    mutationFn: async (progressId: string) => {
+    mutationFn: async ({ progressId, activeSlots = 1 }: { progressId: string; activeSlots?: number }) => {
       if (!user) throw new Error("User not authenticated");
 
       // Get the current progress record
@@ -194,8 +197,23 @@ export function useUserChallengeProgress(objectiveItemIds?: string[]) {
 
       if (updateError) throw updateError;
 
-      // Find the next locked challenge for this objective
-      const { data: allProgress, error: allError } = await supabase
+      // Count how many challenges are currently active for this objective
+      const { data: activeProgress, error: activeError } = await supabase
+        .from("user_challenge_progress")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("objective_item_id", current.objective_item_id)
+        .eq("status", "active");
+
+      if (activeError) throw activeError;
+
+      const currentActiveCount = activeProgress?.length || 0;
+      const slotsToFill = activeSlots - currentActiveCount;
+
+      if (slotsToFill <= 0) return; // Already have enough active challenges
+
+      // Find locked challenges to unlock
+      const { data: lockedProgress, error: lockedError } = await supabase
         .from("user_challenge_progress")
         .select(`
           *,
@@ -205,11 +223,11 @@ export function useUserChallengeProgress(objectiveItemIds?: string[]) {
         .eq("objective_item_id", current.objective_item_id)
         .eq("status", "locked");
 
-      if (allError) throw allError;
+      if (lockedError) throw lockedError;
 
-      if (allProgress && allProgress.length > 0) {
+      if (lockedProgress && lockedProgress.length > 0) {
         // Get order_index from links table for proper ordering
-        const challengeIds = allProgress.map((p) => p.daily_challenge_id);
+        const challengeIds = lockedProgress.map((p) => p.daily_challenge_id);
         const { data: links, error: linksError } = await supabase
           .from("objective_challenge_links")
           .select("daily_challenge_id, order_index")
@@ -220,25 +238,26 @@ export function useUserChallengeProgress(objectiveItemIds?: string[]) {
         if (linksError) throw linksError;
 
         if (links && links.length > 0) {
-          // Find the progress record with the lowest order_index
-          const nextChallengeId = links[0].daily_challenge_id;
-          const nextProgress = allProgress.find((p) => p.daily_challenge_id === nextChallengeId);
+          // Unlock as many challenges as needed to fill the slots
+          const challengesToUnlock = links.slice(0, slotsToFill);
+          const now = new Date().toISOString();
 
-          if (nextProgress) {
-            const challenge = nextProgress.daily_challenges;
-            const now = new Date().toISOString();
-
-            await supabase
-              .from("user_challenge_progress")
-              .update({
-                status: "active",
-                started_at: now,
-                deadline: calculateDeadline(
-                  challenge?.estimated_minutes || 30,
-                  (challenge?.estimated_time_unit as TimeUnit) || "minutes"
-                ),
-              })
-              .eq("id", nextProgress.id);
+          for (const link of challengesToUnlock) {
+            const progressToUnlock = lockedProgress.find((p) => p.daily_challenge_id === link.daily_challenge_id);
+            if (progressToUnlock) {
+              const challenge = progressToUnlock.daily_challenges;
+              await supabase
+                .from("user_challenge_progress")
+                .update({
+                  status: "active",
+                  started_at: now,
+                  deadline: calculateDeadline(
+                    challenge?.estimated_minutes || 30,
+                    (challenge?.estimated_time_unit as TimeUnit) || "minutes"
+                  ),
+                })
+                .eq("id", progressToUnlock.id);
+            }
           }
         }
       }
@@ -310,8 +329,9 @@ export function useUserChallengeProgress(objectiveItemIds?: string[]) {
     },
   });
 
-  // Derived state
-  const activeChallenge = progress.find((p) => p.status === "active");
+  // Derived state - now supports multiple active challenges
+  const activeChallenges = progress.filter((p) => p.status === "active");
+  const activeChallenge = activeChallenges[0]; // Keep for backward compatibility
   const completedChallenges = progress.filter((p) => p.status === "completed");
   const lockedChallenges = progress.filter((p) => p.status === "locked");
 
@@ -319,7 +339,8 @@ export function useUserChallengeProgress(objectiveItemIds?: string[]) {
     progress,
     isLoading,
     refetch,
-    activeChallenge,
+    activeChallenge, // Keep for backward compatibility
+    activeChallenges, // New: array of all active challenges
     completedChallenges,
     lockedChallenges,
     initProgress: initProgressMutation.mutate,

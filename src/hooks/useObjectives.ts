@@ -11,6 +11,7 @@ export interface ObjectiveItem {
   is_infra: boolean;
   order_index: number;
   tags: string[];
+  active_slots: number;
   created_at: string;
 }
 
@@ -31,6 +32,7 @@ export function useObjectives() {
       return (items || []).map(item => ({
         ...item,
         tags: item.tags || [],
+        active_slots: (item as unknown as { active_slots?: number }).active_slots || 1,
       })) as ObjectiveItem[];
     },
   });
