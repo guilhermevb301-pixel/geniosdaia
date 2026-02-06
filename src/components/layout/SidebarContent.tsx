@@ -80,7 +80,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
             "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
             isActive("/")
               ? "bg-accent text-accent-foreground"
-              : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
+              : "text-sidebar-foreground/80 hover:bg-muted hover:text-sidebar-foreground"
           )}
         >
           <Layout className="h-5 w-5 text-amber-400" />
@@ -95,7 +95,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
             "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
             isActive("/aulas")
               ? "bg-accent text-accent-foreground"
-              : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
+              : "text-sidebar-foreground/80 hover:bg-muted hover:text-sidebar-foreground"
           )}
         >
           <BookOpen className="h-5 w-5 text-amber-400" />
@@ -112,7 +112,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
               "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
               isActive(item.href)
                 ? "bg-accent text-accent-foreground"
-                : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
+                : "text-sidebar-foreground/80 hover:bg-muted hover:text-sidebar-foreground"
             )}
           >
             <item.icon className="h-5 w-5 text-amber-400" />
@@ -131,7 +131,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
             "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
             isActive("/certificados")
               ? "bg-accent text-accent-foreground"
-              : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
+              : "text-sidebar-foreground/80 hover:bg-muted hover:text-sidebar-foreground"
           )}
         >
           <Award className="h-5 w-5 text-amber-400" />
@@ -145,7 +145,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
             "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
             isActive("/meu-caderno")
               ? "bg-accent text-accent-foreground"
-              : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
+              : "text-sidebar-foreground/80 hover:bg-muted hover:text-sidebar-foreground"
           )}
         >
           <NotebookPen className="h-5 w-5 text-amber-400" />
@@ -160,7 +160,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
             "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
             isActive("/mentoria")
               ? "bg-accent text-accent-foreground"
-              : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
+              : "text-sidebar-foreground/80 hover:bg-muted hover:text-sidebar-foreground"
           )}
         >
           <MessageSquare className="h-5 w-5 text-amber-400" />
@@ -176,7 +176,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
               "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
               isActive("/minha-mentoria")
                 ? "bg-accent text-accent-foreground"
-                : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
+                : "text-sidebar-foreground/80 hover:bg-muted hover:text-sidebar-foreground"
             )}
           >
             <GraduationCap className="h-5 w-5 text-amber-400" />
@@ -194,7 +194,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                     "flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                     isAdminSection
                       ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:bg-muted hover:text-sidebar-foreground"
+                      : "text-sidebar-foreground/80 hover:bg-muted hover:text-sidebar-foreground"
                   )}
                 >
                   <div className="flex items-center gap-3">
@@ -221,7 +221,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                           "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                           isActive("/admin/modules")
                             ? "text-primary bg-primary/10"
-                            : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
+                            : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-muted"
                         )}
                       >
                         <Layers className="h-4 w-4" />
@@ -234,7 +234,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                           "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                           isActive("/admin/lessons")
                             ? "text-primary bg-primary/10"
-                            : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
+                            : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-muted"
                         )}
                       >
                         <BookOpen className="h-4 w-4" />
@@ -247,7 +247,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                           "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                           isActive("/admin/prompts")
                             ? "text-primary bg-primary/10"
-                            : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
+                            : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-muted"
                         )}
                       >
                         <Lightbulb className="h-4 w-4" />
@@ -260,7 +260,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                           "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                           isActive("/admin/templates")
                             ? "text-primary bg-primary/10"
-                            : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
+                            : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-muted"
                         )}
                       >
                         <FileText className="h-4 w-4" />
@@ -273,7 +273,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                           "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                           isActive("/admin/gpts")
                             ? "text-primary bg-primary/10"
-                            : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
+                            : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-muted"
                         )}
                       >
                         <Bot className="h-4 w-4" />
@@ -290,7 +290,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                       "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                       isActive("/admin/users")
                         ? "text-primary bg-primary/10"
-                        : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
+                        : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-muted"
                     )}
                   >
                     <Users className="h-4 w-4" />
@@ -303,7 +303,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                       "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                       isActive("/admin/mentees")
                         ? "text-primary bg-primary/10"
-                        : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
+                        : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-muted"
                     )}
                   >
                     <GraduationCap className="h-4 w-4" />
@@ -316,7 +316,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                       "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                       isActive("/admin/challenges")
                         ? "text-primary bg-primary/10"
-                        : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
+                        : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-muted"
                     )}
                   >
                     <Trophy className="h-4 w-4" />
@@ -329,7 +329,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                       "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                       isActive("/admin/banners")
                         ? "text-primary bg-primary/10"
-                        : "text-muted-foreground hover:text-sidebar-foreground hover:bg-muted"
+                        : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-muted"
                     )}
                   >
                     <Image className="h-4 w-4" />
