@@ -1,146 +1,126 @@
 
-# Plano: Permitir que o Mentor Escolha Quais Desafios Ficam Ativos Simultaneamente
+# Plano: Melhorar Interface de Sucessão de Desafios
 
-## Problema Identificado
+## Contexto Atual
 
-Atualmente, quando o mentor configura `active_slots = 2` (ou mais), o sistema libera automaticamente os **primeiros N desafios** baseado na ordem (`order_index`).
+O sistema atual ja possui a estrutura necessaria:
+- Campo `is_initial_active` para marcar quais desafios iniciam ativos
+- Campo `predecessor_challenge_id` para definir qual desafio deve ser completado antes
+- Logica de desbloqueio quando um desafio e completado
 
-O mentor quer poder **selecionar especificamente quais desafios** vão estar ativos ao mesmo tempo, independente da ordem na lista.
+Porem a interface pode ficar mais intuitiva para que o mentor entenda claramente o fluxo de progressao.
 
----
+## Melhorias Propostas
 
-## Solução Proposta
+### 1. Reorganizar Visual do Modal
 
-Adicionar um campo `is_initial_active` na tabela `objective_challenge_links` que indica se aquele desafio deve iniciar como ativo quando o aluno selecionar o objetivo.
+**Secao "Desafios Iniciais" separada:**
+- Mostrar claramente quais desafios comecam ativos
+- Usar cards destacados com borda colorida para os iniciais
+- Indicar visualmente a quantidade de slots disponiveis vs usados
 
----
+**Secao "Fluxo de Liberacao":**
+- Para cada desafio nao-inicial, mostrar de forma clara:
+  - "Quando [Desafio X] for completado, libera [este desafio]"
+- Usar setas visuais ou conexoes para ilustrar o fluxo
 
-## Mudanças Necessárias
+### 2. Melhorar Selector de Predecessor
 
-### 1. Alterar Banco de Dados
+Atualmente o dropdown mostra "Nenhum (sera bloqueado)". Melhorias:
 
-| Tabela | Campo Novo | Tipo | Default | Descricao |
-|--------|------------|------|---------|-----------|
-| `objective_challenge_links` | `is_initial_active` | boolean | false | Indica se o desafio inicia como ativo |
+- Renomear para **"Libera quando completar:"**
+- Mostrar preview do titulo do predecessor selecionado
+- Adicionar opcao de selecionar **multiplos predecessores** (AND logico - so libera quando todos forem completados)
+
+### 3. Adicionar Visualizacao do Fluxo
+
+Incluir um pequeno diagrama ou lista resumida mostrando:
+```text
+INICIO
+  |
+  +-- Desafio A (ativo)
+  |     |
+  |     +-- Desafio C (libera apos A)
+  |
+  +-- Desafio B (ativo)
+        |
+        +-- Desafio D (libera apos B)
+              |
+              +-- Desafio E (libera apos D)
+```
+
+### 4. Validacoes e Alertas
+
+- Alertar se um desafio nao-inicial nao tem predecessor definido
+- Alertar se ha desafios "orfaos" (sem caminho para serem desbloqueados)
+- Mostrar aviso se mais desafios estao marcados como iniciais do que os slots permitem
+
+## Detalhes Tecnicos
+
+### Arquivos a Modificar
+
+1. **`src/components/admin/ChallengeLinkingModal.tsx`**
+   - Separar visualmente desafios iniciais dos demais
+   - Adicionar indicador de slots (ex: "2/2 slots usados")
+   - Melhorar labels do dropdown de predecessor
+   - Adicionar preview do fluxo de liberacao
+
+2. **Opcional: Criar componente `ChallengeFlowPreview.tsx`**
+   - Componente para visualizar a arvore de dependencias
+   - Mostra quais desafios sao desbloqueados por quais
+
+### Alteracoes no Modal
 
 ```text
-SQL:
-ALTER TABLE public.objective_challenge_links 
-ADD COLUMN is_initial_active boolean DEFAULT false NOT NULL;
++--------------------------------------------------+
+| Vincular Desafios ao Objetivo                    |
+| [Objetivo Label]                                 |
++--------------------------------------------------+
+|                                                  |
+| DESAFIOS INICIAIS (ativos no inicio)            |
+| [2/2 slots usados]                              |
+|                                                  |
+| [====Desafio A====] [remover]                   |
+| [====Desafio B====] [remover]                   |
+|                                                  |
+| [+ Adicionar desafio inicial]                   |
++--------------------------------------------------+
+|                                                  |
+| SEQUENCIA DE LIBERACAO                          |
+|                                                  |
+| [Desafio C]                                     |
+|   Libera quando: [Desafio A v]                  |
+|                                                  |
+| [Desafio D]                                     |
+|   Libera quando: [Desafio B v]                  |
+|                                                  |
+| [+ Adicionar desafio a sequencia]               |
++--------------------------------------------------+
+|                                                  |
+| PREVIEW DO FLUXO:                               |
+| A ---> C                                        |
+| B ---> D                                        |
+|                                                  |
++--------------------------------------------------+
+|                           [Cancelar] [Salvar]   |
++--------------------------------------------------+
 ```
 
----
+### Logica de Validacao
 
-### 2. Atualizar Interface do ChallengeLinkingModal
-
-No modal de vinculacao de desafios, adicionar checkbox para marcar quais desafios devem iniciar como ativos:
-
-```text
-+---------------------------------------------------------------+
-| Ordem de liberacao (3)                                        |
-+---------------------------------------------------------------+
-|  [*] 1  Criar agente basico          [^] [v] [x]              |
-|      2  Integrar com WhatsApp        [^] [v] [x]              |
-|  [*] 3  Fazer primeira venda         [^] [v] [x]              |
-+---------------------------------------------------------------+
-| [*] = Checkbox "Iniciar Ativo"                                |
-| Selecione ate 4 desafios para iniciar ativos                  |
-+---------------------------------------------------------------+
-```
-
-**Comportamento:**
-- Checkbox ao lado de cada desafio vinculado
-- O numero maximo de selecoes = `active_slots` do objetivo
-- Se nenhum for marcado, o primeiro da lista e ativado (comportamento padrao)
-- Validacao: nao permitir mais selecoes que `active_slots`
-
----
-
-### 3. Atualizar Hook useObjectiveChallengeLinks
-
-- Incluir `is_initial_active` na interface
-- Salvar o campo ao vincular desafios
-- Atualizar queries para retornar o novo campo
-
----
-
-### 4. Ajustar Logica de Inicializacao de Progresso
-
-**Arquivo:** `src/hooks/useUserChallengeProgress.ts`
-
-Atualmente:
-```typescript
-// Ativa os primeiros N baseado em order_index
-const records = sortedChallenges.map((ch, idx) => ({
-  status: idx < activeSlots ? "active" : "locked",
-}));
-```
-
-Novo comportamento:
-```typescript
-// Verifica quais desafios estao marcados como is_initial_active
-const records = sortedChallenges.map((ch) => ({
-  status: ch.is_initial_active ? "active" : "locked",
-  started_at: ch.is_initial_active ? now : null,
-  deadline: ch.is_initial_active ? calculateDeadline(...) : null,
-}));
-```
-
----
-
-### 5. Atualizar useChallengeProgressData
-
-Passar o campo `is_initial_active` para a mutacao de inicializacao.
-
----
-
-## Fluxo Visual do Mentor
-
-```text
-+---------------------------------------------------------------+
-| Vincular Desafios ao Objetivo                                 |
-| "Vender agentes de IA + Viralizar" (2 ativos simultaneos)     |
-+---------------------------------------------------------------+
-|                                                               |
-| Ordem de liberacao (4 desafios)                               |
-| +---------------------------------------------------------+   |
-| | [x] 1 | Criar agente basico           | 2 dias | [^][v]|   |
-| | [ ] 2 | Configurar WhatsApp           | 1 dia  | [^][v]|   |
-| | [x] 3 | Fazer primeira venda          | 3 dias | [^][v]|   |
-| | [ ] 4 | Escalar para 10 clientes      | 1 sem  | [^][v]|   |
-| +---------------------------------------------------------+   |
-|                                                               |
-| * Checkbox [x] = Desafio inicia ativo                         |
-| * Voce pode selecionar ate 2 desafios (active_slots)          |
-|                                                               |
-| [Cancelar]                                    [Salvar (4)]    |
-+---------------------------------------------------------------+
-```
-
----
-
-## Logica de Validacao
-
-1. **Maximo de selecoes**: O numero de desafios marcados como "inicial ativo" nao pode exceder `active_slots` do objetivo
-2. **Fallback**: Se nenhum desafio for marcado, o primeiro da lista (menor `order_index`) e ativado automaticamente
-3. **Interface**: Desabilitar checkboxes adicionais quando o limite for atingido
-
----
-
-## Arquivos a Modificar
-
-| Arquivo | Mudanca |
-|---------|---------|
-| **Migracao SQL** | Adicionar coluna `is_initial_active` |
-| `src/hooks/useObjectiveChallengeLinks.ts` | Incluir campo na interface e salvar |
-| `src/components/admin/ChallengeLinkingModal.tsx` | Adicionar checkboxes de selecao inicial |
-| `src/hooks/useUserChallengeProgress.ts` | Usar `is_initial_active` ao inicializar |
-| `src/hooks/useChallengeProgressData.ts` | Passar campo para inicializacao |
-
----
+Antes de salvar, verificar:
+1. Todos desafios nao-iniciais tem predecessor definido
+2. Nao ha ciclos de dependencia
+3. Numero de iniciais nao excede `active_slots`
 
 ## Beneficios
 
-1. **Flexibilidade total**: Mentor escolhe exatamente quais desafios rodam em paralelo
-2. **Contexto pedagogico**: Pode selecionar desafios complementares que fazem sentido juntos
-3. **Retrocompatibilidade**: Objetivos sem selecao usam o primeiro desafio automaticamente
+- Mentor entende visualmente o fluxo de progressao
+- Reducao de erros de configuracao
+- Interface mais intuitiva para gerenciar desafios simultaneos
+
+## Esforco Estimado
+
+- Modificacao principal no `ChallengeLinkingModal.tsx`
+- Nao requer alteracoes no banco de dados
+- Tempo estimado: implementacao media
