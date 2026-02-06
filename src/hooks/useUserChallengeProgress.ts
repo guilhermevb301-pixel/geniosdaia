@@ -130,6 +130,7 @@ export function useUserChallengeProgress(objectiveItemIds?: string[]) {
     mutationFn: async ({
       objectiveItemId,
       challenges,
+      activeSlots = 1,
     }: {
       objectiveItemId: string;
       challenges: Array<{
@@ -138,6 +139,7 @@ export function useUserChallengeProgress(objectiveItemIds?: string[]) {
         estimated_time_unit: TimeUnit;
         order_index: number;
       }>;
+      activeSlots?: number;
     }) => {
       if (!user) throw new Error("User not authenticated");
       if (challenges.length === 0) return;
@@ -146,13 +148,14 @@ export function useUserChallengeProgress(objectiveItemIds?: string[]) {
       const sortedChallenges = [...challenges].sort((a, b) => a.order_index - b.order_index);
 
       const now = new Date().toISOString();
+      // Use activeSlots to determine how many challenges start as active
       const records = sortedChallenges.map((ch, idx) => ({
         user_id: user.id,
         daily_challenge_id: ch.id,
         objective_item_id: objectiveItemId,
-        status: idx === 0 ? "active" : "locked",
-        started_at: idx === 0 ? now : null,
-        deadline: idx === 0 ? calculateDeadline(ch.estimated_minutes, ch.estimated_time_unit) : null,
+        status: idx < activeSlots ? "active" : "locked",
+        started_at: idx < activeSlots ? now : null,
+        deadline: idx < activeSlots ? calculateDeadline(ch.estimated_minutes, ch.estimated_time_unit) : null,
       }));
 
       const { error } = await supabase
