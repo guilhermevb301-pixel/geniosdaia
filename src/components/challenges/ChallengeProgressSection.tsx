@@ -2,8 +2,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Target, Trophy, Lock } from "lucide-react";
-import { ActiveChallengeCard } from "./ActiveChallengeCard";
-import { LockedChallengeCard } from "./LockedChallengeCard";
 import { CompletedChallengeCard } from "./CompletedChallengeCard";
 import { useUserChallengeProgress } from "@/hooks/useUserChallengeProgress";
 import { useObjectives } from "@/hooks/useObjectives";
@@ -169,36 +167,19 @@ export function ChallengeProgressSection({ selectedObjectives }: ChallengeProgre
   // Active challenge is now rendered in the banner, not here
   return (
     <div className="space-y-6">
-      {/* Locked Challenges */}
+      {/* Locked Challenges - Show count only, no details */}
       {lockedChallenges.length > 0 && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Lock className="h-5 w-5 text-muted-foreground" />
-              Próximos Desafios
-              <Badge variant="secondary" className="ml-auto">
-                {lockedChallenges.length} bloqueado{lockedChallenges.length !== 1 && "s"}
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {lockedChallenges.slice(0, 3).map((p, index) => {
-              const challenge = p.daily_challenges as DailyChallenge | undefined;
-              if (!challenge) return null;
-              return (
-                <LockedChallengeCard
-                  key={p.id}
-                  challenge={challenge}
-                  position={completedChallenges.length + 2 + index}
-                />
-              );
-            })}
-            {lockedChallenges.length > 3 && (
-              <p className="text-xs text-center text-muted-foreground">
-                +{lockedChallenges.length - 3} desafio{lockedChallenges.length - 3 !== 1 && "s"}{" "}
-                bloqueado{lockedChallenges.length - 3 !== 1 && "s"}
-              </p>
-            )}
+        <Card className="border-dashed border-border/50">
+          <CardContent className="py-6 text-center">
+            <Lock className="h-8 w-8 mx-auto mb-3 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">
+              Você tem <strong>{lockedChallenges.length}</strong> desafio
+              {lockedChallenges.length !== 1 && "s"} pendente
+              {lockedChallenges.length !== 1 && "s"} nesta trilha.
+            </p>
+            <p className="text-xs text-muted-foreground/70 mt-1">
+              Complete os desafios ativos para desbloquear os próximos!
+            </p>
           </CardContent>
         </Card>
       )}
