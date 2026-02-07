@@ -6,6 +6,7 @@ import { useDailyChallengesAdmin } from "@/hooks/useDailyChallengesAdmin";
 import { useSyncChallengeProgress } from "@/hooks/useSyncChallengeProgress";
 import { DailyChallenge } from "@/hooks/useDailyChallenges";
 import { TimeUnit } from "@/lib/utils";
+import { sortProgressByChallengOrder } from "@/lib/buildChallengeOrder";
 
 export function useChallengeProgressData(selectedObjectives: string[]) {
   const { objectives } = useObjectives();
@@ -35,6 +36,7 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
     isCompleting,
     restartChallenge,
     isRestarting,
+    clearProgress: clearProgressMutation,
   } = useUserChallengeProgress(selectedItemIds.length > 0 ? selectedItemIds : undefined);
 
   // Sync hook
@@ -178,9 +180,42 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
   };
 
   const isLoading = isLoadingAllLinks || isLoadingChallenges || isLoadingProgress;
+
+  // Build links for sorting - combine all objectives' links
+  const allLinksForSorting = useMemo(() => {
+    const links: Array<{
+      challengeId: string;
+      orderIndex: number;
+      isInitialActive: boolean;
+      predecessorChallengeId: string | null;
+    }> = [];
+
+    selectedItemIds.forEach((itemId) => {
+      const objLinks = linkedChallengesMap[itemId] || [];
+      links.push(...objLinks);
+    });
+
+    return links;
+  }, [selectedItemIds, linkedChallengesMap]);
+
+  // Sort all progress arrays by predecessor chain order
+  const sortedActiveChallenges = useMemo(
+    () => sortProgressByChallengOrder(activeChallenges, allLinksForSorting),
+    [activeChallenges, allLinksForSorting]
+  );
+
+  const sortedCompletedChallenges = useMemo(
+    () => sortProgressByChallengOrder(completedChallenges, allLinksForSorting),
+    [completedChallenges, allLinksForSorting]
+  );
+
+  const sortedLockedChallenges = useMemo(
+    () => sortProgressByChallengOrder(lockedChallenges, allLinksForSorting),
+    [lockedChallenges, allLinksForSorting]
+  );
   
   // Get active challenges data (for multiple active challenges support)
-  const activeChallengesData = activeChallenges
+  const activeChallengesData = sortedActiveChallenges
     .map((p) => p.daily_challenges as DailyChallenge | undefined)
     .filter(Boolean) as DailyChallenge[];
   
@@ -190,16 +225,17 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
     isLoading,
     progress,
     activeChallenge,
-    activeChallenges, // All active progress records
+    activeChallenges: sortedActiveChallenges, // All active progress records (sorted)
     activeChallengeData, // First active challenge data (backward compat)
-    activeChallengesData, // All active challenges data
-    completedChallenges,
-    lockedChallenges,
+    activeChallengesData, // All active challenges data (sorted)
+    completedChallenges: sortedCompletedChallenges,
+    lockedChallenges: sortedLockedChallenges,
     completeChallenge,
     isCompleting,
     restartChallenge,
     isRestarting,
     selectedItemIds,
     selectedObjectivesData,
+    clearProgress: clearProgressMutation,
   };
 }

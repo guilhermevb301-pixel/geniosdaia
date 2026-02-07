@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useChallenges, ChallengeSubmission } from "@/hooks/useChallenges";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { useObjectives } from "@/hooks/useObjectives";
 import { useDailyChallenges, DailyChallenge } from "@/hooks/useDailyChallenges";
 import { useUserXP } from "@/hooks/useUserXP";
 import { useAuth } from "@/contexts/AuthContext";
@@ -558,6 +559,9 @@ export default function Desafios() {
       }
     }
   }, [profile]);
+
+  // Get objectives data for mapping keys to IDs
+  const { objectives: objectivesData } = useObjectives();
   
   // Get challenge progress data for the banner
   const {
@@ -571,10 +575,27 @@ export default function Desafios() {
     isRestarting,
     lockedChallenges,
     completedChallenges,
+    clearProgress,
   } = useChallengeProgressData(selectedObjectives);
 
-  // Salvar objetivos com debounce
+  // Salvar objetivos com debounce - limpar progresso de objetivos removidos
   const handleObjectivesChange = useCallback((objectives: string[]) => {
+    // Encontrar objetivos removidos
+    const removedObjectives = selectedObjectives.filter(
+      (o) => !objectives.includes(o)
+    );
+
+    // Limpar progresso dos objetivos removidos
+    if (removedObjectives.length > 0 && objectivesData.length > 0) {
+      const objectiveItemsToRemove = objectivesData
+        .filter((item) => removedObjectives.includes(item.objective_key))
+        .map((item) => item.id);
+
+      objectiveItemsToRemove.forEach((itemId) => {
+        clearProgress(itemId);
+      });
+    }
+
     setSelectedObjectives(objectives);
     
     if (debounceRef.current) {
@@ -592,7 +613,7 @@ export default function Desafios() {
         toast.error("Erro ao salvar seus objetivos");
       });
     }, 500);
-  }, [profile?.goals, updateProfile]);
+  }, [profile?.goals, updateProfile, selectedObjectives, objectivesData, clearProgress]);
 
   // Buscar todos os desafios diários para filtrar
   const { data: allDailyChallenges = [] } = useQuery({

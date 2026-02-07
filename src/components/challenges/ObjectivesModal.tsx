@@ -94,8 +94,8 @@ export function ObjectivesModal({
           </div>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 max-h-[400px] pr-4 -mr-4">
-          <div className="space-y-2 pr-4">
+        <ScrollArea className="flex-1 max-h-[60vh] pr-4 -mr-4">
+          <div className="space-y-2 pr-4 pb-2">
             {isLoading ? (
               <div className="space-y-2">
                 {[1, 2, 3, 4, 5].map((i) => (
