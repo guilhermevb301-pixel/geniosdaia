@@ -82,8 +82,21 @@ export default function Prompts() {
     );
   };
 
+  // Filter categories based on URL param
+  const filteredCategories = useMemo(() => {
+    if (categoryParam && categories.some(c => c.value === categoryParam)) {
+      return categories.filter(c => c.value === categoryParam);
+    }
+    return categories;
+  }, [categoryParam]);
+
+  // Get active category for dynamic title
+  const activeCategory = categoryParam 
+    ? categories.find(c => c.value === categoryParam)
+    : null;
+
   const groupedPrompts = useMemo(() => {
-    return categories.map((cat) => ({
+    return filteredCategories.map((cat) => ({
       ...cat,
       prompts:
         prompts?.filter(
@@ -92,7 +105,7 @@ export default function Prompts() {
             (searchQuery === "" || matchesSearch(p, searchQuery))
         ) || [],
     }));
-  }, [prompts, searchQuery]);
+  }, [prompts, searchQuery, filteredCategories]);
 
   // Preload first 6 critical images from first category with prompts
   const criticalImages = useMemo(() => {
@@ -132,13 +145,15 @@ export default function Prompts() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Banco de Prompts</h1>
+            <h1 className="text-2xl font-bold text-foreground">
+              {activeCategory ? `Prompts de ${activeCategory.label}` : "Banco de Prompts"}
+            </h1>
             <p className="text-muted-foreground mt-1">
               Prompts prontos para usar com IAs de geração de conteúdo
             </p>
           </div>
           {canManage && (
-            <Button onClick={() => handleNewPrompt("image")}>
+            <Button onClick={() => handleNewPrompt(activeCategory?.value || "image")}>
               <Plus className="h-4 w-4 mr-2" />
               Novo Prompt
             </Button>
