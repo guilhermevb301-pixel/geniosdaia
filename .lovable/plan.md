@@ -1,82 +1,172 @@
 
+# Plano: Corrigir Scroll dos Objetivos + Cores dos Icones da Sidebar
 
-# Plano: Corrigir Altura dos Banners no MacBook
+## Problema 1: Modal de Objetivos Nao Rola
 
-## Problema Identificado
+### Causa Raiz
+O componente `ScrollArea` do Radix UI tem uma limitacao: o viewport interno nao herda automaticamente a altura do container pai quando usamos `flex-1`. Isso faz com que o scroll nao funcione corretamente.
 
-Na imagem enviada, os banners estão sendo cortados demais no MacBook. Isso acontece porque:
-
-1. **Breakpoints Tailwind padrão:**
-   - `sm`: 640px+
-   - `md`: 768px+
-   - `lg`: 1024px+
-
-2. **Limites atuais muito restritivos:**
-   - Desktop (lg+): usa altura configurada (400px) ✓
-   - Tablet (sm - lg): máximo **280px** ← corta demais!
-   - Mobile: máximo **200px**
-
-3. **MacBook no limite:**
-   Um MacBook de 13" pode ter área visível do navegador entre 900-1100px, caindo no breakpoint "tablet" e recebendo apenas 280px de altura quando deveria ter mais.
-
-## Solucao Proposta
-
-Ajustar a funcao `getResponsiveHeights` para:
-
-1. **Adicionar breakpoint intermediario (md)** para laptops menores
-2. **Aumentar os limites maximos** para tablet/laptop
-3. **Usar proporcoes mais generosas**
-
-### Novos Valores
-
-| Breakpoint | Atual | Proposto |
-|------------|-------|----------|
-| Mobile (< sm) | 60%, max 200px | 55%, max 180px |
-| Tablet (sm-md) | 75%, max 280px | 70%, max 280px |
-| Laptop (md-lg) | - | 85%, max 350px |
-| Desktop (lg+) | 100%, max 400px | 100%, max 400px |
-
-### Mudanca de Codigo
+### Solucao
+Substituir o `ScrollArea` do Radix por um container com scroll nativo do CSS, que e mais confiavel em contextos flex:
 
 ```tsx
-const getResponsiveHeights = (desktopHeight: number) => {
-  const clampedDesktop = Math.max(120, Math.min(400, desktopHeight));
-  
-  // Mobile (< 640px): mais compacto
-  const mobile = Math.max(100, Math.min(180, Math.round(clampedDesktop * 0.55)));
-  
-  // Tablet (640px - 767px): intermediario
-  const tablet = Math.max(120, Math.min(280, Math.round(clampedDesktop * 0.70)));
-  
-  // Laptop (768px - 1023px): quase desktop - NOVO!
-  const laptop = Math.max(160, Math.min(350, Math.round(clampedDesktop * 0.85)));
-  
-  return { mobile, tablet, laptop, desktop: clampedDesktop };
-};
+// Antes (bugado)
+<ScrollArea className="flex-1 max-h-[60vh] pr-4 -mr-4">
+  ...
+</ScrollArea>
+
+// Depois (funciona)
+<div className="flex-1 overflow-y-auto max-h-[50vh] pr-4 -mr-4 scrollbar-thin">
+  ...
+</div>
 ```
 
-### Aplicacao no JSX
+Alternativa: corrigir o viewport do ScrollArea adicionando estilos inline:
 
 ```tsx
-<div 
-  className="w-full h-[var(--h-mobile)] sm:h-[var(--h-tablet)] md:h-[var(--h-laptop)] lg:h-[var(--h-desktop)]"
->
+<ScrollArea className="flex-1 min-h-0">
+  <div className="max-h-[50vh] overflow-visible">
+    ...
+  </div>
+</ScrollArea>
 ```
 
-## Resultado Visual
+### Ajustes Adicionais
+- Reduzir `max-h-[60vh]` para `max-h-[50vh]` para garantir espaco para header/footer
+- Adicionar `min-h-0` no container flex para permitir shrink
+- Garantir que o DialogContent use `overflow-hidden`
 
-| Dispositivo | Altura Atual | Altura Nova |
-|-------------|--------------|-------------|
-| iPhone (375px) | 200px | 180px |
-| iPad Mini (768px) | 280px | **340px** |
-| MacBook 13" (1024px) | 280px (se < 1024) | **340px** |
-| MacBook 13" (1280px) | 400px | 400px |
-| Desktop (1440px+) | 400px | 400px |
+---
 
-## Arquivo a Modificar
+## Problema 2: Cores dos Icones da Sidebar
 
-- `src/components/dashboard/AnnouncementCarousel.tsx`
-  - Adicionar variavel CSS `--h-laptop`
-  - Usar breakpoint `md:` para laptops
-  - Ajustar proporcoes na funcao `getResponsiveHeights`
+### Situacao Atual
+Todos os icones estao com cor fixa `text-amber-400` hardcoded no codigo:
 
+```tsx
+<Layout className="h-5 w-5 text-amber-400" />
+<BookOpen className="h-5 w-5 text-amber-400" />
+// etc.
+```
+
+### Solucao Proposta
+
+Criar uma tabela `sidebar_settings` no banco de dados para armazenar configuracoes visuais:
+
+```sql
+CREATE TABLE public.sidebar_settings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  icon_color TEXT NOT NULL DEFAULT 'amber-400',
+  updated_at TIMESTAMPTZ DEFAULT now(),
+  updated_by UUID REFERENCES auth.users(id)
+);
+
+-- RLS: mentores e admins podem atualizar
+CREATE POLICY "Mentors and admins can update sidebar settings"
+  ON public.sidebar_settings
+  FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.user_roles 
+      WHERE user_id = auth.uid() 
+      AND role IN ('admin', 'mentor')
+    )
+  );
+```
+
+### Hook: useSidebarSettings
+
+```tsx
+export function useSidebarSettings() {
+  const { data: settings } = useQuery({
+    queryKey: ["sidebarSettings"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("sidebar_settings")
+        .select("*")
+        .single();
+      return data;
+    },
+  });
+
+  return {
+    iconColor: settings?.icon_color || "amber-400",
+    // ...
+  };
+}
+```
+
+### Componente de Configuracao para Mentores
+
+Adicionar uma secao em uma pagina de administracao (ou criar nova rota `/admin/appearance`) onde o mentor pode escolher a cor dos icones:
+
+```tsx
+const colorOptions = [
+  { value: "amber-400", label: "Dourado" },
+  { value: "primary", label: "Roxo" },
+  { value: "emerald-400", label: "Verde" },
+  { value: "rose-400", label: "Rosa" },
+  { value: "sky-400", label: "Azul" },
+];
+```
+
+### Aplicacao no SidebarContent
+
+```tsx
+const { iconColor } = useSidebarSettings();
+
+// Usar classe dinamica
+<Layout className={cn("h-5 w-5", `text-${iconColor}`)} />
+```
+
+**Nota**: Para classes Tailwind dinamicas funcionarem, precisamos adicionar as cores ao safelist do `tailwind.config.ts`:
+
+```ts
+safelist: [
+  'text-amber-400',
+  'text-primary',
+  'text-emerald-400',
+  'text-rose-400',
+  'text-sky-400',
+],
+```
+
+---
+
+## Arquivos a Modificar/Criar
+
+### Problema 1 (Scroll)
+1. **`src/components/challenges/ObjectivesModal.tsx`**
+   - Substituir ScrollArea por div com overflow nativo
+   - Ajustar max-height e adicionar min-h-0
+
+### Problema 2 (Cores)
+1. **Migration SQL** - Criar tabela `sidebar_settings`
+2. **`src/hooks/useSidebarSettings.ts`** (NOVO) - Hook para buscar/atualizar configs
+3. **`src/components/layout/SidebarContent.tsx`** - Usar cor dinamica do hook
+4. **`src/pages/admin/AdminAppearance.tsx`** (NOVO) - Pagina para gerenciar aparencia
+5. **`tailwind.config.ts`** - Adicionar safelist de cores
+6. **`src/components/layout/SidebarContent.tsx`** - Adicionar link para /admin/appearance
+
+---
+
+## Resumo Visual
+
+```text
+PROBLEMA 1: SCROLL                          PROBLEMA 2: CORES
++-----------------------+                   +-----------------------+
+| Modal de Objetivos    |                   | Sidebar               |
+|-----------------------|                   |-----------------------|
+| [x] Objetivo 1        |                   | [icon] Dashboard      |
+| [x] Objetivo 2        | <-- nao rola      | [icon] Aulas          |
+| [ ] Objetivo 3        |     por causa do  | [icon] Templates      |
+| ...mais itens...      |     ScrollArea    | ...                   |
+|                       |                   |                       |
+| [Confirmar]           |                   | Cor atual: amber-400  |
++-----------------------+                   | (hardcoded)           |
+                                            +-----------------------+
+
+SOLUCAO 1:                                  SOLUCAO 2:
+Usar overflow-y-auto                        Criar tabela + hook
+em vez de ScrollArea                        para cor dinamica
+```
