@@ -40,12 +40,14 @@ export function AnnouncementCarousel() {
   const getResponsiveHeights = (desktopHeight: number) => {
     // Clamp desktop height between 120-400px
     const clampedDesktop = Math.max(120, Math.min(400, desktopHeight));
-    // Mobile: 60% of desktop, min 100px, max 200px
-    const mobile = Math.max(100, Math.min(200, Math.round(clampedDesktop * 0.6)));
-    // Tablet: 75% of desktop, min 120px, max 280px
-    const tablet = Math.max(120, Math.min(280, Math.round(clampedDesktop * 0.75)));
+    // Mobile (< 640px): 55% of desktop, min 100px, max 180px
+    const mobile = Math.max(100, Math.min(180, Math.round(clampedDesktop * 0.55)));
+    // Tablet (640px - 767px): 70% of desktop, min 120px, max 280px
+    const tablet = Math.max(120, Math.min(280, Math.round(clampedDesktop * 0.70)));
+    // Laptop (768px - 1023px): 85% of desktop, min 160px, max 350px
+    const laptop = Math.max(160, Math.min(350, Math.round(clampedDesktop * 0.85)));
     
-    return { mobile, tablet, desktop: clampedDesktop };
+    return { mobile, tablet, laptop, desktop: clampedDesktop };
   };
 
   return (
@@ -73,11 +75,12 @@ export function AnnouncementCarousel() {
               style={{
                 "--h-mobile": `${heights.mobile}px`,
                 "--h-tablet": `${heights.tablet}px`,
+                "--h-laptop": `${heights.laptop}px`,
                 "--h-desktop": `${heights.desktop}px`,
               } as React.CSSProperties}
             >
               {/* Container with responsive height via CSS variables */}
-              <div className="w-full h-[var(--h-mobile)] sm:h-[var(--h-tablet)] lg:h-[var(--h-desktop)]">
+              <div className="w-full h-[var(--h-mobile)] sm:h-[var(--h-tablet)] md:h-[var(--h-laptop)] lg:h-[var(--h-desktop)]">
                 {/* Gradient fallback always visible behind image */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${banner.gradient || 'from-primary to-purple-600'}`} />
                 
