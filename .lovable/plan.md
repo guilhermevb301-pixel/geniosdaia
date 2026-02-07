@@ -1,144 +1,104 @@
 
-# Plano: Accordion de Banco de Prompts na Sidebar
+# Plano: Filtrar Prompts por Categoria na Sidebar
 
-## Entendimento do Pedido
+## Entendimento
 
-O usuário quer que o item "Banco de Prompts" na sidebar seja um menu expansivel (como o "Gerenciar") que ao clicar mostra 3 subcategorias:
-- Imagens
-- Videos  
-- Modificador de Imagens
+Quando o usuario clica em uma subcategoria na sidebar (Imagens, Videos, Modificador), a pagina deve mostrar **somente** os prompts dessa categoria, sem mostrar as outras secoes em accordion.
 
-Cada subcategoria leva para a mesma pagina `/prompts`, mas com a categoria pre-selecionada.
+## Mudanca Proposta
 
-## Arquitetura Proposta
+### Comportamento Atual
+- `/prompts?category=image` → Mostra TODAS as categorias em accordion, com "Imagens" expandido
 
-### Rotas
-Usaremos query params para filtrar a categoria:
-- `/prompts` - Mostra todas as categorias
-- `/prompts?category=image` - Expande automaticamente "Imagens"
-- `/prompts?category=video` - Expande automaticamente "Videos"  
-- `/prompts?category=modifier` - Expande automaticamente "Modificador de Imagens"
+### Novo Comportamento  
+- `/prompts?category=image` → Mostra **APENAS** os prompts de Imagens
+- `/prompts?category=video` → Mostra **APENAS** os prompts de Videos
+- `/prompts?category=modifier` → Mostra **APENAS** os prompts de Modificador
+- `/prompts` (sem parametro) → Mostra todas as categorias em accordion (comportamento atual)
 
-### Estrutura Visual na Sidebar
-```text
-Templates
-v Banco de Prompts    <- Clicavel, expande submenu
-  > Imagens           <- Link para /prompts?category=image
-  > Videos            <- Link para /prompts?category=video
-  > Modificador       <- Link para /prompts?category=modifier
-Meus GPTs
-Eventos
-Desafios
-```
+## Implementacao
 
-## Detalhes Tecnicos
+**Arquivo:** `src/pages/Prompts.tsx`
 
-### Parte 1: Modificar SidebarContent.tsx
-
-1. Remover "Banco de Prompts" da lista `tools`
-2. Adicionar um Collapsible para "Banco de Prompts" similar ao "Gerenciar"
-3. Adicionar subcategorias como links para `/prompts?category=xxx`
-4. Manter estado de expansao quando estiver na rota `/prompts`
+### Logica de Filtragem
 
 ```tsx
-// Novas subcategorias do Banco de Prompts
-const promptCategories = [
-  { label: "Imagens", value: "image", icon: Image },
-  { label: "Vídeos", value: "video", icon: Video },
-  { label: "Modificador de Imagens", value: "modifier", icon: Wand2 },
-];
+// Se tem categoria na URL, filtrar para mostrar apenas essa
+const filteredCategories = useMemo(() => {
+  if (categoryParam && categories.some(c => c.value === categoryParam)) {
+    return categories.filter(c => c.value === categoryParam);
+  }
+  return categories; // Sem filtro, mostra todas
+}, [categoryParam]);
 
-// Estado para controlar expansao
-const [promptsOpen, setPromptsOpen] = useState(
-  location.pathname.startsWith("/prompts")
-);
-
-// Verificar se subcategoria esta ativa
-const isPromptCategoryActive = (category: string) => {
-  const params = new URLSearchParams(location.search);
-  return location.pathname === "/prompts" && params.get("category") === category;
-};
-
-// Renderizar
-<Collapsible open={promptsOpen} onOpenChange={setPromptsOpen}>
-  <CollapsibleTrigger className="w-full">
-    <div className="flex items-center justify-between ...">
-      <div className="flex items-center gap-3">
-        <Lightbulb className="h-5 w-5 text-amber-400" />
-        <span>Banco de Prompts</span>
-      </div>
-      <ChevronDown className={cn("h-4 w-4", promptsOpen && "rotate-180")} />
-    </div>
-  </CollapsibleTrigger>
-  <CollapsibleContent>
-    <div className="ml-4 mt-1 space-y-1 border-l-2 border-amber-400/30 pl-4">
-      {promptCategories.map((cat) => (
-        <Link
-          key={cat.value}
-          to={`/prompts?category=${cat.value}`}
-          onClick={handleClick}
-          className={cn(
-            "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
-            isPromptCategoryActive(cat.value)
-              ? "text-amber-400 bg-amber-400/10"
-              : "text-sidebar-foreground/90 hover:text-sidebar-foreground hover:bg-muted"
-          )}
-        >
-          <cat.icon className="h-4 w-4" />
-          {cat.label}
-        </Link>
-      ))}
-    </div>
-  </CollapsibleContent>
-</Collapsible>
+// Agrupar prompts usando categorias filtradas
+const groupedPrompts = useMemo(() => {
+  return filteredCategories.map((cat) => ({
+    ...cat,
+    prompts: prompts?.filter(
+      (p) =>
+        p.category === cat.value &&
+        (searchQuery === "" || matchesSearch(p, searchQuery))
+    ) || [],
+  }));
+}, [prompts, searchQuery, filteredCategories]);
 ```
 
-### Parte 2: Modificar Prompts.tsx
+### Titulo Dinamico
 
-1. Ler o query param `category` da URL
-2. Se existir, abrir apenas essa categoria no accordion
-3. Se nao existir, manter comportamento atual (todas abertas)
+Quando uma categoria especifica esta selecionada, mostrar o nome dela no header:
 
 ```tsx
-import { useSearchParams } from "react-router-dom";
+// Encontrar categoria ativa
+const activeCategory = categoryParam 
+  ? categories.find(c => c.value === categoryParam)
+  : null;
 
-const [searchParams] = useSearchParams();
-const categoryParam = searchParams.get("category") as PromptCategory | null;
+// No header
+<h1 className="text-2xl font-bold text-foreground">
+  {activeCategory ? `Prompts de ${activeCategory.label}` : "Banco de Prompts"}
+</h1>
+```
 
-// Definir quais categorias abrir por padrao
+### Accordion Sempre Aberto
+
+Quando ha apenas uma categoria, manter o accordion aberto por padrao:
+
+```tsx
 const defaultOpenCategories = useMemo(() => {
+  // Se esta filtrando por categoria, abrir ela
   if (categoryParam && categories.some(c => c.value === categoryParam)) {
     return [categoryParam];
   }
-  // Fallback: abrir categorias com prompts
+  // Caso contrario, abrir todas que tem prompts
   return groupedPrompts.filter((g) => g.prompts.length > 0).map((g) => g.value);
 }, [categoryParam, groupedPrompts]);
 ```
 
-## Arquivos a Modificar
+## Resultado Visual
 
-1. **`src/components/layout/SidebarContent.tsx`**
-   - Remover "Banco de Prompts" da lista tools
-   - Adicionar Collapsible com subcategorias
-   - Importar icones Video e Wand2
-   - Adicionar estado promptsOpen
+### Antes (clicando em Imagens):
+```text
+BANCO DE PROMPTS
 
-2. **`src/pages/Prompts.tsx`**
-   - Importar useSearchParams
-   - Ler parametro category da URL
-   - Ajustar defaultOpenCategories baseado no parametro
+v Imagens (12)      <- Expandido
+  [cards...]
+> Videos (5)        <- Fechado mas visivel  
+> Modificador (3)   <- Fechado mas visivel
+```
 
-## Fluxo do Usuario
+### Depois (clicando em Imagens):
+```text
+PROMPTS DE IMAGENS
 
-1. Usuario ve "Banco de Prompts" na sidebar com seta de expansao
-2. Clica para expandir e ve 3 subcategorias
-3. Clica em "Imagens" -> vai para /prompts?category=image
-4. A pagina abre com apenas a secao "Imagens" expandida
-5. Na sidebar, "Imagens" fica destacado mostrando que esta ativo
+v Imagens (12)      <- Unica categoria, expandida
+  [cards...]
+```
 
-## Beneficios
+## Arquivo a Modificar
 
-- Navegacao mais intuitiva diretamente da sidebar
-- Usuario sabe quais tipos de prompts existem antes de entrar na pagina
-- Acesso rapido a categoria especifica
-- Consistente com o padrao do menu "Gerenciar" que ja existe
+- `src/pages/Prompts.tsx`
+  - Adicionar `filteredCategories` baseado no `categoryParam`
+  - Atualizar `groupedPrompts` para usar `filteredCategories`
+  - Titulo dinamico baseado na categoria ativa
+  - Botao "Novo Prompt" usa categoria ativa como default
