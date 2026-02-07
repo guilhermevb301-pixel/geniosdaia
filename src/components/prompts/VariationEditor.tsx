@@ -34,6 +34,7 @@ export function VariationEditor({ variations, onChange, isUploading, category }:
   const videoInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const isVideoCategory = category === 'video';
+  const isModifierCategory = category === 'modifier';
 
   const addVariation = () => {
     onChange([
@@ -164,18 +165,33 @@ export function VariationEditor({ variations, onChange, isUploading, category }:
 
               {/* Prompt Content */}
               <div className="space-y-2">
-                <Label className="text-xs text-muted-foreground">Texto do Prompt *</Label>
+                <Label className="text-xs text-muted-foreground">
+                  {isModifierCategory ? "Prompt em Inglês *" : "Texto do Prompt *"}
+                </Label>
                 <Textarea
                   value={variation.content}
                   onChange={(e) => updateVariation(index, "content", e.target.value)}
-                  placeholder="Cole o texto do prompt aqui..."
-                  rows={4}
+                  placeholder={isModifierCategory 
+                    ? "Ex: change the style to cinematic realism" 
+                    : "Cole o texto do prompt aqui..."}
+                  rows={isModifierCategory ? 2 : 4}
                   disabled={isUploading}
                 />
               </div>
 
-              {/* Conditional Upload: Video for 'video' category, Image for others */}
-              {isVideoCategory ? (
+              {/* Modifier category: Translation field instead of media */}
+              {isModifierCategory ? (
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Tradução em Português</Label>
+                  <Textarea
+                    value={variation.image_url || ""}
+                    onChange={(e) => updateVariation(index, "image_url", e.target.value)}
+                    placeholder="Ex: muda o estilo para realismo cinematográfico"
+                    rows={2}
+                    disabled={isUploading}
+                  />
+                </div>
+              ) : isVideoCategory ? (
                 /* Video Upload for video category */
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground">Vídeo do Resultado (MP4)</Label>

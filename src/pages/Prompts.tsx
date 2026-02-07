@@ -7,6 +7,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { PromptCard } from "@/components/prompts/PromptCard";
+import { ModifierCard } from "@/components/prompts/ModifierCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useImagePreload } from "@/hooks/useImagePreload";
 import { useIsMentor } from "@/hooks/useIsMentor";
@@ -182,39 +183,55 @@ export default function Prompts() {
           // Single category view - no accordion, just the grid
           <div>
             {groupedPrompts[0]?.prompts.length > 0 ? (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {groupedPrompts[0].prompts.map((prompt, index) => (
-                  <div key={prompt.id} className="relative group">
-                    <PromptCard prompt={prompt} priority={index < 6} />
-                    {canManage && (
-                      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                        <Button
-                          variant="secondary"
-                          size="icon"
-                          className="h-8 w-8 bg-background/90 backdrop-blur-sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditPrompt(prompt);
-                          }}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="icon"
-                          className="h-8 w-8 bg-background/90 backdrop-blur-sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeletePromptId(prompt.id);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+              activeCategory.value === "modifier" ? (
+                // Modifier category: use ModifierCard in a single column
+                <div className="space-y-4">
+                  {groupedPrompts[0].prompts.map((prompt) => (
+                    <ModifierCard
+                      key={prompt.id}
+                      prompt={prompt}
+                      canManage={canManage}
+                      onEdit={() => handleEditPrompt(prompt)}
+                      onDelete={() => setDeletePromptId(prompt.id)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                // Image/Video categories: use PromptCard in grid
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {groupedPrompts[0].prompts.map((prompt, index) => (
+                    <div key={prompt.id} className="relative group">
+                      <PromptCard prompt={prompt} priority={index < 6} />
+                      {canManage && (
+                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                          <Button
+                            variant="secondary"
+                            size="icon"
+                            className="h-8 w-8 bg-background/90 backdrop-blur-sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditPrompt(prompt);
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            size="icon"
+                            className="h-8 w-8 bg-background/90 backdrop-blur-sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeletePromptId(prompt.id);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 <activeCategory.icon className="h-10 w-10 mx-auto mb-3 opacity-50" />
