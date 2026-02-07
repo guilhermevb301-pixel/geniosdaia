@@ -103,5 +103,25 @@ export default {
 		}
   	}
   },
+  safelist: [
+    'text-amber-400',
+    'text-primary',
+    'text-emerald-400',
+    'text-rose-400',
+    'text-sky-400',
+    'text-orange-400',
+    'bg-amber-400/10',
+    'bg-primary/10',
+    'bg-emerald-400/10',
+    'bg-rose-400/10',
+    'bg-sky-400/10',
+    'bg-orange-400/10',
+    'border-amber-400/30',
+    'border-primary/30',
+    'border-emerald-400/30',
+    'border-rose-400/30',
+    'border-sky-400/30',
+    'border-orange-400/30',
+  ],
   plugins: [require("tailwindcss-animate")],
 } satisfies Config;

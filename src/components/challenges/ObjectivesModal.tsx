@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Target, Lock, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -94,7 +93,7 @@ export function ObjectivesModal({
           </div>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 max-h-[60vh] pr-4 -mr-4">
+        <div className="flex-1 overflow-y-auto max-h-[50vh] pr-4 -mr-4 min-h-0">
           <div className="space-y-2 pr-4 pb-2">
             {isLoading ? (
               <div className="space-y-2">
@@ -174,7 +173,7 @@ export function ObjectivesModal({
               </div>
             </div>
           )}
-        </ScrollArea>
+        </div>
 
         <DialogFooter className="flex-col sm:flex-row gap-3 pt-4 border-t">
           <p className="text-xs text-muted-foreground sm:mr-auto">

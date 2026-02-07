@@ -32,6 +32,7 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminChallenges from "./pages/admin/AdminChallenges";
 import AdminGpts from "./pages/admin/AdminGpts";
 import AdminBanners from "./pages/admin/AdminBanners";
+import AdminAppearance from "./pages/admin/AdminAppearance";
 import MenteeEditor from "./pages/admin/MenteeEditor";
 import NotFound from "./pages/NotFound";
 
@@ -241,6 +242,14 @@ const App = () => (
               element={
                 <MentorRoute>
                   <AdminBanners />
+                </MentorRoute>
+              }
+            />
+            <Route
+              path="/admin/appearance"
+              element={
+                <MentorRoute>
+                  <AdminAppearance />
                 </MentorRoute>
               }
             />
