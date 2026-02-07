@@ -1,11 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useEffect, useRef } from "react";
 import { useUserChallengeProgress } from "@/hooks/useUserChallengeProgress";
 import { useObjectives } from "@/hooks/useObjectives";
 import { useObjectiveChallengeLinks } from "@/hooks/useObjectiveChallengeLinks";
 import { useDailyChallengesAdmin } from "@/hooks/useDailyChallengesAdmin";
+import { useSyncChallengeProgress } from "@/hooks/useSyncChallengeProgress";
 import { DailyChallenge } from "@/hooks/useDailyChallenges";
 import { TimeUnit } from "@/lib/utils";
-import { useEffect } from "react";
 
 export function useChallengeProgressData(selectedObjectives: string[]) {
   const { objectives } = useObjectives();
@@ -37,6 +37,12 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
     isRestarting,
   } = useUserChallengeProgress(selectedItemIds.length > 0 ? selectedItemIds : undefined);
 
+  // Sync hook
+  const { syncProgressAsync, isSyncing } = useSyncChallengeProgress();
+
+  // Track which objectives have been synced to avoid repeated syncs
+  const syncedObjectivesRef = useRef<Set<string>>(new Set());
+
   // Get linked challenges with their order, initial active state, and predecessor for each objective
   const linkedChallengesMap = useMemo(() => {
     const map: Record<string, Array<{ 
@@ -66,47 +72,79 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
     return map;
   }, [allLinks]);
 
-  // Initialize progress when objectives change
+  // Sync existing progress with current links (remove orphans, add missing)
   useEffect(() => {
-    if (isLoadingAllLinks || isLoadingChallenges || isLoadingProgress) return;
+    if (isLoadingAllLinks || isLoadingChallenges || isLoadingProgress || isSyncing) return;
 
-    selectedObjectivesData.forEach((objective) => {
+    selectedObjectivesData.forEach(async (objective) => {
       const itemId = objective.id;
       const linkedChallenges = linkedChallengesMap[itemId] || [];
+      
+      // Skip if no linked challenges
       if (linkedChallenges.length === 0) return;
 
-      // Check if user already has progress for this objective
+      // Get existing progress for this objective
       const existingProgress = progress.filter((p) => p.objective_item_id === itemId);
-      if (existingProgress.length > 0) return;
+      
+      // Check if sync is needed: orphans or missing challenges
+      const linkedChallengeIds = linkedChallenges.map((l) => l.challengeId);
+      const hasOrphans = existingProgress.some(
+        (p) => !linkedChallengeIds.includes(p.daily_challenge_id)
+      );
+      const existingChallengeIds = existingProgress.map((p) => p.daily_challenge_id);
+      const hasMissing = linkedChallenges.some(
+        (l) => !existingChallengeIds.includes(l.challengeId)
+      );
 
-      // Prepare challenges with order info, initial active state, and predecessor
-      const challengesWithOrder = linkedChallenges
-        .map((link) => {
-          const challenge = allChallenges.find((c) => c.id === link.challengeId);
-          if (!challenge) return null;
-          return {
-            id: challenge.id,
-            estimated_minutes: challenge.estimated_minutes,
-            estimated_time_unit: (challenge.estimated_time_unit || "minutes") as TimeUnit,
-            order_index: link.orderIndex,
-            is_initial_active: link.isInitialActive,
-            predecessor_challenge_id: link.predecessorChallengeId,
-          };
-        })
-        .filter(Boolean) as Array<{
-          id: string;
-          estimated_minutes: number | null;
-          estimated_time_unit: TimeUnit;
-          order_index: number;
-          is_initial_active: boolean;
-          predecessor_challenge_id: string | null;
-        }>;
+      // If user has no progress at all, use initProgress (first time)
+      if (existingProgress.length === 0) {
+        const challengesWithOrder = linkedChallenges
+          .map((link) => {
+            const challenge = allChallenges.find((c) => c.id === link.challengeId);
+            if (!challenge) return null;
+            return {
+              id: challenge.id,
+              estimated_minutes: challenge.estimated_minutes,
+              estimated_time_unit: (challenge.estimated_time_unit || "minutes") as TimeUnit,
+              order_index: link.orderIndex,
+              is_initial_active: link.isInitialActive,
+              predecessor_challenge_id: link.predecessorChallengeId,
+            };
+          })
+          .filter(Boolean) as Array<{
+            id: string;
+            estimated_minutes: number | null;
+            estimated_time_unit: TimeUnit;
+            order_index: number;
+            is_initial_active: boolean;
+            predecessor_challenge_id: string | null;
+          }>;
 
-      if (challengesWithOrder.length > 0) {
-        // Use the objective's active_slots configuration
-        initProgress({
+        if (challengesWithOrder.length > 0) {
+          initProgress({
+            objectiveItemId: itemId,
+            challenges: challengesWithOrder,
+            activeSlots: objective.active_slots || 1,
+          });
+        }
+        return;
+      }
+
+      // If there are orphans or missing challenges, sync
+      if ((hasOrphans || hasMissing) && !syncedObjectivesRef.current.has(itemId)) {
+        syncedObjectivesRef.current.add(itemId);
+
+        const allChallengesInfo = allChallenges.map((c) => ({
+          id: c.id,
+          estimated_minutes: c.estimated_minutes,
+          estimated_time_unit: (c.estimated_time_unit || "minutes") as TimeUnit,
+        }));
+
+        await syncProgressAsync({
           objectiveItemId: itemId,
-          challenges: challengesWithOrder,
+          linkedChallenges,
+          allChallenges: allChallengesInfo,
+          existingProgress,
           activeSlots: objective.active_slots || 1,
         });
       }
@@ -119,7 +157,9 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
     isLoadingAllLinks,
     isLoadingChallenges,
     isLoadingProgress,
+    isSyncing,
     initProgress,
+    syncProgressAsync,
   ]);
 
   // Wrapper for completeChallenge that includes activeSlots
