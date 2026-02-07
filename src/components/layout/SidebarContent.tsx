@@ -18,7 +18,9 @@ import {
   Award,
   NotebookPen,
   Bot,
-  Image
+  Image,
+  Video,
+  Wand2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -35,10 +37,15 @@ import { getPrefetchHandler } from "@/lib/prefetchRoutes";
 
 const tools = [
   { label: "Templates", href: "/templates", icon: Zap },
-  { label: "Banco de Prompts", href: "/prompts", icon: Lightbulb },
   { label: "Meus GPTs", href: "/meus-gpts", icon: MessageSquare },
   { label: "Eventos", href: "/eventos", icon: Calendar },
   { label: "Desafios", href: "/desafios", icon: Trophy },
+];
+
+const promptCategories = [
+  { label: "Imagens", value: "image", icon: Image },
+  { label: "Vídeos", value: "video", icon: Video },
+  { label: "Modificador de Imagens", value: "modifier", icon: Wand2 },
 ];
 
 interface SidebarContentProps {
@@ -52,9 +59,16 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
   const { isMentor } = useIsMentor();
   const { isMentee } = useIsMentee();
   const [adminOpen, setAdminOpen] = useState(true);
+  const [promptsOpen, setPromptsOpen] = useState(location.pathname === "/prompts");
 
   const isActive = (href: string) => location.pathname === href;
   const isAdminSection = location.pathname.startsWith("/admin");
+  const isPromptsSection = location.pathname === "/prompts";
+
+  const isPromptCategoryActive = (category: string) => {
+    const params = new URLSearchParams(location.search);
+    return location.pathname === "/prompts" && params.get("category") === category;
+  };
 
   const handleClick = () => {
     onNavigate?.();
@@ -115,7 +129,68 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           Aulas
         </Link>
 
-        {/* Tools Section */}
+        {/* Templates Link */}
+        <Link
+          to="/templates"
+          onClick={handleClick}
+          onMouseEnter={() => handlePrefetch("/templates")}
+          className={cn(
+            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
+            isActive("/templates")
+              ? "bg-accent text-accent-foreground"
+              : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
+          )}
+        >
+          <Zap className="h-5 w-5 text-amber-400" />
+          Templates
+        </Link>
+
+        {/* Banco de Prompts - Collapsible */}
+        <Collapsible open={promptsOpen} onOpenChange={setPromptsOpen}>
+          <CollapsibleTrigger className="w-full">
+            <div
+              className={cn(
+                "flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
+                isPromptsSection
+                  ? "bg-accent text-accent-foreground"
+                  : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <Lightbulb className="h-5 w-5 text-amber-400" />
+                <span>Banco de Prompts</span>
+              </div>
+              <ChevronDown
+                className={cn(
+                  "h-4 w-4 transition-transform",
+                  promptsOpen && "rotate-180"
+                )}
+              />
+            </div>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="ml-4 mt-1 space-y-1 border-l-2 border-amber-400/30 pl-4">
+              {promptCategories.map((cat) => (
+                <Link
+                  key={cat.value}
+                  to={`/prompts?category=${cat.value}`}
+                  onClick={handleClick}
+                  className={cn(
+                    "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                    isPromptCategoryActive(cat.value)
+                      ? "text-amber-400 bg-amber-400/10"
+                      : "text-sidebar-foreground/90 hover:text-sidebar-foreground hover:bg-muted"
+                  )}
+                >
+                  <cat.icon className="h-4 w-4" />
+                  {cat.label}
+                </Link>
+              ))}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+
+        {/* Other Tools */}
         {tools.map((item) => (
           <Link
             key={item.href}
