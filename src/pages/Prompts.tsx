@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Video, Image, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { PromptCard } from "@/components/prompts/PromptCard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useImagePreload } from "@/hooks/useImagePreload";
 
 type PromptCategory = "video" | "image";
 
@@ -58,6 +59,13 @@ export default function Prompts() {
     return matchesCategory && matchesSearch;
   });
 
+  // Preload first 6 critical images
+  const criticalImages = useMemo(() => 
+    filteredPrompts?.slice(0, 6).map(p => p.thumbnail_url).filter(Boolean) || [],
+    [filteredPrompts]
+  );
+  useImagePreload(criticalImages, { width: 400 });
+
   const tabItems = [
     { value: "video" as PromptCategory, label: "Vídeos", icon: Video },
     { value: "image" as PromptCategory, label: "Imagens", icon: Image },
@@ -108,8 +116,12 @@ export default function Prompts() {
                 </div>
               ) : filteredPrompts && filteredPrompts.length > 0 ? (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {filteredPrompts.map((prompt) => (
-                    <PromptCard key={prompt.id} prompt={prompt} />
+                  {filteredPrompts.map((prompt, index) => (
+                    <PromptCard 
+                      key={prompt.id} 
+                      prompt={prompt} 
+                      priority={index < 6} // First 6 prompts load eagerly
+                    />
                   ))}
                 </div>
               ) : (

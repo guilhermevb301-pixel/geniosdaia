@@ -32,7 +32,7 @@ export function ModuleGrid({ modules }: ModuleGridProps) {
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-      {modules.map((module) => (
+      {modules.map((module, index) => (
         <ModuleCard
           key={module.id}
           id={module.id}
@@ -42,6 +42,7 @@ export function ModuleGrid({ modules }: ModuleGridProps) {
           completedLessons={module.completedLessons}
           totalLessons={module.totalLessons}
           orderIndex={module.order_index}
+          priority={index < 5} // First 5 modules load eagerly
         />
       ))}
     </div>

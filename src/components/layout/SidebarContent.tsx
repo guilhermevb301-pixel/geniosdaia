@@ -29,7 +29,9 @@ import {
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useIsMentor } from "@/hooks/useIsMentor";
 import { useIsMentee } from "@/hooks/useIsMentee";
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { getPrefetchHandler } from "@/lib/prefetchRoutes";
 
 const tools = [
   { label: "Templates", href: "/templates", icon: Zap },
@@ -45,6 +47,7 @@ interface SidebarContentProps {
 
 export function SidebarContent({ onNavigate }: SidebarContentProps) {
   const location = useLocation();
+  const queryClient = useQueryClient();
   const { isAdmin } = useIsAdmin();
   const { isMentor } = useIsMentor();
   const { isMentee } = useIsMentee();
@@ -56,6 +59,14 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
   const handleClick = () => {
     onNavigate?.();
   };
+
+  // Prefetch data when hovering over links
+  const handlePrefetch = useCallback((route: string) => {
+    const prefetchFn = getPrefetchHandler(route, queryClient);
+    if (prefetchFn) {
+      prefetchFn();
+    }
+  }, [queryClient]);
 
   return (
     <div className="flex h-full flex-col bg-sidebar">
@@ -76,6 +87,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
         <Link
           to="/"
           onClick={handleClick}
+          onMouseEnter={() => handlePrefetch("/")}
           className={cn(
             "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
             isActive("/")
@@ -91,6 +103,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
         <Link
           to="/aulas"
           onClick={handleClick}
+          onMouseEnter={() => handlePrefetch("/aulas")}
           className={cn(
             "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
             isActive("/aulas")
@@ -108,6 +121,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
             key={item.href}
             to={item.href}
             onClick={handleClick}
+            onMouseEnter={() => handlePrefetch(item.href)}
             className={cn(
               "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
               isActive(item.href)

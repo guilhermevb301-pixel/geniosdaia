@@ -32,6 +32,8 @@ interface Prompt {
 
 interface PromptCardProps {
   prompt: Prompt;
+  /** If true, images load eagerly (for above-the-fold cards) */
+  priority?: boolean;
 }
 
 const categoryIcons = {
@@ -40,7 +42,7 @@ const categoryIcons = {
   agent: Bot,
 };
 
-export function PromptCard({ prompt }: PromptCardProps) {
+export function PromptCard({ prompt, priority = false }: PromptCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [currentVariationIndex, setCurrentVariationIndex] = useState(0);
@@ -117,6 +119,7 @@ export function PromptCard({ prompt }: PromptCardProps) {
               objectPosition={prompt.thumbnail_focus || 'center'}
               fallbackIcon={<Icon className="h-12 w-12 text-muted-foreground/40" />}
               optimizedWidth={400}
+              priority={priority}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">

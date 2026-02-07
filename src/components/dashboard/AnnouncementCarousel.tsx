@@ -90,6 +90,7 @@ export function AnnouncementCarousel() {
                     className="w-full h-full"
                     objectFit="cover"
                     optimizedWidth={1200}
+                    priority={true} // Banners are always above-the-fold
                   />
                 ) : null}
               </div>
