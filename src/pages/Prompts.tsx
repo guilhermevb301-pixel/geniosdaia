@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
 import { Video, Image, Search, Wand2, Plus, Pencil, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -41,6 +42,9 @@ const categories = [
 ];
 
 export default function Prompts() {
+  const [searchParams] = useSearchParams();
+  const categoryParam = searchParams.get("category") as PromptCategory | null;
+
   const [searchQuery, setSearchQuery] = useState("");
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState<PromptData | null>(null);
@@ -114,10 +118,13 @@ export default function Prompts() {
     setIsEditorOpen(true);
   };
 
-  // Get default open accordion items - categories with prompts
+  // Get default open accordion items - from URL param or categories with prompts
   const defaultOpenCategories = useMemo(() => {
+    if (categoryParam && categories.some(c => c.value === categoryParam)) {
+      return [categoryParam];
+    }
     return groupedPrompts.filter((g) => g.prompts.length > 0).map((g) => g.value);
-  }, [groupedPrompts]);
+  }, [categoryParam, groupedPrompts]);
 
   return (
     <AppLayout>
