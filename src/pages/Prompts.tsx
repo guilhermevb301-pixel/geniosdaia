@@ -171,14 +171,73 @@ export default function Prompts() {
           />
         </div>
 
-        {/* Accordion Content */}
+        {/* Content */}
         {isLoading ? (
           <div className="space-y-4">
             {Array.from({ length: 3 }).map((_, i) => (
               <Skeleton key={i} className="h-16 rounded-lg" />
             ))}
           </div>
+        ) : activeCategory ? (
+          // Single category view - no accordion, just the grid
+          <div>
+            {groupedPrompts[0]?.prompts.length > 0 ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {groupedPrompts[0].prompts.map((prompt, index) => (
+                  <div key={prompt.id} className="relative group">
+                    <PromptCard prompt={prompt} priority={index < 6} />
+                    {canManage && (
+                      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                        <Button
+                          variant="secondary"
+                          size="icon"
+                          className="h-8 w-8 bg-background/90 backdrop-blur-sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditPrompt(prompt);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="icon"
+                          className="h-8 w-8 bg-background/90 backdrop-blur-sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletePromptId(prompt.id);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <activeCategory.icon className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                <p>Nenhum prompt de {activeCategory.label.toLowerCase()}</p>
+                {searchQuery && (
+                  <p className="text-sm mt-1">Tente buscar por outros termos</p>
+                )}
+                {canManage && !searchQuery && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-3"
+                    onClick={() => handleNewPrompt(activeCategory.value)}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Adicionar Prompt
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
         ) : (
+          // All categories view - with accordion
           <Accordion
             type="multiple"
             defaultValue={defaultOpenCategories}
