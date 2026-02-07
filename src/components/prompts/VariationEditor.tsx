@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { validateImageFile, validateVideoFile } from "@/lib/fileValidation";
 import { getOptimizedImageUrl } from "@/lib/imageOptimization";
 
-type PromptCategory = "video" | "image" | "agent";
+type PromptCategory = "video" | "image" | "agent" | "modifier";
 
 export interface Variation {
   id?: string;

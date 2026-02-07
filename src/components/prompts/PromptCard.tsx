@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Copy, Video, Image, Bot, ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { Copy, Video, Image, Bot, Wand2, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +18,7 @@ interface PromptVariation {
 
 interface Prompt {
   id: string;
-  category: 'video' | 'image' | 'agent';
+  category: 'video' | 'image' | 'agent' | 'modifier';
   title: string;
   content: string;
   description: string | null;
@@ -40,6 +40,7 @@ const categoryIcons = {
   video: Video,
   image: Image,
   agent: Bot,
+  modifier: Wand2,
 };
 
 export function PromptCard({ prompt, priority = false }: PromptCardProps) {
