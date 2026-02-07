@@ -1,155 +1,130 @@
 
-# Plano: Carregamento Instantaneo de Imagens
+# Plano: Correções na Arena dos Gênios
 
-## Problema Atual
+## Problemas Identificados
 
-O sistema ja usa otimizacao de imagens (WebP 75%, resize), mas as imagens ainda demoram a aparecer porque:
-1. **Lazy loading em tudo**: Todas imagens usam `loading="lazy"`, mesmo as visiveis imediatamente
-2. **Sem prefetch de dados**: Os dados das queries nao sao pre-carregados
-3. **Sem cache de imagens**: Imagens nao sao cacheadas entre navegacoes
-4. **Sem preload estrategico**: Nao ha preload das imagens criticas
+### 1. Desafios Bloqueados Visíveis (Spoilers)
+A página `/desafios` mostra os cards completos dos desafios bloqueados, incluindo título, objetivo, dificuldade e tempo estimado. O usuário quer que os próximos desafios fiquem ocultos até serem liberados.
 
-## Solucao em 4 Frentes
+### 2. Bug ao Completar Desafios
+O sistema atual busca o predecessor na tabela `objective_challenge_links` pelo `daily_challenge_id` do desafio completado. Quando há dois desafios simultâneos, ambos podem ter sucessores diferentes configurados e o sistema precisa respeitar cada caminho de desbloqueio independentemente.
 
-### 1. Prefetch de Dados nas Rotas Principais
+### 3. Dados Órfãos no Progresso
+Existem registros de progresso do usuário (`user_challenge_progress`) para desafios que não estão mais vinculados ao objetivo (`objective_challenge_links`). Isso causa comportamento inesperado.
 
-Usar o `prefetchQuery` do TanStack Query para carregar dados **antes** de navegar:
-- Quando o usuario passa o mouse sobre um link na sidebar, pre-carregar os dados daquela pagina
-- Dados ficam em cache e a pagina carrega instantaneamente
+## Solução Proposta
 
-Exemplo de fluxo:
+### Parte 1: Ocultar Desafios Bloqueados
+
+Modificar `ChallengeProgressSection.tsx` para NÃO renderizar os cards individuais de desafios bloqueados. Mostrar apenas:
+- Uma contagem discreta: "Você tem X desafios pendentes"
+- Nenhum detalhe sobre título ou conteúdo
+
+Antes:
 ```text
-Usuario passa mouse em "Prompts" na sidebar
-  -> prefetchQuery carrega lista de prompts em background
-  -> Quando clica, dados ja estao prontos
-  -> Imagens comecam a carregar antes de renderizar
+PRÓXIMOS DESAFIOS
+[Card com título, objetivo, dificuldade]
+[Card com título, objetivo, dificuldade]
++2 desafios bloqueados
 ```
 
-### 2. Eager Loading para Imagens Criticas
-
-Diferenciar imagens criticas (above-the-fold) de secundarias:
-- Banners do dashboard: `loading="eager"` + preload hints
-- Primeiros 6-8 items de grids: `loading="eager"`
-- Restante: manter `loading="lazy"`
-
-### 3. Preload de Imagens via Link Hints
-
-Adicionar preload dinamico para imagens criticas:
-```html
-<link rel="preload" as="image" href="url-otimizada" />
+Depois:
+```text
+PRÓXIMO PASSO
+Você tem 4 desafios pendentes nesta trilha.
+Complete os desafios ativos para desbloquear os próximos!
 ```
 
-Injetar esses hints quando os dados chegam, antes de renderizar.
+### Parte 2: Corrigir Lógica de Conclusão
 
-### 4. Cache Longo no QueryClient
+A lógica atual em `useUserChallengeProgress.ts` já está correta para buscar sucessores:
+```typescript
+const { data: successorLinks } = await supabase
+  .from("objective_challenge_links")
+  .select("daily_challenge_id")
+  .eq("objective_item_id", current.objective_item_id)
+  .eq("predecessor_challenge_id", current.daily_challenge_id);
+```
 
-Configurar `staleTime` maior para dados estaticos como prompts, modulos e banners:
-- `staleTime: 5 * 60 * 1000` (5 minutos) - dados considerados frescos
-- `gcTime: 10 * 60 * 1000` (10 minutos) - manter em cache
+O problema é que o código não está sendo executado corretamente. Verificações necessárias:
+1. Garantir que `current.daily_challenge_id` existe e está correto
+2. Verificar se os sucessores existem na tabela de links
+3. Garantir que os registros de progresso para os sucessores existem
 
-## Detalhes Tecnicos
+### Parte 3: Limpar Dados Inconsistentes
 
-### Arquivos a Criar/Modificar
+Criar funcionalidade para sincronizar o progresso do usuário com os links atuais:
+- Quando um desafio no progresso não existe mais nos links, removê-lo
+- Quando um novo desafio é adicionado aos links, criar o registro de progresso
 
-1. **`src/App.tsx`** - Configurar QueryClient com staleTime global
-2. **`src/lib/prefetchRoutes.ts`** (novo) - Funcoes de prefetch por rota
-3. **`src/components/layout/SidebarContent.tsx`** - Adicionar onMouseEnter nos links para prefetch
-4. **`src/components/ui/image-with-skeleton.tsx`** - Adicionar prop `priority` para eager loading
-5. **`src/hooks/useImagePreload.ts`** (novo) - Hook para preload dinamico de imagens
+## Detalhes Técnicos
 
-### Implementacao do QueryClient
+### Arquivos a Modificar
+
+1. **`src/components/challenges/ChallengeProgressSection.tsx`**
+   - Remover seção de LockedChallengeCard
+   - Substituir por mensagem simples de contagem
+   - Manter card de "Desafios Completados" (pode mostrar histórico)
+
+2. **`src/hooks/useUserChallengeProgress.ts`**
+   - Adicionar logs de debug na mutation de complete (temporário)
+   - Melhorar tratamento de erro
+   - Garantir refetch após conclusão
+
+3. **`src/hooks/useChallengeProgressData.ts`**
+   - Adicionar lógica para sincronizar progresso com links
+   - Remover registros de progresso órfãos (desafios removidos dos links)
+   - Adicionar registros faltantes (desafios novos nos links)
+
+### Nova Lógica de Sincronização
 
 ```typescript
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutos
-      gcTime: 10 * 60 * 1000, // 10 minutos cache
-      refetchOnWindowFocus: false,
-    },
-  },
-});
-```
+// Em useChallengeProgressData ou useEffect dedicado
+// Quando os links mudam, sincronizar o progresso:
 
-### Prefetch na Sidebar
-
-```typescript
-// Quando mouse entra no link
-const handlePrefetch = (route: string) => {
-  if (route === '/prompts') {
-    queryClient.prefetchQuery({
-      queryKey: ['prompts'],
-      queryFn: fetchPrompts,
-      staleTime: 5 * 60 * 1000,
-    });
-  }
-  // ... outras rotas
-};
-```
-
-### Componente ImageWithSkeleton Atualizado
-
-```typescript
-interface Props {
-  // ... existentes
-  priority?: boolean; // Se true, usa eager loading
-}
-
-// No img:
-loading={priority ? "eager" : "lazy"}
-```
-
-### Hook useImagePreload
-
-```typescript
-export function useImagePreload(urls: string[]) {
-  useEffect(() => {
-    urls.forEach((url) => {
-      if (!url) return;
-      const link = document.createElement('link');
-      link.rel = 'preload';
-      link.as = 'image';
-      link.href = url;
-      document.head.appendChild(link);
-    });
-  }, [urls]);
-}
-```
-
-### Uso nas Paginas
-
-```typescript
-// Em Prompts.tsx
-const { data: prompts } = useQuery({...});
-
-// Preload das primeiras 6 imagens
-const criticalImages = prompts?.slice(0, 6).map(p => 
-  getOptimizedImageUrl(p.thumbnail_url, { width: 400 })
+// 1. Encontrar desafios no progresso que não existem nos links
+const orphanProgress = progress.filter(p => 
+  !linkedChallenges.some(l => l.challengeId === p.daily_challenge_id)
 );
-useImagePreload(criticalImages);
+// Deletar orphans
+
+// 2. Encontrar desafios nos links que não existem no progresso
+const missingChallenges = linkedChallenges.filter(l =>
+  !progress.some(p => p.daily_challenge_id === l.challengeId)
+);
+// Criar registros faltantes
 ```
 
-## Fluxo Final
+### Interface Simplificada para Bloqueados
 
-```text
-1. Usuario loga -> Dashboard carrega
-2. Sidebar renderiza com prefetch handlers
-3. Mouse passa em "Prompts" -> prefetch da query
-4. Dados chegam -> preload das primeiras 6 imagens
-5. Usuario clica -> pagina renderiza instantaneamente
-6. Imagens criticas ja estao no cache do browser
+```tsx
+{/* Em vez de cards detalhados */}
+{lockedChallenges.length > 0 && (
+  <Card className="border-dashed border-border/50">
+    <CardContent className="py-6 text-center">
+      <Lock className="h-8 w-8 mx-auto mb-3 text-muted-foreground/40" />
+      <p className="text-sm text-muted-foreground">
+        Você tem <strong>{lockedChallenges.length}</strong> desafio
+        {lockedChallenges.length !== 1 && "s"} pendente
+        {lockedChallenges.length !== 1 && "s"} nesta trilha.
+      </p>
+      <p className="text-xs text-muted-foreground/70 mt-1">
+        Complete os desafios ativos para desbloquear os próximos!
+      </p>
+    </CardContent>
+  </Card>
+)}
 ```
 
-## Beneficios Esperados
+## Benefícios
 
-- Dados pre-carregados: navegacao instantanea
-- Imagens criticas com preload: aparecem muito mais rapido
-- Cache de 5 minutos: menos requests repetidos
-- Experiencia "nativa": parece app nativo, nao web
+- Sem spoilers: alunos não veem os desafios futuros
+- Sistema mais robusto: sincronização automática entre links e progresso
+- Correção do bug de conclusão: garantir desbloqueio correto dos sucessores
+- Dados limpos: remoção de registros órfãos
 
-## Esforco Estimado
+## Esforço Estimado
 
-- Modificar 4-5 arquivos existentes
-- Criar 2 novos arquivos pequenos
-- Sem alteracoes no banco de dados
-- Tempo estimado: implementacao media
+- 3 arquivos a modificar
+- Sem alterações no banco de dados
+- Implementação média
