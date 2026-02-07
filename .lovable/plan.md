@@ -1,147 +1,205 @@
 
-# Plano: Sistema Perfeito de Objetivos e Ordem de Desafios
+# Plano: Banco de Prompts com Accordion e Sessoes Dinamicas
 
-## Problemas Identificados
+## Resumo da Mudanca
 
-### Problema 1: Modal mostra apenas 3 objetivos
-O banco de dados tem 6 objetivos, mas o modal esta limitando a visualizacao. O problema esta no `max-h-[400px]` do ScrollArea que pode estar cortando items, e pode haver problema no scroll em dispositivos moveis.
+Transformar a pagina `/prompts` de um layout com abas (Tabs) para um layout com acordeoes (Accordion), onde cada secao pode ser expandida/recolhida. Alem disso, adicionar uma nova categoria "Modificador de Imagens" e permitir que mentores gerenciem prompts e secoes diretamente na pagina.
 
-### Problema 2: Ordem dos desafios invertida
-Ao analisar a tabela `objective_challenge_links`, encontrei a seguinte inconsistencia para o objetivo "Criar videos incriveis":
-- Desafio inicial (is_initial_active=true): `order_index: 4`
-- Desafios de sequencia: `order_index: 0, 1, 2, 3`
+## Arquitetura Proposta
 
-Isso causa confusao no sistema porque a ordenacao por `order_index` coloca o desafio inicial por ultimo, quando deveria estar primeiro.
+### Estrutura Visual
+```text
+BANCO DE PROMPTS
+[Buscar prompts...]
 
-### Problema 3: Remocao de objetivos
-Quando o aluno desmarca um objetivo, o progresso antigo permanece no banco, causando inconsistencias quando ele seleciona novamente.
+v Imagens                    <- Accordion aberto
+  [Grid de cards de prompts de imagem]
 
-## Solucao em 3 Partes
+> Videos                     <- Accordion fechado
 
-### Parte 1: Corrigir Modal de Objetivos
+> Modificador de Imagens     <- Nova secao
 
-Melhorias no `ObjectivesModal.tsx`:
-- Remover ou aumentar limite de altura do ScrollArea
-- Adicionar scroll suave em mobile
-- Garantir que todos os objetivos aparecem
+[+ Adicionar Secao] (apenas para mentores)
+```
+
+### Nova Categoria no Banco de Dados
+
+A tabela `prompts` usa a coluna `category` (text) para filtrar. Atualmente tem: `video`, `image`. Vamos adicionar `modifier` para "Modificador de Imagens".
+
+Nao e necessario alterar o schema pois `category` ja e um campo texto livre.
+
+## Detalhes Tecnicos
+
+### Parte 1: Nova Pagina com Accordion
+
+**Arquivo:** `src/pages/Prompts.tsx`
+
+Substituir o componente `Tabs` por `Accordion` do Radix UI:
 
 ```tsx
-// Antes:
-<ScrollArea className="flex-1 max-h-[400px] pr-4 -mr-4">
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
-// Depois:
-<ScrollArea className="flex-1 max-h-[60vh] pr-4 -mr-4">
+// Categorias disponiveis
+const categories = [
+  { value: "image", label: "Imagens", icon: Image },
+  { value: "video", label: "Videos", icon: Video },
+  { value: "modifier", label: "Modificador de Imagens", icon: Wand2 }, // Nova!
+];
+
+// Agrupar prompts por categoria
+const groupedPrompts = useMemo(() => {
+  return categories.map(cat => ({
+    ...cat,
+    prompts: prompts?.filter(p => 
+      p.category === cat.value &&
+      (searchQuery === "" || matchesSearch(p, searchQuery))
+    ) || []
+  }));
+}, [prompts, searchQuery]);
+
+// Renderizar
+<Accordion type="multiple" defaultValue={["image"]}>
+  {groupedPrompts.map((group) => (
+    <AccordionItem key={group.value} value={group.value}>
+      <AccordionTrigger className="flex items-center gap-2">
+        <group.icon className="h-5 w-5" />
+        {group.label} ({group.prompts.length})
+      </AccordionTrigger>
+      <AccordionContent>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {group.prompts.map((prompt) => (
+            <PromptCard key={prompt.id} prompt={prompt} />
+          ))}
+        </div>
+      </AccordionContent>
+    </AccordionItem>
+  ))}
+</Accordion>
 ```
 
-### Parte 2: Corrigir Ordenacao de Desafios
+### Parte 2: Permitir Mentores Gerenciarem Prompts
 
-O problema raiz esta na forma como os links estao salvos. A correcao envolve:
+Atualmente apenas admins podem gerenciar prompts via `/admin/prompts`. Precisamos:
 
-1. **Na inicializacao** (`useUserChallengeProgress.ts`):
-   - Ja ordena por `order_index` - OK
-   - O problema e que os dados no banco estao invertidos
+1. **Atualizar RLS** para permitir mentores:
+   - A tabela `prompts` tem RLS que permite apenas `admin`. Precisamos adicionar `mentor`.
 
-2. **No sync** (`useSyncChallengeProgress.ts`):
-   - Respeitar o `order_index` correto
-   - O desafio com `is_initial_active=true` deve ter `order_index` menor
+2. **Adicionar botoes de edicao inline** na pagina `/prompts`:
+   - Detectar se o usuario e mentor ou admin usando `useIsMentor()` e `useIsAdmin()`
+   - Mostrar botao "+" para novo prompt
+   - Mostrar botoes de editar/excluir em cada card
 
-3. **Correcao de dados no banco**:
-   - Atualizar os `order_index` dos links para refletir a ordem correta
-   - Desafios iniciais devem ter `order_index` 0
-   - Sequencias seguem 1, 2, 3...
+```tsx
+const { isMentor } = useIsMentor();
+const { isAdmin } = useIsAdmin();
+const canManage = isMentor || isAdmin;
 
-A logica atual ordena por `order_index`, mas o importante e o fluxo de `predecessor_challenge_id`. A ordem de exibicao deve seguir a cadeia de predecessores, nao o index numerico.
+// No header
+{canManage && (
+  <Button onClick={() => setShowNewPromptModal(true)}>
+    <Plus className="h-4 w-4 mr-2" />
+    Novo Prompt
+  </Button>
+)}
 
-**Nova logica proposta**:
-Em vez de ordenar puramente por `order_index`, construir a arvore de dependencias baseada em `predecessor_challenge_id`:
-1. Desafios sem predecessor = iniciais
-2. Para cada inicial, seguir a cadeia de quem o aponta como predecessor
-
-### Parte 3: Limpeza ao Remover Objetivo
-
-No `Desafios.tsx`, quando o usuario desmarca um objetivo no modal, chamar `clearProgress` para esse objetivo antes de salvar:
-
-```typescript
-const handleObjectivesChange = useCallback((objectives: string[]) => {
-  // Encontrar objetivos removidos
-  const removedObjectives = selectedObjectives.filter(
-    (o) => !objectives.includes(o)
-  );
-  
-  // Limpar progresso dos objetivos removidos
-  const objectiveItemsToRemove = objectivesData
-    .filter((item) => removedObjectives.includes(item.objective_key))
-    .map((item) => item.id);
-  
-  objectiveItemsToRemove.forEach((itemId) => {
-    clearProgress(itemId);
-  });
-  
-  // Salvar novos objetivos
-  setSelectedObjectives(objectives);
-  // ... debounce save
-}, [selectedObjectives, objectivesData, clearProgress]);
+// Em cada card
+{canManage && (
+  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100">
+    <Button size="icon" variant="secondary" onClick={() => openEdit(prompt)}>
+      <Pencil className="h-4 w-4" />
+    </Button>
+  </div>
+)}
 ```
+
+### Parte 3: Migracao do Banco de Dados
+
+Adicionar permissao para mentores gerenciarem prompts:
+
+```sql
+-- Atualizar RLS para prompts
+DROP POLICY IF EXISTS "Admins can manage prompts" ON prompts;
+CREATE POLICY "Admins and mentors can manage prompts"
+ON prompts FOR ALL
+USING (has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'mentor'))
+WITH CHECK (has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'mentor'));
+
+-- Atualizar RLS para prompt_variations
+DROP POLICY IF EXISTS "Admins and mentors can manage prompt_variations" ON prompt_variations;
+-- (ja existe, verificar se esta correto)
+```
+
+### Parte 4: Componente de Edicao Inline
+
+Reutilizar o modal de edicao existente em `AdminPrompts.tsx` como componente compartilhado:
+
+**Novo arquivo:** `src/components/prompts/PromptEditorModal.tsx`
+
+Extrair a logica do dialog de criar/editar do `AdminPrompts.tsx` para um componente reutilizavel que pode ser usado tanto em `/admin/prompts` quanto em `/prompts`.
 
 ## Arquivos a Modificar
 
-1. **`src/components/challenges/ObjectivesModal.tsx`**
-   - Aumentar altura maxima do ScrollArea
-   - Melhorar UX mobile
+1. **`src/pages/Prompts.tsx`** (modificar)
+   - Substituir Tabs por Accordion
+   - Adicionar nova categoria "modifier" 
+   - Adicionar botoes de gerenciamento para mentores
+   - Integrar modal de edicao
 
-2. **`src/hooks/useChallengeProgressData.ts`**
-   - Construir arvore de desafios baseada em predecessores
-   - Garantir ordem correta de exibicao
+2. **`src/components/prompts/PromptEditorModal.tsx`** (novo)
+   - Extrair logica de criar/editar do AdminPrompts
+   - Componente reutilizavel com props para criar/editar
 
-3. **`src/pages/Desafios.tsx`**
-   - Importar `clearProgress` do hook
-   - Implementar limpeza ao desmarcar objetivos
+3. **`src/pages/admin/AdminPrompts.tsx`** (modificar)
+   - Adicionar categoria "modifier" nas abas
+   - Usar novo componente PromptEditorModal
 
-4. **Correcao de dados no banco**
-   - Atualizar `order_index` dos links existentes para consistencia
+4. **Migracao SQL** (nova)
+   - Atualizar RLS de `prompts` para incluir mentores
 
-## Nova Logica de Ordenacao por Predecessores
+## Fluxo do Usuario
 
-```typescript
-// Construir ordem correta baseada em predecessores
-function buildChallengeOrder(links: ChallengeLink[]) {
-  const result: string[] = [];
-  const processedIds = new Set<string>();
-  
-  // 1. Encontrar todos os iniciais (sem predecessor ou is_initial_active)
-  const initials = links.filter(
-    (l) => l.isInitialActive || l.predecessorChallengeId === null
-  );
-  
-  // Adicionar iniciais primeiro
-  initials.forEach((initial) => {
-    if (!processedIds.has(initial.challengeId)) {
-      result.push(initial.challengeId);
-      processedIds.add(initial.challengeId);
-      
-      // Seguir cadeia de sucessores
-      let current = initial.challengeId;
-      while (true) {
-        const successor = links.find(
-          (l) => l.predecessorChallengeId === current && !processedIds.has(l.challengeId)
-        );
-        if (!successor) break;
-        result.push(successor.challengeId);
-        processedIds.add(successor.challengeId);
-        current = successor.challengeId;
-      }
-    }
-  });
-  
-  return result;
-}
+### Aluno
+1. Abre `/prompts`
+2. Ve 3 secoes em accordion: Imagens, Videos, Modificador de Imagens
+3. Clica em uma secao para expandir
+4. Ve os cards de prompts
+5. Clica em um card para ver detalhes e copiar
+
+### Mentor
+1. Abre `/prompts`
+2. Ve as mesmas secoes + botao "Novo Prompt"
+3. Ao passar mouse sobre um card, ve botoes de editar/excluir
+4. Pode criar, editar e excluir prompts diretamente na pagina
+
+## Interface Visual do Accordion
+
+```text
++------------------------------------------+
+| Banco de Prompts                         |
+| Prompts prontos para usar com IAs        |
+|                                          |
+| [Buscar prompts...] [+ Novo Prompt]      |
++------------------------------------------+
+|                                          |
+| v Imagens (12)                           |
+|   +--------+ +--------+ +--------+       |
+|   |  Card  | |  Card  | |  Card  |       |
+|   +--------+ +--------+ +--------+       |
+|   +--------+ +--------+ +--------+       |
+|   |  Card  | |  Card  | |  Card  |       |
+|   +--------+ +--------+ +--------+       |
+|                                          |
+| > Videos (5)                             |
+|                                          |
+| > Modificador de Imagens (3)             |
+|                                          |
++------------------------------------------+
 ```
 
-## Fluxo de Usuario Esperado
+## Beneficios
 
-1. Aluno abre /desafios
-2. Modal de objetivos mostra TODOS os 6 objetivos (scroll funcional)
-3. Aluno marca/desmarca objetivos livremente
-4. Ao desmarcar, progresso antigo e limpo
-5. Desafios aparecem na ordem correta: inicial -> sequencia
-6. Completar um desafio desbloqueia seu sucessor direto
+- Layout mais organizado e expansivel
+- Mentores podem gerenciar prompts sem acessar area admin
+- Nova categoria para modificadores de imagem
+- Menos clicks para ver conteudo (accordion permite multiplos abertos)
+- Busca global funciona em todas as secoes
