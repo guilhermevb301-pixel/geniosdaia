@@ -15,6 +15,8 @@ interface ImageWithSkeletonProps {
   optimizedWidth?: number;
   /** Qualidade para otimização (1-100, padrão 75) */
   optimizedQuality?: number;
+  /** Se true, usa eager loading para imagens críticas (above-the-fold) */
+  priority?: boolean;
 }
 
 export function ImageWithSkeleton({
@@ -27,6 +29,7 @@ export function ImageWithSkeleton({
   fallbackIcon,
   optimizedWidth,
   optimizedQuality = 75,
+  priority = false,
 }: ImageWithSkeletonProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -50,12 +53,13 @@ export function ImageWithSkeleton({
         </div>
       )}
 
-      {/* Image with lazy loading */}
+      {/* Image with configurable loading */}
       <img
         src={optimizedSrc || src}
         alt={alt}
-        loading="lazy"
-        decoding="async"
+        loading={priority ? "eager" : "lazy"}
+        decoding={priority ? "sync" : "async"}
+        fetchPriority={priority ? "high" : "auto"}
         onLoad={() => setIsLoaded(true)}
         onError={() => setHasError(true)}
         className={cn(

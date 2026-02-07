@@ -6,10 +6,20 @@ import { RankingLists } from "@/components/dashboard/RankingLists";
 import { EvolutionCard } from "@/components/dashboard/EvolutionCard";
 import { WeeklyChallengeCard } from "@/components/dashboard/WeeklyChallengeCard";
 import { useUserStreak } from "@/hooks/useUserStreak";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
+import { useDashboardBanners } from "@/hooks/useDashboardBanners";
+import { useImagePreload } from "@/hooks/useImagePreload";
 
 export default function Dashboard() {
   const { logActivity } = useUserStreak();
+  const { banners } = useDashboardBanners();
+
+  // Preload banner images for instant display
+  const bannerImages = useMemo(() => 
+    banners.map(b => b.image_url).filter(Boolean),
+    [banners]
+  );
+  useImagePreload(bannerImages, { width: 1200 });
 
   // Log daily activity on dashboard load
   useEffect(() => {

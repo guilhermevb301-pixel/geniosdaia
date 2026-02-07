@@ -1,9 +1,11 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { CourseProgress } from "@/components/aulas/CourseProgress";
 import { ModuleGrid } from "@/components/aulas/ModuleGrid";
+import { useImagePreload } from "@/hooks/useImagePreload";
 
 interface ModuleSection {
   id: string;
@@ -120,6 +122,13 @@ export default function Aulas() {
   // Calculate total progress
   const totalLessons = modules.reduce((acc, m) => acc + m.totalLessons, 0);
   const completedLessons = modules.reduce((acc, m) => acc + m.completedLessons, 0);
+
+  // Preload first 5 module cover images
+  const criticalImages = useMemo(() => 
+    modules.slice(0, 5).map(m => m.cover_image_url).filter(Boolean),
+    [modules]
+  );
+  useImagePreload(criticalImages, { width: 300 });
 
   return (
     <AppLayout>

@@ -14,6 +14,8 @@ interface ModuleCardProps {
   completedLessons: number;
   totalLessons: number;
   orderIndex: number;
+  /** If true, images load eagerly (for above-the-fold cards) */
+  priority?: boolean;
 }
 
 export function ModuleCard({
@@ -24,6 +26,7 @@ export function ModuleCard({
   completedLessons,
   totalLessons,
   orderIndex,
+  priority = false,
 }: ModuleCardProps) {
   const progressPercent = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
   const isCompleted = totalLessons > 0 && completedLessons === totalLessons;
@@ -41,6 +44,7 @@ export function ModuleCard({
                 containerClassName="h-full w-full"
                 fallbackIcon={<BookOpen className="h-12 w-12 text-primary/40" />}
                 optimizedWidth={300}
+                priority={priority}
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">

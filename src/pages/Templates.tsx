@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -10,6 +10,7 @@ import { Search, Download, Heart, MessageCircle, Sparkles, FileArchive } from "l
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { Link } from "react-router-dom";
 import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton";
+import { useImagePreload } from "@/hooks/useImagePreload";
 
 interface Template {
   id: string;
@@ -77,6 +78,13 @@ export default function Templates() {
     );
   });
 
+  // Preload first 6 critical images
+  const criticalImages = useMemo(() => 
+    filteredTemplates?.slice(0, 6).map(t => t.image_url).filter(Boolean) || [],
+    [filteredTemplates]
+  );
+  useImagePreload(criticalImages, { width: 400 });
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -113,7 +121,7 @@ export default function Templates() {
           </div>
         ) : filteredTemplates && filteredTemplates.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredTemplates.map((template) => (
+            {filteredTemplates.map((template, index) => (
               <Card
                 key={template.id}
                 className="group overflow-hidden hover:border-primary/50 transition-colors"
@@ -128,6 +136,7 @@ export default function Templates() {
                       containerClassName="w-full h-full"
                       fallbackIcon={<Sparkles className="h-12 w-12 text-muted-foreground/50" />}
                       optimizedWidth={400}
+                      priority={index < 6} // First 6 load eagerly
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
