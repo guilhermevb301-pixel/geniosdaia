@@ -1,205 +1,144 @@
 
-# Plano: Banco de Prompts com Accordion e Sessoes Dinamicas
+# Plano: Accordion de Banco de Prompts na Sidebar
 
-## Resumo da Mudanca
+## Entendimento do Pedido
 
-Transformar a pagina `/prompts` de um layout com abas (Tabs) para um layout com acordeoes (Accordion), onde cada secao pode ser expandida/recolhida. Alem disso, adicionar uma nova categoria "Modificador de Imagens" e permitir que mentores gerenciem prompts e secoes diretamente na pagina.
+O usuário quer que o item "Banco de Prompts" na sidebar seja um menu expansivel (como o "Gerenciar") que ao clicar mostra 3 subcategorias:
+- Imagens
+- Videos  
+- Modificador de Imagens
+
+Cada subcategoria leva para a mesma pagina `/prompts`, mas com a categoria pre-selecionada.
 
 ## Arquitetura Proposta
 
-### Estrutura Visual
+### Rotas
+Usaremos query params para filtrar a categoria:
+- `/prompts` - Mostra todas as categorias
+- `/prompts?category=image` - Expande automaticamente "Imagens"
+- `/prompts?category=video` - Expande automaticamente "Videos"  
+- `/prompts?category=modifier` - Expande automaticamente "Modificador de Imagens"
+
+### Estrutura Visual na Sidebar
 ```text
-BANCO DE PROMPTS
-[Buscar prompts...]
-
-v Imagens                    <- Accordion aberto
-  [Grid de cards de prompts de imagem]
-
-> Videos                     <- Accordion fechado
-
-> Modificador de Imagens     <- Nova secao
-
-[+ Adicionar Secao] (apenas para mentores)
+Templates
+v Banco de Prompts    <- Clicavel, expande submenu
+  > Imagens           <- Link para /prompts?category=image
+  > Videos            <- Link para /prompts?category=video
+  > Modificador       <- Link para /prompts?category=modifier
+Meus GPTs
+Eventos
+Desafios
 ```
-
-### Nova Categoria no Banco de Dados
-
-A tabela `prompts` usa a coluna `category` (text) para filtrar. Atualmente tem: `video`, `image`. Vamos adicionar `modifier` para "Modificador de Imagens".
-
-Nao e necessario alterar o schema pois `category` ja e um campo texto livre.
 
 ## Detalhes Tecnicos
 
-### Parte 1: Nova Pagina com Accordion
+### Parte 1: Modificar SidebarContent.tsx
 
-**Arquivo:** `src/pages/Prompts.tsx`
-
-Substituir o componente `Tabs` por `Accordion` do Radix UI:
+1. Remover "Banco de Prompts" da lista `tools`
+2. Adicionar um Collapsible para "Banco de Prompts" similar ao "Gerenciar"
+3. Adicionar subcategorias como links para `/prompts?category=xxx`
+4. Manter estado de expansao quando estiver na rota `/prompts`
 
 ```tsx
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-
-// Categorias disponiveis
-const categories = [
-  { value: "image", label: "Imagens", icon: Image },
-  { value: "video", label: "Videos", icon: Video },
-  { value: "modifier", label: "Modificador de Imagens", icon: Wand2 }, // Nova!
+// Novas subcategorias do Banco de Prompts
+const promptCategories = [
+  { label: "Imagens", value: "image", icon: Image },
+  { label: "Vídeos", value: "video", icon: Video },
+  { label: "Modificador de Imagens", value: "modifier", icon: Wand2 },
 ];
 
-// Agrupar prompts por categoria
-const groupedPrompts = useMemo(() => {
-  return categories.map(cat => ({
-    ...cat,
-    prompts: prompts?.filter(p => 
-      p.category === cat.value &&
-      (searchQuery === "" || matchesSearch(p, searchQuery))
-    ) || []
-  }));
-}, [prompts, searchQuery]);
+// Estado para controlar expansao
+const [promptsOpen, setPromptsOpen] = useState(
+  location.pathname.startsWith("/prompts")
+);
+
+// Verificar se subcategoria esta ativa
+const isPromptCategoryActive = (category: string) => {
+  const params = new URLSearchParams(location.search);
+  return location.pathname === "/prompts" && params.get("category") === category;
+};
 
 // Renderizar
-<Accordion type="multiple" defaultValue={["image"]}>
-  {groupedPrompts.map((group) => (
-    <AccordionItem key={group.value} value={group.value}>
-      <AccordionTrigger className="flex items-center gap-2">
-        <group.icon className="h-5 w-5" />
-        {group.label} ({group.prompts.length})
-      </AccordionTrigger>
-      <AccordionContent>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {group.prompts.map((prompt) => (
-            <PromptCard key={prompt.id} prompt={prompt} />
-          ))}
-        </div>
-      </AccordionContent>
-    </AccordionItem>
-  ))}
-</Accordion>
+<Collapsible open={promptsOpen} onOpenChange={setPromptsOpen}>
+  <CollapsibleTrigger className="w-full">
+    <div className="flex items-center justify-between ...">
+      <div className="flex items-center gap-3">
+        <Lightbulb className="h-5 w-5 text-amber-400" />
+        <span>Banco de Prompts</span>
+      </div>
+      <ChevronDown className={cn("h-4 w-4", promptsOpen && "rotate-180")} />
+    </div>
+  </CollapsibleTrigger>
+  <CollapsibleContent>
+    <div className="ml-4 mt-1 space-y-1 border-l-2 border-amber-400/30 pl-4">
+      {promptCategories.map((cat) => (
+        <Link
+          key={cat.value}
+          to={`/prompts?category=${cat.value}`}
+          onClick={handleClick}
+          className={cn(
+            "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+            isPromptCategoryActive(cat.value)
+              ? "text-amber-400 bg-amber-400/10"
+              : "text-sidebar-foreground/90 hover:text-sidebar-foreground hover:bg-muted"
+          )}
+        >
+          <cat.icon className="h-4 w-4" />
+          {cat.label}
+        </Link>
+      ))}
+    </div>
+  </CollapsibleContent>
+</Collapsible>
 ```
 
-### Parte 2: Permitir Mentores Gerenciarem Prompts
+### Parte 2: Modificar Prompts.tsx
 
-Atualmente apenas admins podem gerenciar prompts via `/admin/prompts`. Precisamos:
-
-1. **Atualizar RLS** para permitir mentores:
-   - A tabela `prompts` tem RLS que permite apenas `admin`. Precisamos adicionar `mentor`.
-
-2. **Adicionar botoes de edicao inline** na pagina `/prompts`:
-   - Detectar se o usuario e mentor ou admin usando `useIsMentor()` e `useIsAdmin()`
-   - Mostrar botao "+" para novo prompt
-   - Mostrar botoes de editar/excluir em cada card
+1. Ler o query param `category` da URL
+2. Se existir, abrir apenas essa categoria no accordion
+3. Se nao existir, manter comportamento atual (todas abertas)
 
 ```tsx
-const { isMentor } = useIsMentor();
-const { isAdmin } = useIsAdmin();
-const canManage = isMentor || isAdmin;
+import { useSearchParams } from "react-router-dom";
 
-// No header
-{canManage && (
-  <Button onClick={() => setShowNewPromptModal(true)}>
-    <Plus className="h-4 w-4 mr-2" />
-    Novo Prompt
-  </Button>
-)}
+const [searchParams] = useSearchParams();
+const categoryParam = searchParams.get("category") as PromptCategory | null;
 
-// Em cada card
-{canManage && (
-  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100">
-    <Button size="icon" variant="secondary" onClick={() => openEdit(prompt)}>
-      <Pencil className="h-4 w-4" />
-    </Button>
-  </div>
-)}
+// Definir quais categorias abrir por padrao
+const defaultOpenCategories = useMemo(() => {
+  if (categoryParam && categories.some(c => c.value === categoryParam)) {
+    return [categoryParam];
+  }
+  // Fallback: abrir categorias com prompts
+  return groupedPrompts.filter((g) => g.prompts.length > 0).map((g) => g.value);
+}, [categoryParam, groupedPrompts]);
 ```
-
-### Parte 3: Migracao do Banco de Dados
-
-Adicionar permissao para mentores gerenciarem prompts:
-
-```sql
--- Atualizar RLS para prompts
-DROP POLICY IF EXISTS "Admins can manage prompts" ON prompts;
-CREATE POLICY "Admins and mentors can manage prompts"
-ON prompts FOR ALL
-USING (has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'mentor'))
-WITH CHECK (has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'mentor'));
-
--- Atualizar RLS para prompt_variations
-DROP POLICY IF EXISTS "Admins and mentors can manage prompt_variations" ON prompt_variations;
--- (ja existe, verificar se esta correto)
-```
-
-### Parte 4: Componente de Edicao Inline
-
-Reutilizar o modal de edicao existente em `AdminPrompts.tsx` como componente compartilhado:
-
-**Novo arquivo:** `src/components/prompts/PromptEditorModal.tsx`
-
-Extrair a logica do dialog de criar/editar do `AdminPrompts.tsx` para um componente reutilizavel que pode ser usado tanto em `/admin/prompts` quanto em `/prompts`.
 
 ## Arquivos a Modificar
 
-1. **`src/pages/Prompts.tsx`** (modificar)
-   - Substituir Tabs por Accordion
-   - Adicionar nova categoria "modifier" 
-   - Adicionar botoes de gerenciamento para mentores
-   - Integrar modal de edicao
+1. **`src/components/layout/SidebarContent.tsx`**
+   - Remover "Banco de Prompts" da lista tools
+   - Adicionar Collapsible com subcategorias
+   - Importar icones Video e Wand2
+   - Adicionar estado promptsOpen
 
-2. **`src/components/prompts/PromptEditorModal.tsx`** (novo)
-   - Extrair logica de criar/editar do AdminPrompts
-   - Componente reutilizavel com props para criar/editar
-
-3. **`src/pages/admin/AdminPrompts.tsx`** (modificar)
-   - Adicionar categoria "modifier" nas abas
-   - Usar novo componente PromptEditorModal
-
-4. **Migracao SQL** (nova)
-   - Atualizar RLS de `prompts` para incluir mentores
+2. **`src/pages/Prompts.tsx`**
+   - Importar useSearchParams
+   - Ler parametro category da URL
+   - Ajustar defaultOpenCategories baseado no parametro
 
 ## Fluxo do Usuario
 
-### Aluno
-1. Abre `/prompts`
-2. Ve 3 secoes em accordion: Imagens, Videos, Modificador de Imagens
-3. Clica em uma secao para expandir
-4. Ve os cards de prompts
-5. Clica em um card para ver detalhes e copiar
-
-### Mentor
-1. Abre `/prompts`
-2. Ve as mesmas secoes + botao "Novo Prompt"
-3. Ao passar mouse sobre um card, ve botoes de editar/excluir
-4. Pode criar, editar e excluir prompts diretamente na pagina
-
-## Interface Visual do Accordion
-
-```text
-+------------------------------------------+
-| Banco de Prompts                         |
-| Prompts prontos para usar com IAs        |
-|                                          |
-| [Buscar prompts...] [+ Novo Prompt]      |
-+------------------------------------------+
-|                                          |
-| v Imagens (12)                           |
-|   +--------+ +--------+ +--------+       |
-|   |  Card  | |  Card  | |  Card  |       |
-|   +--------+ +--------+ +--------+       |
-|   +--------+ +--------+ +--------+       |
-|   |  Card  | |  Card  | |  Card  |       |
-|   +--------+ +--------+ +--------+       |
-|                                          |
-| > Videos (5)                             |
-|                                          |
-| > Modificador de Imagens (3)             |
-|                                          |
-+------------------------------------------+
-```
+1. Usuario ve "Banco de Prompts" na sidebar com seta de expansao
+2. Clica para expandir e ve 3 subcategorias
+3. Clica em "Imagens" -> vai para /prompts?category=image
+4. A pagina abre com apenas a secao "Imagens" expandida
+5. Na sidebar, "Imagens" fica destacado mostrando que esta ativo
 
 ## Beneficios
 
-- Layout mais organizado e expansivel
-- Mentores podem gerenciar prompts sem acessar area admin
-- Nova categoria para modificadores de imagem
-- Menos clicks para ver conteudo (accordion permite multiplos abertos)
-- Busca global funciona em todas as secoes
+- Navegacao mais intuitiva diretamente da sidebar
+- Usuario sabe quais tipos de prompts existem antes de entrar na pagina
+- Acesso rapido a categoria especifica
+- Consistente com o padrao do menu "Gerenciar" que ja existe
