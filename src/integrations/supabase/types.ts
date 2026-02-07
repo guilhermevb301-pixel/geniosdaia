@@ -985,6 +985,27 @@ export type Database = {
         }
         Relationships: []
       }
+      sidebar_settings: {
+        Row: {
+          icon_color: string
+          id: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          icon_color?: string
+          id?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          icon_color?: string
+          id?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       templates: {
         Row: {
           author_name: string | null

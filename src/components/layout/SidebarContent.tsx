@@ -20,7 +20,8 @@ import {
   Bot,
   Image,
   Video,
-  Wand2
+  Wand2,
+  Palette
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -31,6 +32,7 @@ import {
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useIsMentor } from "@/hooks/useIsMentor";
 import { useIsMentee } from "@/hooks/useIsMentee";
+import { useSidebarSettings } from "@/hooks/useSidebarSettings";
 import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getPrefetchHandler } from "@/lib/prefetchRoutes";
@@ -58,8 +60,12 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
   const { isAdmin } = useIsAdmin();
   const { isMentor } = useIsMentor();
   const { isMentee } = useIsMentee();
+  const { iconColor } = useSidebarSettings();
   const [adminOpen, setAdminOpen] = useState(true);
   const [promptsOpen, setPromptsOpen] = useState(location.pathname === "/prompts");
+  
+  // Dynamic icon color class
+  const iconColorClass = `text-${iconColor}`;
 
   const isActive = (href: string) => location.pathname === href;
   const isAdminSection = location.pathname.startsWith("/admin");
@@ -109,7 +115,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
               : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
           )}
         >
-          <Layout className="h-5 w-5 text-amber-400" />
+          <Layout className={cn("h-5 w-5", iconColorClass)} />
           Dashboard
         </Link>
 
@@ -125,7 +131,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
               : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
           )}
         >
-          <BookOpen className="h-5 w-5 text-amber-400" />
+          <BookOpen className={cn("h-5 w-5", iconColorClass)} />
           Aulas
         </Link>
 
@@ -141,7 +147,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
               : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
           )}
         >
-          <Zap className="h-5 w-5 text-amber-400" />
+          <Zap className={cn("h-5 w-5", iconColorClass)} />
           Templates
         </Link>
 
@@ -157,7 +163,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
               )}
             >
               <div className="flex items-center gap-3">
-                <Lightbulb className="h-5 w-5 text-amber-400" />
+                <Lightbulb className={cn("h-5 w-5", iconColorClass)} />
                 <span>Banco de Prompts</span>
               </div>
               <ChevronDown
@@ -169,7 +175,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
             </div>
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <div className="ml-4 mt-1 space-y-1 border-l-2 border-amber-400/30 pl-4">
+            <div className={cn("ml-4 mt-1 space-y-1 border-l-2 pl-4", iconColor === "primary" ? "border-primary/30" : `border-${iconColor}/30`)}>
               {promptCategories.map((cat) => (
                 <Link
                   key={cat.value}
@@ -178,7 +184,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                   className={cn(
                     "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                     isPromptCategoryActive(cat.value)
-                      ? "text-amber-400 bg-amber-400/10"
+                      ? `${iconColorClass} bg-${iconColor}/10`
                       : "text-sidebar-foreground/90 hover:text-sidebar-foreground hover:bg-muted"
                   )}
                 >
@@ -204,7 +210,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                 : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
             )}
           >
-            <item.icon className="h-5 w-5 text-amber-400" />
+            <item.icon className={cn("h-5 w-5", iconColorClass)} />
             {item.label}
           </Link>
         ))}
@@ -223,7 +229,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
               : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
           )}
         >
-          <Award className="h-5 w-5 text-amber-400" />
+          <Award className={cn("h-5 w-5", iconColorClass)} />
           Certificados
         </Link>
 
@@ -237,7 +243,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
               : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
           )}
         >
-          <NotebookPen className="h-5 w-5 text-amber-400" />
+          <NotebookPen className={cn("h-5 w-5", iconColorClass)} />
           Meu Caderno
         </Link>
 
@@ -252,7 +258,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
               : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
           )}
         >
-          <MessageSquare className="h-5 w-5 text-amber-400" />
+          <MessageSquare className={cn("h-5 w-5", iconColorClass)} />
           Aplicar Mentoria
         </Link>
 
@@ -268,7 +274,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                 : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
             )}
           >
-            <GraduationCap className="h-5 w-5 text-amber-400" />
+            <GraduationCap className={cn("h-5 w-5", iconColorClass)} />
             Minha Mentoria
           </Link>
         )}
@@ -423,6 +429,19 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                   >
                     <Image className="h-4 w-4" />
                     Banners
+                  </Link>
+                  <Link
+                    to="/admin/appearance"
+                    onClick={handleClick}
+                    className={cn(
+                      "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                      isActive("/admin/appearance")
+                        ? "text-primary bg-primary/10"
+                        : "text-sidebar-foreground/90 hover:text-sidebar-foreground hover:bg-muted"
+                    )}
+                  >
+                    <Palette className="h-4 w-4" />
+                    Aparência
                   </Link>
                 </div>
               </CollapsibleContent>
