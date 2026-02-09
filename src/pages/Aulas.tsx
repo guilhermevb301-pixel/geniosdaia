@@ -121,12 +121,6 @@ export default function Aulas() {
   const totalLessons = modules.reduce((acc, m) => acc + m.totalLessons, 0);
   const completedLessons = modules.reduce((acc, m) => acc + m.completedLessons, 0);
 
-  // Preload first 5 module cover images
-  const criticalImages = useMemo(() => 
-    modules.slice(0, 5).map(m => m.cover_image_url).filter(Boolean),
-    [modules]
-  );
-  useImagePreload(criticalImages, { width: 300 });
 
   return (
     <AppLayout>
