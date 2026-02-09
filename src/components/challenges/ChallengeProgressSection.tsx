@@ -3,110 +3,24 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Target, Trophy, Lock } from "lucide-react";
 import { CompletedChallengeCard } from "./CompletedChallengeCard";
-import { useUserChallengeProgress } from "@/hooks/useUserChallengeProgress";
-import { useObjectives } from "@/hooks/useObjectives";
-import { useObjectiveChallengeLinks } from "@/hooks/useObjectiveChallengeLinks";
-import { useDailyChallengesAdmin } from "@/hooks/useDailyChallengesAdmin";
-import { useEffect, useMemo } from "react";
 import { DailyChallenge } from "@/hooks/useDailyChallenges";
-import { TimeUnit } from "@/lib/utils";
+import { useChallengeProgressData } from "@/hooks/useChallengeProgressData";
 
 interface ChallengeProgressSectionProps {
   selectedObjectives: string[];
 }
 
 export function ChallengeProgressSection({ selectedObjectives }: ChallengeProgressSectionProps) {
-  const { objectives } = useObjectives();
-  const { allLinks, isLoadingAllLinks } = useObjectiveChallengeLinks();
-  const { challenges: allChallenges, isLoading: isLoadingChallenges } = useDailyChallengesAdmin();
-
-  // Get objective item IDs from selected keys
-  const selectedItemIds = objectives
-    .filter((item) => selectedObjectives.includes(item.objective_key))
-    .map((item) => item.id);
-
-  // Get user progress for selected objectives
   const {
-    progress,
-    activeChallenge,
+    isLoading,
     completedChallenges,
     lockedChallenges,
-    isLoading: isLoadingProgress,
-    initProgress,
-    completeChallenge,
-    isCompleting,
-  } = useUserChallengeProgress(selectedItemIds.length > 0 ? selectedItemIds : undefined);
-
-  // Get linked challenges with their order for each objective
-  const linkedChallengesMap = useMemo(() => {
-    const map: Record<string, Array<{ challengeId: string; orderIndex: number }>> = {};
-    
-    allLinks.forEach((link) => {
-      if (!map[link.objective_item_id]) {
-        map[link.objective_item_id] = [];
-      }
-      map[link.objective_item_id].push({
-        challengeId: link.daily_challenge_id,
-        orderIndex: (link as unknown as { order_index: number }).order_index || 0,
-      });
-    });
-
-    // Sort by order_index
-    Object.keys(map).forEach((key) => {
-      map[key].sort((a, b) => a.orderIndex - b.orderIndex);
-    });
-
-    return map;
-  }, [allLinks]);
-
-  // Initialize progress when objectives change
-  useEffect(() => {
-    if (isLoadingAllLinks || isLoadingChallenges || isLoadingProgress) return;
-
-    selectedItemIds.forEach((itemId) => {
-      const linkedChallenges = linkedChallengesMap[itemId] || [];
-      if (linkedChallenges.length === 0) return;
-
-      // Check if user already has progress for this objective
-      const existingProgress = progress.filter((p) => p.objective_item_id === itemId);
-      if (existingProgress.length > 0) return;
-
-      // Prepare challenges with order info
-      const challengesWithOrder = linkedChallenges
-        .map((link) => {
-          const challenge = allChallenges.find((c) => c.id === link.challengeId);
-          if (!challenge) return null;
-          return {
-            id: challenge.id,
-            estimated_minutes: challenge.estimated_minutes,
-            estimated_time_unit: (challenge.estimated_time_unit || "minutes") as TimeUnit,
-            order_index: link.orderIndex,
-          };
-        })
-        .filter(Boolean) as Array<{
-          id: string;
-          estimated_minutes: number | null;
-          estimated_time_unit: TimeUnit;
-          order_index: number;
-        }>;
-
-      if (challengesWithOrder.length > 0) {
-        initProgress({ objectiveItemId: itemId, challenges: challengesWithOrder });
-      }
-    });
-  }, [
-    selectedItemIds,
-    linkedChallengesMap,
-    allChallenges,
-    progress,
-    isLoadingAllLinks,
-    isLoadingChallenges,
-    isLoadingProgress,
-    initProgress,
-  ]);
+    activeChallenges,
+    activeChallenge,
+  } = useChallengeProgressData(selectedObjectives);
 
   // Loading state
-  if (isLoadingAllLinks || isLoadingChallenges || isLoadingProgress) {
+  if (isLoading) {
     return (
       <Card>
         <CardHeader>
