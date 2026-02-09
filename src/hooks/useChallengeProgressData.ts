@@ -213,6 +213,8 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
     isSyncing,
     initProgress,
     syncProgressAsync,
+    queryClient,
+    user,
   ]);
 
   // Wrapper for completeChallenge that includes activeSlots
