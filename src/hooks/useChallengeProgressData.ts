@@ -12,6 +12,8 @@ import { sortProgressByChallengOrder } from "@/lib/buildChallengeOrder";
 import { useQueryClient } from "@tanstack/react-query";
 
 export function useChallengeProgressData(selectedObjectives: string[]) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const { objectives } = useObjectives();
   const { allLinks, isLoadingAllLinks } = useObjectiveChallengeLinks();
   const { challenges: allChallenges, isLoading: isLoadingChallenges } = useDailyChallengesAdmin();

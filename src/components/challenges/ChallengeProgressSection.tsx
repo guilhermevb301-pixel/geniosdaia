@@ -74,10 +74,6 @@ export function ChallengeProgressSection({ selectedObjectives }: ChallengeProgre
     );
   }
 
-  // Get the active challenge details
-  const activeChallengeData = activeChallenge?.daily_challenges as DailyChallenge | undefined;
-
-  // Return data for parent component to use in banner
   // Active challenge is now rendered in the banner, not here
   return (
     <div className="space-y-6">
