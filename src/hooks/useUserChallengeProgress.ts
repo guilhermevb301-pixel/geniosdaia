@@ -176,6 +176,15 @@ export function useUserChallengeProgress(objectiveItemIds?: string[]) {
         };
       });
 
+      // Safety net: ensure at least one challenge is active
+      const hasAnyActive = records.some((r) => r.status === "active");
+      if (!hasAnyActive && records.length > 0) {
+        records[0].status = "active";
+        records[0].started_at = now;
+        const firstChallenge = sortedChallenges[0];
+        records[0].deadline = calculateDeadline(firstChallenge.estimated_minutes, firstChallenge.estimated_time_unit);
+      }
+
       const { error } = await supabase
         .from("user_challenge_progress")
         .upsert(records, { onConflict: "user_id,daily_challenge_id,objective_item_id" });
