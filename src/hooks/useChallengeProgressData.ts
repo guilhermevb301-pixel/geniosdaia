@@ -1,12 +1,15 @@
 import { useMemo, useEffect, useRef } from "react";
-import { useUserChallengeProgress } from "@/hooks/useUserChallengeProgress";
+import { useUserChallengeProgress, calculateDeadline } from "@/hooks/useUserChallengeProgress";
 import { useObjectives } from "@/hooks/useObjectives";
 import { useObjectiveChallengeLinks } from "@/hooks/useObjectiveChallengeLinks";
 import { useDailyChallengesAdmin } from "@/hooks/useDailyChallengesAdmin";
 import { useSyncChallengeProgress } from "@/hooks/useSyncChallengeProgress";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { DailyChallenge } from "@/hooks/useDailyChallenges";
 import { TimeUnit } from "@/lib/utils";
 import { sortProgressByChallengOrder } from "@/lib/buildChallengeOrder";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function useChallengeProgressData(selectedObjectives: string[]) {
   const { objectives } = useObjectives();
