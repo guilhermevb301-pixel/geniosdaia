@@ -13,6 +13,7 @@ interface ChallengeProgressSectionProps {
 export function ChallengeProgressSection({ selectedObjectives }: ChallengeProgressSectionProps) {
   const {
     isLoading,
+    progress,
     completedChallenges,
     lockedChallenges,
     activeChallenges,
