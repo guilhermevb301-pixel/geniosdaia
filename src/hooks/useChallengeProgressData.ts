@@ -1,14 +1,19 @@
 import { useMemo, useEffect, useRef } from "react";
-import { useUserChallengeProgress } from "@/hooks/useUserChallengeProgress";
+import { useUserChallengeProgress, calculateDeadline } from "@/hooks/useUserChallengeProgress";
 import { useObjectives } from "@/hooks/useObjectives";
 import { useObjectiveChallengeLinks } from "@/hooks/useObjectiveChallengeLinks";
 import { useDailyChallengesAdmin } from "@/hooks/useDailyChallengesAdmin";
 import { useSyncChallengeProgress } from "@/hooks/useSyncChallengeProgress";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { DailyChallenge } from "@/hooks/useDailyChallenges";
 import { TimeUnit } from "@/lib/utils";
 import { sortProgressByChallengOrder } from "@/lib/buildChallengeOrder";
+import { useQueryClient } from "@tanstack/react-query";
 
 export function useChallengeProgressData(selectedObjectives: string[]) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const { objectives } = useObjectives();
   const { allLinks, isLoadingAllLinks } = useObjectiveChallengeLinks();
   const { challenges: allChallenges, isLoading: isLoadingChallenges } = useDailyChallengesAdmin();
@@ -149,6 +154,52 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
           existingProgress,
           activeSlots: objective.active_slots || 1,
         });
+        return; // After sync, data will refresh and recovery will run on next render
+      }
+
+      // RECOVERY: If progress exists but NONE are active or completed, activate first challenge(s)
+      const hasActiveOrCompleted = existingProgress.some(
+        (p) => p.status === "active" || p.status === "completed"
+      );
+
+      if (!hasActiveOrCompleted && existingProgress.length > 0) {
+        const recoveryKey = `recovery-${itemId}`;
+        if (syncedObjectivesRef.current.has(recoveryKey)) return;
+        syncedObjectivesRef.current.add(recoveryKey);
+
+        const activeSlots = objective.active_slots || 1;
+        const now = new Date().toISOString();
+
+        // Determine which challenges to activate
+        const initialLinks = linkedChallenges.filter((l) => l.isInitialActive);
+        const toActivate =
+          initialLinks.length > 0
+            ? initialLinks.slice(0, activeSlots)
+            : linkedChallenges.slice(0, activeSlots); // fallback: first N by order
+
+        for (const link of toActivate) {
+          const progressRecord = existingProgress.find(
+            (p) => p.daily_challenge_id === link.challengeId
+          );
+          if (!progressRecord) continue;
+
+          const challenge = allChallenges.find((c) => c.id === link.challengeId);
+
+          await supabase
+            .from("user_challenge_progress")
+            .update({
+              status: "active",
+              started_at: now,
+              deadline: calculateDeadline(
+                challenge?.estimated_minutes || 30,
+                (challenge?.estimated_time_unit as TimeUnit) || "minutes"
+              ),
+            })
+            .eq("id", progressRecord.id);
+        }
+
+        // Refresh data
+        queryClient.invalidateQueries({ queryKey: ["userChallengeProgress"] });
       }
     });
   }, [
@@ -162,6 +213,8 @@ export function useChallengeProgressData(selectedObjectives: string[]) {
     isSyncing,
     initProgress,
     syncProgressAsync,
+    queryClient,
+    user,
   ]);
 
   // Wrapper for completeChallenge that includes activeSlots
