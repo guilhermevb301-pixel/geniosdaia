@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getOptimizedImageUrl } from "@/lib/imageOptimization";
@@ -11,11 +11,8 @@ interface ImageWithSkeletonProps {
   objectFit?: "cover" | "contain" | "fill";
   objectPosition?: string;
   fallbackIcon?: React.ReactNode;
-  /** Largura para otimização automática (apenas URLs do Supabase) */
   optimizedWidth?: number;
-  /** Qualidade para otimização (1-100, padrão 75) */
   optimizedQuality?: number;
-  /** Se true, usa eager loading para imagens críticas (above-the-fold) */
   priority?: boolean;
 }
 
@@ -34,27 +31,31 @@ export function ImageWithSkeleton({
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
 
-  // Aplica otimização se width especificado
   const optimizedSrc = optimizedWidth
     ? getOptimizedImageUrl(src, { width: optimizedWidth, quality: optimizedQuality })
     : src;
 
+  // Detect cached images instantly via ref callback
+  const imgRef = useCallback((node: HTMLImageElement | null) => {
+    if (node && node.complete && node.naturalWidth > 0) {
+      setIsLoaded(true);
+    }
+  }, []);
+
   return (
     <div className={cn("relative overflow-hidden", containerClassName)}>
-      {/* Skeleton while loading */}
       {!isLoaded && !hasError && (
         <Skeleton className="absolute inset-0 w-full h-full" />
       )}
 
-      {/* Error fallback */}
       {hasError && fallbackIcon && (
         <div className="absolute inset-0 flex items-center justify-center bg-muted">
           {fallbackIcon}
         </div>
       )}
 
-      {/* Image with configurable loading */}
       <img
+        ref={imgRef}
         src={optimizedSrc || src}
         alt={alt}
         loading={priority ? "eager" : "lazy"}
@@ -63,8 +64,9 @@ export function ImageWithSkeleton({
         onLoad={() => setIsLoaded(true)}
         onError={() => setHasError(true)}
         className={cn(
-          "transition-opacity duration-300 w-full h-full",
+          "w-full h-full",
           isLoaded ? "opacity-100" : "opacity-0",
+          !isLoaded && "transition-opacity duration-150",
           objectFit === "cover" && "object-cover",
           objectFit === "contain" && "object-contain",
           objectFit === "fill" && "object-fill",
