@@ -216,15 +216,26 @@ function ActiveChallengeItem({
               {isRestarting ? "Reiniciando..." : "Reiniciar"}
             </Button>
           ) : (
-            <Button
-              onClick={onComplete}
-              disabled={!allItemsChecked || isCompleting}
-              className="w-full"
-              size="sm"
-            >
-              <CheckCircle2 className="mr-2 h-4 w-4" />
-              {isCompleting ? "Concluindo..." : "Completar"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={onComplete}
+                disabled={!allItemsChecked || isCompleting}
+                className="flex-1"
+                size="sm"
+              >
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+                {isCompleting ? "Concluindo..." : "Completar"}
+              </Button>
+              <Button
+                onClick={onRestart}
+                disabled={isRestarting}
+                variant="outline"
+                size="sm"
+                className="border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -368,15 +379,27 @@ function ActiveChallengeItem({
               {isRestarting ? "Reiniciando..." : "Reiniciar Desafio"}
             </Button>
           ) : (
-            <Button
-              onClick={onComplete}
-              disabled={!allItemsChecked || isCompleting}
-              className="w-full mt-4"
-              size="lg"
-            >
-              <CheckCircle2 className="mr-2 h-5 w-5" />
-              {isCompleting ? "Concluindo..." : "Completei Este Desafio"}
-            </Button>
+            <div className="flex gap-3 mt-4">
+              <Button
+                onClick={onComplete}
+                disabled={!allItemsChecked || isCompleting}
+                className="flex-1"
+                size="lg"
+              >
+                <CheckCircle2 className="mr-2 h-5 w-5" />
+                {isCompleting ? "Concluindo..." : "Completei Este Desafio"}
+              </Button>
+              <Button
+                onClick={onRestart}
+                disabled={isRestarting}
+                variant="outline"
+                size="lg"
+                className="border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
+              >
+                <RotateCcw className="mr-2 h-5 w-5" />
+                Reiniciar
+              </Button>
+            </div>
           )}
 
           {!timeLeft.expired && !allItemsChecked && challenge.checklist && challenge.checklist.length > 0 && (
