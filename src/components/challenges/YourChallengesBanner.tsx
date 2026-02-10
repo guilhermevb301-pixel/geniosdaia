@@ -216,15 +216,26 @@ function ActiveChallengeItem({
               {isRestarting ? "Reiniciando..." : "Reiniciar"}
             </Button>
           ) : (
-            <Button
-              onClick={onComplete}
-              disabled={!allItemsChecked || isCompleting}
-              className="w-full"
-              size="sm"
-            >
-              <CheckCircle2 className="mr-2 h-4 w-4" />
-              {isCompleting ? "Concluindo..." : "Completar"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={onComplete}
+                disabled={!allItemsChecked || isCompleting}
+                className="flex-1"
+                size="sm"
+              >
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+                {isCompleting ? "Concluindo..." : "Completar"}
+              </Button>
+              <Button
+                onClick={onRestart}
+                disabled={isRestarting}
+                variant="outline"
+                size="sm"
+                className="border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
