@@ -751,6 +751,10 @@ export default function Desafios() {
               <ObjectivesSummary 
                 selectedObjectives={selectedObjectives}
                 onEdit={() => setShowObjectivesModal(true)}
+                onResetObjective={(objectiveItemId) => {
+                  clearProgress(objectiveItemId);
+                  toast.success("Progresso reiniciado! Os desafios serão recarregados.");
+                }}
               />
             </div>
             
