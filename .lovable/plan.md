@@ -1,70 +1,81 @@
 
 
-# Plano: Imagens Instantaneas (Solucao Definitiva)
+# Plano: Reiniciar Desafios e Objetivos Livremente
 
-## Problema Real
+## O que o aluno precisa conseguir fazer
 
-O componente `ImageWithSkeleton` **sempre** comeca com `opacity: 0` e mostra um skeleton cinza, mesmo quando a imagem ja esta no cache do navegador. Isso significa que toda vez que voce navega entre paginas, todas as imagens "piscam" com o skeleton antes de aparecer -- mesmo que ja tenham sido carregadas antes.
+1. **Reiniciar um desafio individual** (ja funciona - botao aparece quando o tempo expira)
+2. **Reiniciar um desafio a qualquer momento** (NOVO - mesmo antes do tempo expirar)
+3. **Resetar todo o progresso de um objetivo** (NOVO - recomecar do zero)
+4. **Trocar objetivos sem problemas** (ja funciona parcialmente, mas precisa ser mais robusto)
 
-Alem disso, a transicao de 300ms (`transition-opacity duration-300`) adiciona atraso desnecessario.
+## Mudancas
 
-## Solucao
+### 1. Botao "Reiniciar" sempre visivel no desafio ativo
 
-Modificar o `ImageWithSkeleton` para detectar se a imagem ja esta em cache e pular completamente o skeleton nesses casos. Imagens cacheadas aparecem **instantaneamente**.
+Atualmente o botao de reiniciar so aparece quando o tempo expira. O aluno deve poder reiniciar a qualquer momento.
 
-### Mudanca Principal: `src/components/ui/image-with-skeleton.tsx`
+**Arquivo: `src/components/challenges/YourChallengesBanner.tsx`**
+- No `ActiveChallengeItem`, mostrar o botao "Reiniciar" sempre (nao apenas quando expirado)
+- Layout: botao "Completar" principal + botao "Reiniciar" secundario ao lado
+- Quando expirado: botao "Reiniciar" fica em destaque (como hoje) e "Completar" desaparece
+
+### 2. Botao "Recomecar Objetivo" no ObjectivesSummary
+
+Adicionar opcao de resetar todo o progresso de um objetivo especifico sem precisar desmarcar e remarcar.
+
+**Arquivo: `src/components/challenges/ObjectivesSummary.tsx`**
+- Adicionar um botao/icone de reset ao lado de cada objetivo no resumo
+- Ao clicar, exibir um `AlertDialog` de confirmacao: "Tem certeza? Todo o progresso deste objetivo sera reiniciado."
+- Ao confirmar: chamar `clearProgress(objectiveItemId)` e depois re-inicializar via invalidacao de cache (o hook `useChallengeProgressData` cuida de re-criar o progresso automaticamente)
+
+**Arquivo: `src/pages/Desafios.tsx`**
+- Passar `clearProgress` e `objectivesData` como props para o `ObjectivesSummary`
+- Ou criar um callback `onResetObjective` que faz o clear e deixa o sistema re-inicializar
+
+### 3. Troca de objetivos inteligente
+
+O fluxo atual ja limpa o progresso ao desmarcar um objetivo (`handleObjectivesChange`). Mas precisa garantir que:
+- Ao marcar um novo objetivo, o progresso e criado imediatamente (ja funciona via `useChallengeProgressData`)
+- Ao desmarcar, o progresso e removido completamente (ja funciona via `clearProgress`)
+- Nao ha estado "travado" apos a troca
+
+Isso ja esta implementado. Apenas precisamos garantir que o `clearProgress` invalida corretamente o cache.
+
+## Detalhes Tecnicos
+
+### ActiveChallengeItem - Layout dos botoes
 
 ```text
-ANTES (sempre pisca):
-1. Monta componente -> isLoaded = false -> mostra skeleton
-2. Navegador carrega imagem (mesmo se cacheada)
-3. onLoad dispara -> isLoaded = true -> fade-in 300ms
-= SEMPRE tem delay visual
+ANTES (tempo NAO expirado):
+  [====== Completar Desafio ======]
 
-DEPOIS (instantaneo se cacheado):
-1. Monta componente -> verifica cache via img.complete
-2. Se cacheada -> isLoaded = true IMEDIATAMENTE -> sem skeleton
-3. Se nao cacheada -> mostra skeleton -> onLoad -> aparece rapido (150ms)
-= Cacheadas aparecem INSTANTANEAMENTE
+ANTES (tempo expirado):
+  [====== Reiniciar Desafio ======]
+
+DEPOIS (tempo NAO expirado):
+  [==== Completar ====] [Reiniciar]
+
+DEPOIS (tempo expirado):
+  [====== Reiniciar Desafio ======]
 ```
 
-**Tecnica**: Usar `useRef` + `img.complete` + `img.naturalWidth > 0` para detectar imagens ja decodificadas pelo navegador. Isso e uma API nativa do browser, 100% confiavel.
+### ObjectivesSummary - Reset por objetivo
 
-```tsx
-// Detectar cache no ref callback
-const imgRef = useCallback((node: HTMLImageElement | null) => {
-  if (node && node.complete && node.naturalWidth > 0) {
-    setIsLoaded(true); // Instantaneo, sem skeleton
-  }
-}, []);
+```text
+[Seus Objetivos (2)]                    [Editar]
+  [Vender primeiro projeto IA]  [icone reset]
+  [Criar agente funcional]      [icone reset]
 ```
 
-Tambem reduzir a transicao de `duration-300` para `duration-150` para imagens nao-cacheadas.
+Ao clicar no icone de reset:
+1. AlertDialog: "Reiniciar objetivo? Todo seu progresso sera apagado e os desafios voltarao ao inicio."
+2. Confirmar -> `clearProgress(objectiveItemId)`
+3. O `useChallengeProgressData` detecta que nao ha progresso e re-inicializa automaticamente
 
-### Mudanca Secundaria: Remover `useImagePreload` da pagina `/aulas`
+### Arquivos a modificar
 
-O hook `useImagePreload` injeta `<link rel="preload">` no `<head>`, mas isso so funciona na primeira visita. Nas navegacoes seguintes, o cache do browser ja resolve. O hook adiciona complexidade sem beneficio real. Remover da pagina `Aulas.tsx`.
-
-### Erro de Build
-
-O erro `bun install timeout` e um problema temporario de infraestrutura, nao do codigo. Vai se resolver automaticamente com o proximo deploy. Nao precisa de mudanca de codigo.
-
-## Arquivos a Modificar
-
-1. **`src/components/ui/image-with-skeleton.tsx`**
-   - Adicionar deteccao de cache via `img.complete`
-   - Usar `useCallback` ref para verificar no mount
-   - Reduzir transicao de 300ms para 150ms
-   - Iniciar com `isLoaded = true` quando cacheado (sem skeleton)
-
-2. **`src/pages/Aulas.tsx`**
-   - Remover import e uso de `useImagePreload` (desnecessario com a nova logica)
-   - Remover `useMemo` de `criticalImages`
-
-## Resultado
-
-- Imagens ja visitadas: aparecem **instantaneamente** (0ms de delay)
-- Imagens novas: skeleton breve + aparicao em 150ms (metade do atual)
-- Sem mais "piscar" ao navegar entre paginas
-- Codigo mais simples e confiavel
+1. **`src/components/challenges/YourChallengesBanner.tsx`** - Botao reiniciar sempre visivel
+2. **`src/components/challenges/ObjectivesSummary.tsx`** - Botao reset por objetivo + AlertDialog
+3. **`src/pages/Desafios.tsx`** - Passar callback `onResetObjective` para ObjectivesSummary
 
