@@ -87,6 +87,13 @@ export function PromptEditorModal({
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
+  // Sync form state when editingPrompt changes or modal opens
+  useEffect(() => {
+    if (open) {
+      resetForm();
+    }
+  }, [open, editingPrompt]);
+
   // Reset form when modal opens with new data
   const resetForm = () => {
     setFormData({
