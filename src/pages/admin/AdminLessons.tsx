@@ -31,6 +31,7 @@ import {
 import { Plus, ArrowLeft, Youtube, Download, Upload, Video, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
+import { Progress } from "@/components/ui/progress";
 import { validateVideoFile } from "@/lib/fileValidation";
 import {
   DndContext,
