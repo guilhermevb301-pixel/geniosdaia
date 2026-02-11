@@ -61,19 +61,24 @@ export function VideoPlayer({ lesson, onMarkComplete }: VideoPlayerProps) {
       {/* Video Container */}
       <div className="aspect-video bg-muted rounded-lg overflow-hidden relative">
         {lesson.videoUrl ? (
-          isYouTubeVideo && !showVideo ? (
+          isDirectVideo ? (
+            <video
+              src={lesson.videoUrl}
+              className="w-full h-full"
+              controls
+              controlsList="nodownload"
+              playsInline
+            />
+          ) : isYouTubeVideo && !showVideo ? (
             // Lite YouTube Embed - Show thumbnail until clicked
             <button
               onClick={() => setShowVideo(true)}
               className="relative w-full h-full group cursor-pointer"
               aria-label="Reproduzir vídeo"
             >
-              {/* Skeleton while thumbnail loads */}
               {!thumbnailLoaded && (
                 <Skeleton className="absolute inset-0 w-full h-full" />
               )}
-              
-              {/* YouTube Thumbnail */}
               <img
                 src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
                 alt={lesson.title}
@@ -84,8 +89,6 @@ export function VideoPlayer({ lesson, onMarkComplete }: VideoPlayerProps) {
                   thumbnailLoaded ? "opacity-100" : "opacity-0"
                 }`}
               />
-              
-              {/* Play Button Overlay */}
               <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
                 <div className="flex h-16 w-16 sm:h-20 sm:w-20 items-center justify-center rounded-full bg-primary/90 group-hover:bg-primary group-hover:scale-110 transition-all shadow-lg">
                   <PlayCircle className="h-10 w-10 sm:h-12 sm:w-12 text-primary-foreground" />
@@ -93,7 +96,6 @@ export function VideoPlayer({ lesson, onMarkComplete }: VideoPlayerProps) {
               </div>
             </button>
           ) : (
-            // Full iframe - either non-YouTube or user clicked to play
             <iframe
               src={isYouTubeVideo 
                 ? `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0` 
