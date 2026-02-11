@@ -277,39 +277,53 @@ export default function Prompts() {
                 </AccordionTrigger>
                 <AccordionContent className="pb-4">
                   {group.prompts.length > 0 ? (
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                      {group.prompts.map((prompt, index) => (
-                        <div key={prompt.id} className="relative group">
-                          <PromptCard prompt={prompt} priority={index < 6} />
-                          {canManage && (
-                            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                              <Button
-                                variant="secondary"
-                                size="icon"
-                                className="h-8 w-8 bg-background/90 backdrop-blur-sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEditPrompt(prompt);
-                                }}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="secondary"
-                                size="icon"
-                                className="h-8 w-8 bg-background/90 backdrop-blur-sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setDeletePromptId(prompt.id);
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                    group.value === "modifier" ? (
+                      <div className="space-y-4">
+                        {group.prompts.map((prompt) => (
+                          <ModifierCard
+                            key={prompt.id}
+                            prompt={prompt}
+                            canManage={canManage}
+                            onEdit={() => handleEditPrompt(prompt)}
+                            onDelete={() => setDeletePromptId(prompt.id)}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {group.prompts.map((prompt, index) => (
+                          <div key={prompt.id} className="relative group">
+                            <PromptCard prompt={prompt} priority={index < 6} />
+                            {canManage && (
+                              <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                <Button
+                                  variant="secondary"
+                                  size="icon"
+                                  className="h-8 w-8 bg-background/90 backdrop-blur-sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditPrompt(prompt);
+                                  }}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="secondary"
+                                  size="icon"
+                                  className="h-8 w-8 bg-background/90 backdrop-blur-sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeletePromptId(prompt.id);
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )
                   ) : (
                     <div className="text-center py-8 text-muted-foreground">
                       <group.icon className="h-10 w-10 mx-auto mb-3 opacity-50" />
