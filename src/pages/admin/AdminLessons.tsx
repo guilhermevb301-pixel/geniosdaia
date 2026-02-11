@@ -295,13 +295,38 @@ export default function AdminLessons() {
     setDialogOpen(true);
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    let finalYoutubeUrl = videoSourceType === "youtube" ? (youtubeUrl || null) : null;
+
+    // Upload video file if provided
+    if (videoSourceType === "upload" && videoFile) {
+      setIsUploading(true);
+      try {
+        const fileName = `${crypto.randomUUID()}.mp4`;
+        const { error: uploadError } = await supabase.storage
+          .from("lesson-videos")
+          .upload(fileName, videoFile, { contentType: "video/mp4" });
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from("lesson-videos")
+          .getPublicUrl(fileName);
+        finalYoutubeUrl = urlData.publicUrl;
+      } catch (err: any) {
+        toast({ variant: "destructive", title: "Erro no upload do vídeo", description: err.message });
+        setIsUploading(false);
+        return;
+      }
+      setIsUploading(false);
+    }
+
     const lessonData = {
       module_id: moduleId,
       title,
       description: description || null,
-      youtube_url: youtubeUrl || null,
+      youtube_url: finalYoutubeUrl,
       download_url: downloadUrl || null,
       duration: duration || null,
       order_index: lessons ? lessons.filter(l => l.module_id === moduleId).length : 0,
