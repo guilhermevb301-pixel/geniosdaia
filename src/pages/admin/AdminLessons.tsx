@@ -506,8 +506,10 @@ export default function AdminLessons() {
                   <Button type="button" variant="outline" onClick={resetForm}>
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-                    {editingLesson ? "Salvar" : "Criar"}
+                  <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending || isUploading}>
+                    {isUploading ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enviando vídeo...</>
+                    ) : editingLesson ? "Salvar" : "Criar"}
                   </Button>
                 </div>
               </form>
