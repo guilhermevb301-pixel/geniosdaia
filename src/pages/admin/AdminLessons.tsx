@@ -451,7 +451,7 @@ export default function AdminLessons() {
                     <div className="space-y-2">
                       <Label htmlFor="video-upload" className="flex items-center gap-2">
                         <Video className="h-4 w-4" />
-                        Vídeo MP4 (máx. 100MB)
+                        Vídeo MP4 (máx. 1GB)
                       </Label>
                       {editingLesson?.youtube_url?.includes('/lesson-videos/') && !videoFile && (
                         <p className="text-xs text-muted-foreground">Vídeo atual já enviado. Selecione um novo arquivo para substituir.</p>
