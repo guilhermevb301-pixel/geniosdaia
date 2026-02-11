@@ -355,7 +355,7 @@ export default function AdminLessons() {
             </Link>
             <div>
               <h1 className="text-2xl font-bold">Gerenciar Aulas</h1>
-              <p className="text-muted-foreground">Adicione aulas do YouTube aos módulos. Arraste para reordenar.</p>
+              <p className="text-muted-foreground">Adicione aulas aos módulos via YouTube ou upload de MP4. Arraste para reordenar.</p>
             </div>
           </div>
 
