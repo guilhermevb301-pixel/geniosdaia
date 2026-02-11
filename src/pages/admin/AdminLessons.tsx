@@ -288,6 +288,10 @@ export default function AdminLessons() {
     setYoutubeUrl(lesson.youtube_url || "");
     setDownloadUrl(lesson.download_url || "");
     setDuration(lesson.duration || "");
+    setVideoFile(null);
+    // Detect if existing lesson uses uploaded video (not YouTube)
+    const url = lesson.youtube_url || "";
+    setVideoSourceType(url.includes('/lesson-videos/') || url.endsWith('.mp4') ? "upload" : "youtube");
     setDialogOpen(true);
   }
 
