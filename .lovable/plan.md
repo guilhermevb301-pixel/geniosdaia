@@ -1,81 +1,69 @@
 
 
-# Plano: Reiniciar Desafios e Objetivos Livremente
+# Plano: Corrigir Build + Reestruturar Modificador de Imagens
 
-## O que o aluno precisa conseguir fazer
+## 1. Erro de Build
 
-1. **Reiniciar um desafio individual** (ja funciona - botao aparece quando o tempo expira)
-2. **Reiniciar um desafio a qualquer momento** (NOVO - mesmo antes do tempo expirar)
-3. **Resetar todo o progresso de um objetivo** (NOVO - recomecar do zero)
-4. **Trocar objetivos sem problemas** (ja funciona parcialmente, mas precisa ser mais robusto)
+O erro e o mesmo timeout de `bun install` que aconteceu antes -- problema temporario de infraestrutura, nao do codigo. Vou forcar um rebuild com uma mudanca minima.
 
-## Mudancas
+## 2. Reestruturar "Modificador de Imagens"
 
-### 1. Botao "Reiniciar" sempre visivel no desafio ativo
+A categoria "Modificador de Imagens" vai funcionar como um banco de comandos organizados por grupos/titulos. Cada grupo tem ~10 prompts com texto em ingles e traducao em portugues.
 
-Atualmente o botao de reiniciar so aparece quando o tempo expira. O aluno deve poder reiniciar a qualquer momento.
+### Como vai funcionar
 
-**Arquivo: `src/components/challenges/YourChallengesBanner.tsx`**
-- No `ActiveChallengeItem`, mostrar o botao "Reiniciar" sempre (nao apenas quando expirado)
-- Layout: botao "Completar" principal + botao "Reiniciar" secundario ao lado
-- Quando expirado: botao "Reiniciar" fica em destaque (como hoje) e "Completar" desaparece
+Cada "prompt" na categoria `modifier` representa um **grupo** (ex: "Estilos de Imagem", "Cameras e Lentes"). As `prompt_variations` desse grupo sao os comandos individuais, onde:
+- `content` = texto em ingles (ex: "change the style to cinematic realism")
+- `image_url` = traducao em portugues (ex: "muda o estilo para realismo cinematografico")
 
-### 2. Botao "Recomecar Objetivo" no ObjectivesSummary
+Isso **ja e exatamente a estrutura atual** do banco de dados. O `ModifierCard` ja exibe isso corretamente. Nao precisa mudar o schema.
 
-Adicionar opcao de resetar todo o progresso de um objetivo especifico sem precisar desmarcar e remarcar.
+### Permissoes
 
-**Arquivo: `src/components/challenges/ObjectivesSummary.tsx`**
-- Adicionar um botao/icone de reset ao lado de cada objetivo no resumo
-- Ao clicar, exibir um `AlertDialog` de confirmacao: "Tem certeza? Todo o progresso deste objetivo sera reiniciado."
-- Ao confirmar: chamar `clearProgress(objectiveItemId)` e depois re-inicializar via invalidacao de cache (o hook `useChallengeProgressData` cuida de re-criar o progresso automaticamente)
+- **Mentores e admins**: podem criar, editar e excluir grupos e prompts (ja funciona via RLS)
+- **Alunos**: so visualizam e copiam (ja funciona)
 
-**Arquivo: `src/pages/Desafios.tsx`**
-- Passar `clearProgress` e `objectivesData` como props para o `ObjectivesSummary`
-- Ou criar um callback `onResetObjective` que faz o clear e deixa o sistema re-inicializar
+### Mudancas no `ModifierCard`
 
-### 3. Troca de objetivos inteligente
+O card atual ja funciona bem, mas vou melhorar a visualizacao:
 
-O fluxo atual ja limpa o progresso ao desmarcar um objetivo (`handleObjectivesChange`). Mas precisa garantir que:
-- Ao marcar um novo objetivo, o progresso e criado imediatamente (ja funciona via `useChallengeProgressData`)
-- Ao desmarcar, o progresso e removido completamente (ja funciona via `clearProgress`)
-- Nao ha estado "travado" apos a troca
+1. Adicionar numeracao nos prompts (1, 2, 3...)
+2. Destacar melhor a seta de traducao (ingles -> portugues)
+3. Adicionar botao de copiar tambem na traducao
+4. Melhorar a tipografia para facilitar leitura rapida
 
-Isso ja esta implementado. Apenas precisamos garantir que o `clearProgress` invalida corretamente o cache.
+### Mudancas no Accordion (pagina `/prompts` sem filtro de categoria)
 
-## Detalhes Tecnicos
+Na view geral com accordion, a categoria "Modificador de Imagens" ja usa `ModifierCard` em vez de `PromptCard`. Isso ja esta implementado. Vou garantir que na view de accordion tambem use o layout de lista simples.
 
-### ActiveChallengeItem - Layout dos botoes
+### Visual do ModifierCard atualizado
 
 ```text
-ANTES (tempo NAO expirado):
-  [====== Completar Desafio ======]
++--------------------------------------------------+
+| Estilos de Imagem                    [Editar] [X] |  <- so para mentores
++--------------------------------------------------+
+| 1. change the style to cinematic realism     [C]  |
+|    -> muda o estilo para realismo cinematografico  |
+|--------------------------------------------------|
+| 2. change the style to editorial fashion...  [C]  |
+|    -> muda para estilo editorial de revista       |
+|--------------------------------------------------|
+| ...                                               |
++--------------------------------------------------+
 
-ANTES (tempo expirado):
-  [====== Reiniciar Desafio ======]
-
-DEPOIS (tempo NAO expirado):
-  [==== Completar ====] [Reiniciar]
-
-DEPOIS (tempo expirado):
-  [====== Reiniciar Desafio ======]
+[C] = botao copiar
 ```
 
-### ObjectivesSummary - Reset por objetivo
+## Arquivos a modificar
 
-```text
-[Seus Objetivos (2)]                    [Editar]
-  [Vender primeiro projeto IA]  [icone reset]
-  [Criar agente funcional]      [icone reset]
-```
+1. **`src/components/prompts/ModifierCard.tsx`**
+   - Adicionar numeracao (1, 2, 3...) nos prompts
+   - Melhorar layout da traducao com seta mais visivel
+   - Adicionar botao de copiar na traducao tambem
+   - Usar `font-mono` no ingles e fonte normal no portugues
 
-Ao clicar no icone de reset:
-1. AlertDialog: "Reiniciar objetivo? Todo seu progresso sera apagado e os desafios voltarao ao inicio."
-2. Confirmar -> `clearProgress(objectiveItemId)`
-3. O `useChallengeProgressData` detecta que nao ha progresso e re-inicializa automaticamente
+2. **`src/pages/Prompts.tsx`**
+   - Na view accordion (sem filtro), garantir que a categoria `modifier` use `ModifierCard` em vez de `PromptCard` (ja esta implementado na view filtrada, precisa verificar na view accordion)
 
-### Arquivos a modificar
-
-1. **`src/components/challenges/YourChallengesBanner.tsx`** - Botao reiniciar sempre visivel
-2. **`src/components/challenges/ObjectivesSummary.tsx`** - Botao reset por objetivo + AlertDialog
-3. **`src/pages/Desafios.tsx`** - Passar callback `onResetObjective` para ObjectivesSummary
+3. **Trigger de rebuild** para resolver o timeout de build
 
