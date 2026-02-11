@@ -1,0 +1,2 @@
+ALTER TABLE public.prompts DROP CONSTRAINT prompts_category_check;
+ALTER TABLE public.prompts ADD CONSTRAINT prompts_category_check CHECK (category = ANY (ARRAY['video'::text, 'image'::text, 'agent'::text, 'modifier'::text]));
