@@ -56,15 +56,22 @@ export function SortableLessonRow({ lesson, moduleName, onEdit, onDelete }: Sort
       <TableCell>{lesson.duration || "-"}</TableCell>
       <TableCell>
         {lesson.youtube_url ? (
-          <a
-            href={lesson.youtube_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-destructive hover:underline flex items-center gap-1"
-          >
-            <Youtube className="h-4 w-4" />
-            Ver
-          </a>
+          lesson.youtube_url.includes('/lesson-videos/') || lesson.youtube_url.endsWith('.mp4') ? (
+            <span className="text-primary flex items-center gap-1">
+              <Video className="h-4 w-4" />
+              MP4
+            </span>
+          ) : (
+            <a
+              href={lesson.youtube_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-destructive hover:underline flex items-center gap-1"
+            >
+              <Youtube className="h-4 w-4" />
+              Ver
+            </a>
+          )
         ) : (
           <span className="text-muted-foreground">-</span>
         )}
