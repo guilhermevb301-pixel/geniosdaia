@@ -1,69 +1,38 @@
 
 
-# Plano: Corrigir Build + Reestruturar Modificador de Imagens
+# Plano: Criar os 12 Grupos de Modificadores no Banco de Dados
 
-## 1. Erro de Build
+## O que sera feito
 
-O erro e o mesmo timeout de `bun install` que aconteceu antes -- problema temporario de infraestrutura, nao do codigo. Vou forcar um rebuild com uma mudanca minima.
+Inserir os 12 grupos como registros na tabela `prompts` com `category = 'modifier'`. Para os dois grupos que voce ja passou os prompts completos (Estilos de Imagem e Cameras e Lentes), tambem inserir as variacoes com os comandos em ingles e traducoes em portugues.
 
-## 2. Reestruturar "Modificador de Imagens"
+Os outros 10 grupos serao criados vazios, prontos para voce (como mentor) adicionar os prompts depois pela interface.
 
-A categoria "Modificador de Imagens" vai funcionar como um banco de comandos organizados por grupos/titulos. Cada grupo tem ~10 prompts com texto em ingles e traducao em portugues.
+## Grupos a criar
 
-### Como vai funcionar
+1. **Estilos de Imagem** - com 10 prompts prontos
+2. **Cameras e Lentes** - com 10 prompts prontos
+3. **Angulos e Enquadramentos** - vazio (pronto para preencher)
+4. **Iluminacao** - vazio
+5. **Condicoes do Tempo** - vazio
+6. **Estilos de Diretores** - vazio
+7. **Estilos de Fotografos** - vazio
+8. **Tipos de Filme** - vazio
+9. **Emocoes** - vazio
+10. **Materiais** - vazio
+11. **Paletas de Cores** - vazio
+12. **Acoes** - vazio
 
-Cada "prompt" na categoria `modifier` representa um **grupo** (ex: "Estilos de Imagem", "Cameras e Lentes"). As `prompt_variations` desse grupo sao os comandos individuais, onde:
-- `content` = texto em ingles (ex: "change the style to cinematic realism")
-- `image_url` = traducao em portugues (ex: "muda o estilo para realismo cinematografico")
+## Como funciona
 
-Isso **ja e exatamente a estrutura atual** do banco de dados. O `ModifierCard` ja exibe isso corretamente. Nao precisa mudar o schema.
+- Cada grupo e um registro na tabela `prompts` com `category = 'modifier'`
+- Os prompts individuais ficam na tabela `prompt_variations` com:
+  - `content` = comando em ingles
+  - `image_url` = traducao em portugues
+- Mentores podem editar/adicionar prompts via botao de editar no card
+- Alunos so visualizam e copiam
 
-### Permissoes
+## Detalhes tecnicos
 
-- **Mentores e admins**: podem criar, editar e excluir grupos e prompts (ja funciona via RLS)
-- **Alunos**: so visualizam e copiam (ja funciona)
-
-### Mudancas no `ModifierCard`
-
-O card atual ja funciona bem, mas vou melhorar a visualizacao:
-
-1. Adicionar numeracao nos prompts (1, 2, 3...)
-2. Destacar melhor a seta de traducao (ingles -> portugues)
-3. Adicionar botao de copiar tambem na traducao
-4. Melhorar a tipografia para facilitar leitura rapida
-
-### Mudancas no Accordion (pagina `/prompts` sem filtro de categoria)
-
-Na view geral com accordion, a categoria "Modificador de Imagens" ja usa `ModifierCard` em vez de `PromptCard`. Isso ja esta implementado. Vou garantir que na view de accordion tambem use o layout de lista simples.
-
-### Visual do ModifierCard atualizado
-
-```text
-+--------------------------------------------------+
-| Estilos de Imagem                    [Editar] [X] |  <- so para mentores
-+--------------------------------------------------+
-| 1. change the style to cinematic realism     [C]  |
-|    -> muda o estilo para realismo cinematografico  |
-|--------------------------------------------------|
-| 2. change the style to editorial fashion...  [C]  |
-|    -> muda para estilo editorial de revista       |
-|--------------------------------------------------|
-| ...                                               |
-+--------------------------------------------------+
-
-[C] = botao copiar
-```
-
-## Arquivos a modificar
-
-1. **`src/components/prompts/ModifierCard.tsx`**
-   - Adicionar numeracao (1, 2, 3...) nos prompts
-   - Melhorar layout da traducao com seta mais visivel
-   - Adicionar botao de copiar na traducao tambem
-   - Usar `font-mono` no ingles e fonte normal no portugues
-
-2. **`src/pages/Prompts.tsx`**
-   - Na view accordion (sem filtro), garantir que a categoria `modifier` use `ModifierCard` em vez de `PromptCard` (ja esta implementado na view filtrada, precisa verificar na view accordion)
-
-3. **Trigger de rebuild** para resolver o timeout de build
+Serão executadas queries INSERT para criar os 12 prompts e as 20 variacoes (10 para cada grupo preenchido). Nenhuma mudanca de codigo e necessaria - a UI ja suporta tudo isso.
 
