@@ -54,6 +54,7 @@ export function VideoPlayer({ lesson, onMarkComplete }: VideoPlayerProps) {
 
   const videoId = lesson.videoUrl ? extractYouTubeId(lesson.videoUrl) : null;
   const isYouTubeVideo = !!videoId;
+  const isDirectVideo = lesson.videoUrl ? isDirectVideoUrl(lesson.videoUrl) : false;
 
   return (
     <div className="space-y-4">
