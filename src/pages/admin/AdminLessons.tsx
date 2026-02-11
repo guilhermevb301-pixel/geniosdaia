@@ -78,6 +78,9 @@ export default function AdminLessons() {
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [downloadUrl, setDownloadUrl] = useState("");
   const [duration, setDuration] = useState("");
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [videoSourceType, setVideoSourceType] = useState<"youtube" | "upload">("youtube");
 
   // DnD sensors
   const sensors = useSensors(
