@@ -81,6 +81,7 @@ export default function AdminLessons() {
   const [duration, setDuration] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [videoSourceType, setVideoSourceType] = useState<"youtube" | "upload">("youtube");
 
   // DnD sensors
