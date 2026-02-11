@@ -31,6 +31,7 @@ import {
 import { Plus, ArrowLeft, Youtube, Download, Upload, Video, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
+import { Progress } from "@/components/ui/progress";
 import { validateVideoFile } from "@/lib/fileValidation";
 import {
   DndContext,
@@ -80,6 +81,7 @@ export default function AdminLessons() {
   const [duration, setDuration] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [videoSourceType, setVideoSourceType] = useState<"youtube" | "upload">("youtube");
 
   // DnD sensors
@@ -277,6 +279,7 @@ export default function AdminLessons() {
     setDownloadUrl("");
     setDuration("");
     setVideoFile(null);
+    setUploadProgress(0);
     setVideoSourceType("youtube");
   }
 
@@ -303,12 +306,45 @@ export default function AdminLessons() {
     // Upload video file if provided
     if (videoSourceType === "upload" && videoFile) {
       setIsUploading(true);
+      setUploadProgress(0);
       try {
         const fileName = `${crypto.randomUUID()}.mp4`;
-        const { error: uploadError } = await supabase.storage
+
+        // Create signed upload URL
+        const { data: signedData, error: signedError } = await supabase.storage
           .from("lesson-videos")
-          .upload(fileName, videoFile, { contentType: "video/mp4" });
-        if (uploadError) throw uploadError;
+          .createSignedUploadUrl(fileName);
+        if (signedError || !signedData) throw signedError || new Error("Falha ao gerar URL de upload");
+
+        // Upload using XMLHttpRequest for progress tracking
+        const uploadUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/upload/sign/lesson-videos/${fileName}?token=${signedData.token}`;
+
+        await new Promise<void>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open("PUT", uploadUrl);
+          xhr.setRequestHeader("x-upsert", "false");
+
+          xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+              const pct = Math.round((event.loaded / event.total) * 100);
+              setUploadProgress(pct);
+            }
+          };
+
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve();
+            } else {
+              reject(new Error(`Upload falhou com status ${xhr.status}: ${xhr.responseText}`));
+            }
+          };
+
+          xhr.onerror = () => reject(new Error("Erro de rede durante o upload"));
+          xhr.ontimeout = () => reject(new Error("Upload expirou (timeout)"));
+          xhr.timeout = 600000; // 10 min timeout
+
+          xhr.send(videoFile);
+        });
 
         const { data: urlData } = supabase.storage
           .from("lesson-videos")
@@ -317,9 +353,11 @@ export default function AdminLessons() {
       } catch (err: any) {
         toast({ variant: "destructive", title: "Erro no upload do vídeo", description: err.message });
         setIsUploading(false);
+        setUploadProgress(0);
         return;
       }
       setIsUploading(false);
+      setUploadProgress(0);
     }
 
     const lessonData = {
@@ -502,13 +540,20 @@ export default function AdminLessons() {
                   </div>
                 </div>
 
+                {isUploading && (
+                  <div className="space-y-1">
+                    <Progress value={uploadProgress} className="h-2" />
+                    <p className="text-xs text-muted-foreground text-center">Enviando vídeo... {uploadProgress}%</p>
+                  </div>
+                )}
+
                 <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={resetForm}>
+                  <Button type="button" variant="outline" onClick={resetForm} disabled={isUploading}>
                     Cancelar
                   </Button>
                   <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending || isUploading}>
                     {isUploading ? (
-                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enviando vídeo...</>
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enviando... {uploadProgress}%</>
                     ) : editingLesson ? "Salvar" : "Criar"}
                   </Button>
                 </div>
