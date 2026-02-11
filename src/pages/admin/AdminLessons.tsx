@@ -279,6 +279,7 @@ export default function AdminLessons() {
     setDownloadUrl("");
     setDuration("");
     setVideoFile(null);
+    setUploadProgress(0);
     setVideoSourceType("youtube");
   }
 
