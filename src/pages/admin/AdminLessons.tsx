@@ -301,6 +301,11 @@ export default function AdminLessons() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
+    if (!moduleId) {
+      toast({ variant: "destructive", title: "Selecione um módulo" });
+      return;
+    }
+
     let finalYoutubeUrl = videoSourceType === "youtube" ? (youtubeUrl || null) : null;
 
     // Upload video file if provided
@@ -317,11 +322,9 @@ export default function AdminLessons() {
         if (signedError || !signedData) throw signedError || new Error("Falha ao gerar URL de upload");
 
         // Upload using XMLHttpRequest for progress tracking
-        const uploadUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/upload/sign/lesson-videos/${fileName}?token=${signedData.token}`;
-
         await new Promise<void>((resolve, reject) => {
           const xhr = new XMLHttpRequest();
-          xhr.open("PUT", uploadUrl);
+          xhr.open("PUT", signedData.signedUrl);
           xhr.setRequestHeader("x-upsert", "false");
 
           xhr.upload.onprogress = (event) => {
