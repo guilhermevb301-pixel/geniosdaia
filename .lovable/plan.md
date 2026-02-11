@@ -1,43 +1,49 @@
 
 
-# Corrigir Upload de Video Travando
+# Corrigir Bugs da Pagina de Aulas
 
-## Problema Identificado
-O upload de videos grandes (centenas de MB ate 1GB) usa o metodo `supabase.storage.upload()` padrao, que nao e ideal para arquivos grandes. Para arquivos acima de ~6MB, o Supabase recomenda usar **uploads resumiveis (TUS protocol)**, que:
-- Enviam o arquivo em pedacos (chunks)
-- Permitem retomar uploads interrompidos
-- Fornecem progresso real do envio
+## Problema Principal
+Quando o usuario sai e volta para a pagina `/aulas`, os modulos somem e a pagina fica "desconfigurada" (sem modulos, sem fotos). Isso acontece porque:
 
-Alem disso, o codigo atual nao mostra nenhum progresso percentual durante o upload, fazendo parecer que travou.
+1. **Sem estado de carregamento**: A pagina nao verifica se os dados estao carregando. Quando as queries ainda estao buscando dados, `modulesData` e `undefined`, que vira um array vazio, mostrando o estado "Sem modulos disponiveis" em vez de um loading spinner.
+
+2. **Queries independentes sem sincronizacao**: A pagina faz 4 queries separadas (sections, modules, lessons, progress) e renderiza com base no que estiver disponivel no momento, causando flickers.
+
+3. **Imagens nao reaparecem**: O componente `ImageWithSkeleton` usa estado interno (`isLoaded`, `hasError`). Quando o componente remonta, ele comeca do zero e pode falhar se a URL mudar levemente ou se houver problema de cache.
 
 ## Solucao
 
-### 1. Trocar para upload em chunks com progresso
-- Substituir `supabase.storage.upload()` por `supabase.storage.uploadToSignedUrl()` ou usar o metodo de upload com chunks manual
-- Como alternativa mais simples e compativel: fazer o upload usando `XMLHttpRequest` direto para a API de storage do Supabase, o que permite rastrear progresso via `onprogress`
+### 1. Adicionar estado de carregamento na pagina Aulas
+- Verificar `isLoading` / `isPending` das queries de modules e lessons
+- Mostrar um skeleton/spinner enquanto os dados carregam, em vez do estado vazio
+- Isso evita o flash de "Sem modulos disponiveis"
 
-### 2. Adicionar barra de progresso visual
-- Mostrar percentual de upload durante o envio (ex: "Enviando video... 45%")
-- Usar o componente `Progress` ja existente no projeto
+### 2. Mostrar skeletons nos cards enquanto carregam
+- Criar um componente `ModuleCardSkeleton` com a mesma estrutura visual do `ModuleCard`
+- Exibir grid de skeletons durante o carregamento
 
-### 3. Melhorar tratamento de erros
-- Adicionar timeout e retry para uploads que falham
-- Mostrar mensagem clara se o upload falhar
+### 3. Manter dados anteriores durante refetch
+- Usar `placeholderData: keepPreviousData` nas queries para manter os dados antigos visiveis enquanto busca novos
+- Isso elimina o "piscar" ao navegar de volta
 
 ## Detalhes Tecnicos
 
-**Arquivo afetado:** `src/pages/admin/AdminLessons.tsx`
+**Arquivos afetados:**
 
-**Mudancas:**
-- Adicionar estado `uploadProgress` (0-100)
-- Substituir `supabase.storage.upload()` por upload via `XMLHttpRequest` ou `fetch` com `ReadableStream` para rastrear progresso
-- Na pratica, usar `XMLHttpRequest` para a URL do storage do Supabase com o token de autorizacao, pois permite `upload.onprogress`
-- Exibir barra de progresso no botao/dialog durante upload
-- Criar uma `signedUploadUrl` via `supabase.storage.createSignedUploadUrl()` para fazer upload seguro com progresso
+1. **`src/pages/Aulas.tsx`**
+   - Extrair `isLoading` das queries de modules e lessons
+   - Importar `keepPreviousData` do React Query e usar como `placeholderData`
+   - Renderizar skeleton grid quando `isLoading` for true em vez do empty state
+   - So mostrar empty state quando os dados carregaram E estao vazios
 
-**Fluxo:**
-1. Gerar URL de upload assinada via `createSignedUploadUrl`
-2. Fazer upload usando `XMLHttpRequest` com evento `progress`
-3. Atualizar barra de progresso em tempo real
-4. Ao completar, obter URL publica e salvar a aula
+2. **`src/components/aulas/ModuleGrid.tsx`**
+   - Aceitar prop `isLoading` opcional
+   - Renderizar grid de skeletons quando `isLoading` for true
+
+3. **`src/components/aulas/ModuleCardSkeleton.tsx`** (novo arquivo)
+   - Componente skeleton com mesma estrutura do `ModuleCard` (AspectRatio 3/4, titulo, barra de progresso)
+
+4. **`src/pages/ModuleLessons.tsx`**
+   - Adicionar `keepPreviousData` nas queries de lessons e progress
+   - Garantir que invalidacoes de cache (apos marcar aula completa) afetem tambem a query global de lessons
 
