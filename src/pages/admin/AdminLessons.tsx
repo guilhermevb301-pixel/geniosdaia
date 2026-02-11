@@ -540,13 +540,20 @@ export default function AdminLessons() {
                   </div>
                 </div>
 
+                {isUploading && (
+                  <div className="space-y-1">
+                    <Progress value={uploadProgress} className="h-2" />
+                    <p className="text-xs text-muted-foreground text-center">Enviando vídeo... {uploadProgress}%</p>
+                  </div>
+                )}
+
                 <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={resetForm}>
+                  <Button type="button" variant="outline" onClick={resetForm} disabled={isUploading}>
                     Cancelar
                   </Button>
                   <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending || isUploading}>
                     {isUploading ? (
-                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enviando vídeo...</>
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enviando... {uploadProgress}%</>
                     ) : editingLesson ? "Salvar" : "Criar"}
                   </Button>
                 </div>
