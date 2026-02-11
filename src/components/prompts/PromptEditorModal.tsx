@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Video, X, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -86,6 +86,13 @@ export function PromptEditorModal({
 
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync form state when editingPrompt changes or modal opens
+  useEffect(() => {
+    if (open) {
+      resetForm();
+    }
+  }, [open, editingPrompt]);
 
   // Reset form when modal opens with new data
   const resetForm = () => {
