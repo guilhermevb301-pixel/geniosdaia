@@ -45,20 +45,10 @@ export function ModifierCard({ prompt, canManage, onEdit, onDelete }: ModifierCa
         </div>
         {canManage && (
           <div className="flex gap-1 ml-2">
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8"
-              onClick={onEdit}
-            >
+            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onEdit}>
               <Pencil className="h-4 w-4" />
             </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8"
-              onClick={onDelete}
-            >
+            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={onDelete}>
               <Trash2 className="h-4 w-4 text-destructive" />
             </Button>
           </div>
@@ -68,19 +58,29 @@ export function ModifierCard({ prompt, canManage, onEdit, onDelete }: ModifierCa
       {/* List of variations/prompts */}
       <div className="divide-y divide-border">
         {variations.length > 0 ? (
-          variations.map((variation) => (
+          variations.map((variation, index) => (
             <div
               key={variation.id}
               className="p-3 flex items-start gap-3 hover:bg-muted/20 transition-colors"
             >
-              <div className="flex-1 min-w-0">
+              {/* Number */}
+              <span className="text-xs font-medium text-muted-foreground mt-0.5 shrink-0 w-5 text-right">
+                {index + 1}.
+              </span>
+
+              <div className="flex-1 min-w-0 space-y-1">
+                {/* English command */}
                 <p className="font-mono text-sm break-words">{variation.content}</p>
+                {/* Portuguese translation */}
                 {variation.image_url && (
-                  <p className="text-muted-foreground text-sm mt-1">
-                    → {variation.image_url}
+                  <p className="text-muted-foreground text-sm flex items-center gap-1.5">
+                    <span className="text-primary/70 shrink-0">→</span>
+                    <span>{variation.image_url}</span>
                   </p>
                 )}
               </div>
+
+              {/* Copy button */}
               <Button
                 size="icon"
                 variant="ghost"
