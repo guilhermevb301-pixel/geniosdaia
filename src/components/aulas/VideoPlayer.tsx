@@ -20,19 +20,18 @@ interface VideoPlayerProps {
 
 // Extract YouTube video ID from various URL formats
 function extractYouTubeId(url: string): string | null {
-  // Handle YouTube embed URLs
   const embedMatch = url.match(/youtube\.com\/embed\/([^?&]+)/);
   if (embedMatch) return embedMatch[1];
-
-  // Handle youtu.be URLs
   const shortMatch = url.match(/youtu\.be\/([^?&]+)/);
   if (shortMatch) return shortMatch[1];
-
-  // Handle youtube.com/watch URLs
   const watchMatch = url.match(/youtube\.com\/watch\?v=([^&]+)/);
   if (watchMatch) return watchMatch[1];
-
   return null;
+}
+
+function isDirectVideoUrl(url: string): boolean {
+  const lower = url.toLowerCase();
+  return lower.endsWith('.mp4') || lower.includes('/lesson-videos/') || lower.includes('/object/public/lesson-videos');
 }
 
 export function VideoPlayer({ lesson, onMarkComplete }: VideoPlayerProps) {
