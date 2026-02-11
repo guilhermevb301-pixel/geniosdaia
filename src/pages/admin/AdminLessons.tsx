@@ -28,9 +28,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, ArrowLeft, Youtube, Download } from "lucide-react";
+import { Plus, ArrowLeft, Youtube, Download, Upload, Video, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
+import { validateVideoFile } from "@/lib/fileValidation";
 import {
   DndContext,
   closestCenter,
