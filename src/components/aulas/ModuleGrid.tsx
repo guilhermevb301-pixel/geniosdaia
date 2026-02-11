@@ -1,4 +1,5 @@
 import { ModuleCard } from "./ModuleCard";
+import { ModuleCardSkeleton } from "./ModuleCardSkeleton";
 
 interface Module {
   id: string;
@@ -13,21 +14,22 @@ interface Module {
 
 interface ModuleGridProps {
   modules: Module[];
+  isLoading?: boolean;
 }
 
-export function ModuleGrid({ modules }: ModuleGridProps) {
-  if (modules.length === 0) {
+export function ModuleGrid({ modules, isLoading }: ModuleGridProps) {
+  if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted mb-6">
-          <span className="text-4xl">📚</span>
-        </div>
-        <h2 className="text-2xl font-semibold mb-2">Sem módulos disponíveis</h2>
-        <p className="text-muted-foreground max-w-md">
-          Os módulos ainda não foram adicionados. Aguarde o administrador adicionar o conteúdo.
-        </p>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <ModuleCardSkeleton key={i} />
+        ))}
       </div>
     );
+  }
+
+  if (modules.length === 0) {
+    return null;
   }
 
   return (
@@ -42,7 +44,7 @@ export function ModuleGrid({ modules }: ModuleGridProps) {
           completedLessons={module.completedLessons}
           totalLessons={module.totalLessons}
           orderIndex={module.order_index}
-          priority={index < 5} // First 5 modules load eagerly
+          priority={index < 5}
         />
       ))}
     </div>

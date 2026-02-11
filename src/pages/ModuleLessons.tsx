@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -66,6 +66,7 @@ export default function ModuleLessons() {
       return data;
     },
     enabled: !!moduleId,
+    placeholderData: keepPreviousData,
   });
 
   // Fetch user progress
@@ -83,6 +84,7 @@ export default function ModuleLessons() {
       return data;
     },
     enabled: !!user && !!lessonsData,
+    placeholderData: keepPreviousData,
   });
 
   // Mark lesson complete mutation

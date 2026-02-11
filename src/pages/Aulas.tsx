@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -42,10 +42,11 @@ export default function Aulas() {
       if (error) throw error;
       return data as ModuleSection[];
     },
+    placeholderData: keepPreviousData,
   });
 
   // Fetch modules
-  const { data: modulesData } = useQuery({
+  const { data: modulesData, isLoading: isLoadingModules } = useQuery({
     queryKey: ["modules"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -55,10 +56,11 @@ export default function Aulas() {
       if (error) throw error;
       return data;
     },
+    placeholderData: keepPreviousData,
   });
 
   // Fetch lessons
-  const { data: lessonsData } = useQuery({
+  const { data: lessonsData, isLoading: isLoadingLessons } = useQuery({
     queryKey: ["lessons"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -68,6 +70,7 @@ export default function Aulas() {
       if (error) throw error;
       return data;
     },
+    placeholderData: keepPreviousData,
   });
 
   // Fetch user progress
@@ -83,7 +86,10 @@ export default function Aulas() {
       return data;
     },
     enabled: !!user,
+    placeholderData: keepPreviousData,
   });
+
+  const isLoading = isLoadingModules || isLoadingLessons;
 
   // Build modules with progress
   const modules: ModuleWithProgress[] = (modulesData || []).map((module) => {
@@ -121,7 +127,6 @@ export default function Aulas() {
   const totalLessons = modules.reduce((acc, m) => acc + m.totalLessons, 0);
   const completedLessons = modules.reduce((acc, m) => acc + m.completedLessons, 0);
 
-
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -141,32 +146,38 @@ export default function Aulas() {
 
         {/* Modules organized by sections */}
         <div className="space-y-8">
-          {/* Modules without section first */}
-          {modulesWithoutSection.length > 0 && (
-            <ModuleGrid modules={modulesWithoutSection} />
-          )}
+          {isLoading ? (
+            <ModuleGrid modules={[]} isLoading />
+          ) : (
+            <>
+              {/* Modules without section first */}
+              {modulesWithoutSection.length > 0 && (
+                <ModuleGrid modules={modulesWithoutSection} />
+              )}
 
-          {/* Section groups with their modules */}
-          {sectionGroups.map(({ section, modules: sectionModules }) => (
-            <div key={section.id} className="space-y-4">
-              <h2 className="text-xl font-semibold text-foreground">
-                {section.title}
-              </h2>
-              <ModuleGrid modules={sectionModules} />
-            </div>
-          ))}
+              {/* Section groups with their modules */}
+              {sectionGroups.map(({ section, modules: sectionModules }) => (
+                <div key={section.id} className="space-y-4">
+                  <h2 className="text-xl font-semibold text-foreground">
+                    {section.title}
+                  </h2>
+                  <ModuleGrid modules={sectionModules} />
+                </div>
+              ))}
 
-          {/* Empty state when no modules at all */}
-          {modules.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted mb-6">
-                <span className="text-4xl">📚</span>
-              </div>
-              <h2 className="text-2xl font-semibold mb-2">Sem módulos disponíveis</h2>
-              <p className="text-muted-foreground max-w-md">
-                Os módulos ainda não foram adicionados. Aguarde o administrador adicionar o conteúdo.
-              </p>
-            </div>
+              {/* Empty state when no modules at all */}
+              {modules.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted mb-6">
+                    <span className="text-4xl">📚</span>
+                  </div>
+                  <h2 className="text-2xl font-semibold mb-2">Sem módulos disponíveis</h2>
+                  <p className="text-muted-foreground max-w-md">
+                    Os módulos ainda não foram adicionados. Aguarde o administrador adicionar o conteúdo.
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
