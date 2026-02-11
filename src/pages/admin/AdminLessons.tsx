@@ -301,6 +301,11 @@ export default function AdminLessons() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
+    if (!moduleId) {
+      toast({ variant: "destructive", title: "Selecione um módulo" });
+      return;
+    }
+
     let finalYoutubeUrl = videoSourceType === "youtube" ? (youtubeUrl || null) : null;
 
     // Upload video file if provided
