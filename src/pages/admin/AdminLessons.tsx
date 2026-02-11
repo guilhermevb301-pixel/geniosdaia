@@ -408,17 +408,73 @@ export default function AdminLessons() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="youtube" className="flex items-center gap-2">
-                    <Youtube className="h-4 w-4 text-destructive" />
-                    URL do YouTube
-                  </Label>
-                  <Input
-                    id="youtube"
-                    value={youtubeUrl}
-                    onChange={(e) => setYoutubeUrl(e.target.value)}
-                    placeholder="https://www.youtube.com/watch?v=..."
-                  />
+                {/* Video Source Toggle */}
+                <div className="space-y-3">
+                  <Label>Fonte do Vídeo</Label>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant={videoSourceType === "youtube" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setVideoSourceType("youtube")}
+                      className="flex items-center gap-2"
+                    >
+                      <Youtube className="h-4 w-4" />
+                      YouTube
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={videoSourceType === "upload" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setVideoSourceType("upload")}
+                      className="flex items-center gap-2"
+                    >
+                      <Upload className="h-4 w-4" />
+                      Upload MP4
+                    </Button>
+                  </div>
+
+                  {videoSourceType === "youtube" ? (
+                    <div className="space-y-2">
+                      <Label htmlFor="youtube" className="flex items-center gap-2">
+                        <Youtube className="h-4 w-4 text-destructive" />
+                        URL do YouTube
+                      </Label>
+                      <Input
+                        id="youtube"
+                        value={youtubeUrl}
+                        onChange={(e) => setYoutubeUrl(e.target.value)}
+                        placeholder="https://www.youtube.com/watch?v=..."
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label htmlFor="video-upload" className="flex items-center gap-2">
+                        <Video className="h-4 w-4" />
+                        Vídeo MP4 (máx. 100MB)
+                      </Label>
+                      {editingLesson?.youtube_url?.includes('/lesson-videos/') && !videoFile && (
+                        <p className="text-xs text-muted-foreground">Vídeo atual já enviado. Selecione um novo arquivo para substituir.</p>
+                      )}
+                      <Input
+                        id="video-upload"
+                        type="file"
+                        accept="video/mp4,.mp4"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const validation = validateVideoFile(file);
+                            if (!validation.valid) {
+                              toast({ variant: "destructive", title: "Arquivo inválido", description: validation.error });
+                              e.target.value = "";
+                              return;
+                            }
+                            setVideoFile(file);
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
