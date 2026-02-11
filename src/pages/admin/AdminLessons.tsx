@@ -306,12 +306,45 @@ export default function AdminLessons() {
     // Upload video file if provided
     if (videoSourceType === "upload" && videoFile) {
       setIsUploading(true);
+      setUploadProgress(0);
       try {
         const fileName = `${crypto.randomUUID()}.mp4`;
-        const { error: uploadError } = await supabase.storage
+
+        // Create signed upload URL
+        const { data: signedData, error: signedError } = await supabase.storage
           .from("lesson-videos")
-          .upload(fileName, videoFile, { contentType: "video/mp4" });
-        if (uploadError) throw uploadError;
+          .createSignedUploadUrl(fileName);
+        if (signedError || !signedData) throw signedError || new Error("Falha ao gerar URL de upload");
+
+        // Upload using XMLHttpRequest for progress tracking
+        const uploadUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/upload/sign/lesson-videos/${fileName}?token=${signedData.token}`;
+
+        await new Promise<void>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open("PUT", uploadUrl);
+          xhr.setRequestHeader("x-upsert", "false");
+
+          xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+              const pct = Math.round((event.loaded / event.total) * 100);
+              setUploadProgress(pct);
+            }
+          };
+
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve();
+            } else {
+              reject(new Error(`Upload falhou com status ${xhr.status}: ${xhr.responseText}`));
+            }
+          };
+
+          xhr.onerror = () => reject(new Error("Erro de rede durante o upload"));
+          xhr.ontimeout = () => reject(new Error("Upload expirou (timeout)"));
+          xhr.timeout = 600000; // 10 min timeout
+
+          xhr.send(videoFile);
+        });
 
         const { data: urlData } = supabase.storage
           .from("lesson-videos")
@@ -320,9 +353,11 @@ export default function AdminLessons() {
       } catch (err: any) {
         toast({ variant: "destructive", title: "Erro no upload do vídeo", description: err.message });
         setIsUploading(false);
+        setUploadProgress(0);
         return;
       }
       setIsUploading(false);
+      setUploadProgress(0);
     }
 
     const lessonData = {
