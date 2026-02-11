@@ -276,6 +276,8 @@ export default function AdminLessons() {
     setYoutubeUrl("");
     setDownloadUrl("");
     setDuration("");
+    setVideoFile(null);
+    setVideoSourceType("youtube");
   }
 
   function handleEdit(lesson: Lesson) {
