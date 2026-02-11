@@ -1,38 +1,33 @@
 
 
-# Plano: Criar os 12 Grupos de Modificadores no Banco de Dados
+# Plano: Corrigir Bugs do Modificador de Prompts
 
-## O que sera feito
+## Problemas Identificados
 
-Inserir os 12 grupos como registros na tabela `prompts` com `category = 'modifier'`. Para os dois grupos que voce ja passou os prompts completos (Estilos de Imagem e Cameras e Lentes), tambem inserir as variacoes com os comandos em ingles e traducoes em portugues.
+1. **Dados duplicados no banco**: "Cameras e Lentes" aparece duas vezes (o registro com ID `...0003` deveria ser "Angulos e Enquadramentos")
+2. **Modal de edicao com estado obsoleto**: O formulario do editor inicializa os valores apenas na primeira renderizacao. Quando voce clica para editar um prompt diferente, os campos continuam com os dados antigos, causando duplicacoes ao salvar
+3. **Mentor nao consegue editar**: O hook `useIsMentor` usa a funcao `has_role` do banco, que deve funcionar corretamente. Preciso verificar se o usuario logado realmente tem a role `mentor` no banco
 
-Os outros 10 grupos serao criados vazios, prontos para voce (como mentor) adicionar os prompts depois pela interface.
+## Correcoes Planejadas
 
-## Grupos a criar
+### 1. Corrigir dados duplicados no banco
+- Atualizar o registro `a1000001-0000-0000-0000-000000000003` de "Cameras e Lentes" para "Angulos e Enquadramentos"
 
-1. **Estilos de Imagem** - com 10 prompts prontos
-2. **Cameras e Lentes** - com 10 prompts prontos
-3. **Angulos e Enquadramentos** - vazio (pronto para preencher)
-4. **Iluminacao** - vazio
-5. **Condicoes do Tempo** - vazio
-6. **Estilos de Diretores** - vazio
-7. **Estilos de Fotografos** - vazio
-8. **Tipos de Filme** - vazio
-9. **Emocoes** - vazio
-10. **Materiais** - vazio
-11. **Paletas de Cores** - vazio
-12. **Acoes** - vazio
+### 2. Corrigir o estado do modal de edicao (PromptEditorModal)
+- Adicionar um `useEffect` que reseta o formulario quando `editingPrompt` ou `open` mudam
+- Isso resolve tanto o problema de edicao incorreta quanto a duplicacao ao salvar
 
-## Como funciona
+### 3. Verificar role do mentor
+- Consultar o banco para confirmar que o usuario logado tem a role `mentor`
+- Se nao tiver, orientar sobre como atribuir a role
 
-- Cada grupo e um registro na tabela `prompts` com `category = 'modifier'`
-- Os prompts individuais ficam na tabela `prompt_variations` com:
-  - `content` = comando em ingles
-  - `image_url` = traducao em portugues
-- Mentores podem editar/adicionar prompts via botao de editar no card
-- Alunos so visualizam e copiam
+## Detalhes Tecnicos
 
-## Detalhes tecnicos
+**Arquivo: `src/components/prompts/PromptEditorModal.tsx`**
+- Adicionar `useEffect` sincronizando `editingPrompt`/`open` com o estado interno do formulario
+- Remover a dependencia do `useState` initializer para dados do `editingPrompt`
 
-Serão executadas queries INSERT para criar os 12 prompts e as 20 variacoes (10 para cada grupo preenchido). Nenhuma mudanca de codigo e necessaria - a UI ja suporta tudo isso.
+**Banco de dados:**
+- UPDATE para corrigir titulo do registro duplicado
+- Verificar roles do usuario atual
 
