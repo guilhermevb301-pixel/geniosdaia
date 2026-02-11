@@ -141,32 +141,38 @@ export default function Aulas() {
 
         {/* Modules organized by sections */}
         <div className="space-y-8">
-          {/* Modules without section first */}
-          {modulesWithoutSection.length > 0 && (
-            <ModuleGrid modules={modulesWithoutSection} />
-          )}
+          {isLoading ? (
+            <ModuleGrid modules={[]} isLoading />
+          ) : (
+            <>
+              {/* Modules without section first */}
+              {modulesWithoutSection.length > 0 && (
+                <ModuleGrid modules={modulesWithoutSection} />
+              )}
 
-          {/* Section groups with their modules */}
-          {sectionGroups.map(({ section, modules: sectionModules }) => (
-            <div key={section.id} className="space-y-4">
-              <h2 className="text-xl font-semibold text-foreground">
-                {section.title}
-              </h2>
-              <ModuleGrid modules={sectionModules} />
-            </div>
-          ))}
+              {/* Section groups with their modules */}
+              {sectionGroups.map(({ section, modules: sectionModules }) => (
+                <div key={section.id} className="space-y-4">
+                  <h2 className="text-xl font-semibold text-foreground">
+                    {section.title}
+                  </h2>
+                  <ModuleGrid modules={sectionModules} />
+                </div>
+              ))}
 
-          {/* Empty state when no modules at all */}
-          {modules.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted mb-6">
-                <span className="text-4xl">📚</span>
-              </div>
-              <h2 className="text-2xl font-semibold mb-2">Sem módulos disponíveis</h2>
-              <p className="text-muted-foreground max-w-md">
-                Os módulos ainda não foram adicionados. Aguarde o administrador adicionar o conteúdo.
-              </p>
-            </div>
+              {/* Empty state when no modules at all */}
+              {modules.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted mb-6">
+                    <span className="text-4xl">📚</span>
+                  </div>
+                  <h2 className="text-2xl font-semibold mb-2">Sem módulos disponíveis</h2>
+                  <p className="text-muted-foreground max-w-md">
+                    Os módulos ainda não foram adicionados. Aguarde o administrador adicionar o conteúdo.
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

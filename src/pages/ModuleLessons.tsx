@@ -66,6 +66,7 @@ export default function ModuleLessons() {
       return data;
     },
     enabled: !!moduleId,
+    placeholderData: keepPreviousData,
   });
 
   // Fetch user progress
@@ -83,6 +84,7 @@ export default function ModuleLessons() {
       return data;
     },
     enabled: !!user && !!lessonsData,
+    placeholderData: keepPreviousData,
   });
 
   // Mark lesson complete mutation
