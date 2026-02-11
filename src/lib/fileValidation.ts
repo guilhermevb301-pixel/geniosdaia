@@ -45,7 +45,7 @@ export const ALLOWED_VIDEO_EXTENSIONS = ['.mp4'];
 export const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 export const MAX_JSON_SIZE = 2 * 1024 * 1024; // 2MB
 export const MAX_ZIP_SIZE = 50 * 1024 * 1024; // 50MB
-export const MAX_VIDEO_SIZE = 500 * 1024 * 1024; // 500MB
+export const MAX_VIDEO_SIZE = 1024 * 1024 * 1024; // 1GB
 
 export interface FileValidationResult {
   valid: boolean;
