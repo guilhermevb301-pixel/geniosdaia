@@ -28,9 +28,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, ArrowLeft, Youtube, Download } from "lucide-react";
+import { Plus, ArrowLeft, Youtube, Download, Upload, Video, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
+import { validateVideoFile } from "@/lib/fileValidation";
 import {
   DndContext,
   closestCenter,
@@ -77,6 +78,9 @@ export default function AdminLessons() {
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [downloadUrl, setDownloadUrl] = useState("");
   const [duration, setDuration] = useState("");
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [videoSourceType, setVideoSourceType] = useState<"youtube" | "upload">("youtube");
 
   // DnD sensors
   const sensors = useSensors(
@@ -272,6 +276,8 @@ export default function AdminLessons() {
     setYoutubeUrl("");
     setDownloadUrl("");
     setDuration("");
+    setVideoFile(null);
+    setVideoSourceType("youtube");
   }
 
   function handleEdit(lesson: Lesson) {
@@ -282,16 +288,45 @@ export default function AdminLessons() {
     setYoutubeUrl(lesson.youtube_url || "");
     setDownloadUrl(lesson.download_url || "");
     setDuration(lesson.duration || "");
+    setVideoFile(null);
+    // Detect if existing lesson uses uploaded video (not YouTube)
+    const url = lesson.youtube_url || "";
+    setVideoSourceType(url.includes('/lesson-videos/') || url.endsWith('.mp4') ? "upload" : "youtube");
     setDialogOpen(true);
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    let finalYoutubeUrl = videoSourceType === "youtube" ? (youtubeUrl || null) : null;
+
+    // Upload video file if provided
+    if (videoSourceType === "upload" && videoFile) {
+      setIsUploading(true);
+      try {
+        const fileName = `${crypto.randomUUID()}.mp4`;
+        const { error: uploadError } = await supabase.storage
+          .from("lesson-videos")
+          .upload(fileName, videoFile, { contentType: "video/mp4" });
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from("lesson-videos")
+          .getPublicUrl(fileName);
+        finalYoutubeUrl = urlData.publicUrl;
+      } catch (err: any) {
+        toast({ variant: "destructive", title: "Erro no upload do vídeo", description: err.message });
+        setIsUploading(false);
+        return;
+      }
+      setIsUploading(false);
+    }
+
     const lessonData = {
       module_id: moduleId,
       title,
       description: description || null,
-      youtube_url: youtubeUrl || null,
+      youtube_url: finalYoutubeUrl,
       download_url: downloadUrl || null,
       duration: duration || null,
       order_index: lessons ? lessons.filter(l => l.module_id === moduleId).length : 0,
@@ -320,7 +355,7 @@ export default function AdminLessons() {
             </Link>
             <div>
               <h1 className="text-2xl font-bold">Gerenciar Aulas</h1>
-              <p className="text-muted-foreground">Adicione aulas do YouTube aos módulos. Arraste para reordenar.</p>
+              <p className="text-muted-foreground">Adicione aulas aos módulos via YouTube ou upload de MP4. Arraste para reordenar.</p>
             </div>
           </div>
 
@@ -373,17 +408,73 @@ export default function AdminLessons() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="youtube" className="flex items-center gap-2">
-                    <Youtube className="h-4 w-4 text-destructive" />
-                    URL do YouTube
-                  </Label>
-                  <Input
-                    id="youtube"
-                    value={youtubeUrl}
-                    onChange={(e) => setYoutubeUrl(e.target.value)}
-                    placeholder="https://www.youtube.com/watch?v=..."
-                  />
+                {/* Video Source Toggle */}
+                <div className="space-y-3">
+                  <Label>Fonte do Vídeo</Label>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant={videoSourceType === "youtube" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setVideoSourceType("youtube")}
+                      className="flex items-center gap-2"
+                    >
+                      <Youtube className="h-4 w-4" />
+                      YouTube
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={videoSourceType === "upload" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setVideoSourceType("upload")}
+                      className="flex items-center gap-2"
+                    >
+                      <Upload className="h-4 w-4" />
+                      Upload MP4
+                    </Button>
+                  </div>
+
+                  {videoSourceType === "youtube" ? (
+                    <div className="space-y-2">
+                      <Label htmlFor="youtube" className="flex items-center gap-2">
+                        <Youtube className="h-4 w-4 text-destructive" />
+                        URL do YouTube
+                      </Label>
+                      <Input
+                        id="youtube"
+                        value={youtubeUrl}
+                        onChange={(e) => setYoutubeUrl(e.target.value)}
+                        placeholder="https://www.youtube.com/watch?v=..."
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label htmlFor="video-upload" className="flex items-center gap-2">
+                        <Video className="h-4 w-4" />
+                        Vídeo MP4 (máx. 100MB)
+                      </Label>
+                      {editingLesson?.youtube_url?.includes('/lesson-videos/') && !videoFile && (
+                        <p className="text-xs text-muted-foreground">Vídeo atual já enviado. Selecione um novo arquivo para substituir.</p>
+                      )}
+                      <Input
+                        id="video-upload"
+                        type="file"
+                        accept="video/mp4,.mp4"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const validation = validateVideoFile(file);
+                            if (!validation.valid) {
+                              toast({ variant: "destructive", title: "Arquivo inválido", description: validation.error });
+                              e.target.value = "";
+                              return;
+                            }
+                            setVideoFile(file);
+                          }
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -415,8 +506,10 @@ export default function AdminLessons() {
                   <Button type="button" variant="outline" onClick={resetForm}>
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-                    {editingLesson ? "Salvar" : "Criar"}
+                  <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending || isUploading}>
+                    {isUploading ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enviando vídeo...</>
+                    ) : editingLesson ? "Salvar" : "Criar"}
                   </Button>
                 </div>
               </form>
