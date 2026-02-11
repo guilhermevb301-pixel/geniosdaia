@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -42,10 +42,11 @@ export default function Aulas() {
       if (error) throw error;
       return data as ModuleSection[];
     },
+    placeholderData: keepPreviousData,
   });
 
   // Fetch modules
-  const { data: modulesData } = useQuery({
+  const { data: modulesData, isLoading: isLoadingModules } = useQuery({
     queryKey: ["modules"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -55,10 +56,11 @@ export default function Aulas() {
       if (error) throw error;
       return data;
     },
+    placeholderData: keepPreviousData,
   });
 
   // Fetch lessons
-  const { data: lessonsData } = useQuery({
+  const { data: lessonsData, isLoading: isLoadingLessons } = useQuery({
     queryKey: ["lessons"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -68,6 +70,7 @@ export default function Aulas() {
       if (error) throw error;
       return data;
     },
+    placeholderData: keepPreviousData,
   });
 
   // Fetch user progress
@@ -83,7 +86,10 @@ export default function Aulas() {
       return data;
     },
     enabled: !!user,
+    placeholderData: keepPreviousData,
   });
+
+  const isLoading = isLoadingModules || isLoadingLessons;
 
   // Build modules with progress
   const modules: ModuleWithProgress[] = (modulesData || []).map((module) => {
@@ -120,7 +126,6 @@ export default function Aulas() {
   // Calculate total progress
   const totalLessons = modules.reduce((acc, m) => acc + m.totalLessons, 0);
   const completedLessons = modules.reduce((acc, m) => acc + m.completedLessons, 0);
-
 
   return (
     <AppLayout>
