@@ -146,6 +146,37 @@ export default function AdminModules() {
     },
   });
 
+  const reorderSectionsMutation = useMutation({
+    mutationFn: async (reorderedSections: { id: string; order_index: number }[]) => {
+      const updates = reorderedSections.map(({ id, order_index }) =>
+        supabase.from("module_sections").update({ order_index }).eq("id", id)
+      );
+      const results = await Promise.all(updates);
+      const failed = results.find((r) => r.error);
+      if (failed?.error) throw failed.error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["module_sections"] });
+      toast({ title: "Ordem das seções atualizada!" });
+    },
+    onError: (error) => {
+      toast({ variant: "destructive", title: "Erro ao reordenar", description: error.message });
+    },
+  });
+
+  function handleMoveSection(index: number, direction: "up" | "down") {
+    if (!sections) return;
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= sections.length) return;
+
+    const reordered = [...sections];
+    const [moved] = reordered.splice(index, 1);
+    reordered.splice(newIndex, 0, moved);
+
+    const updates = reordered.map((s, i) => ({ id: s.id, order_index: i }));
+    reorderSectionsMutation.mutate(updates);
+  }
+
   // Module mutations
   const createMutation = useMutation({
     mutationFn: async (newModule: { title: string; description: string; cover_image_url: string | null; order_index: number; section_id: string | null }) => {
