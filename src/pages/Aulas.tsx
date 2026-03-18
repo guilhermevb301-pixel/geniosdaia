@@ -90,6 +90,7 @@ export default function Aulas() {
       return data;
     },
     enabled: !!user,
+    staleTime: 5 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
 
