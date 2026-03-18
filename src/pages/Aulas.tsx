@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { CourseProgress } from "@/components/aulas/CourseProgress";
 import { ModuleGrid } from "@/components/aulas/ModuleGrid";
+import { useImagePreload } from "@/hooks/useImagePreload";
 
 interface ModuleSection {
   id: string;
@@ -42,6 +43,7 @@ export default function Aulas() {
       if (error) throw error;
       return data as ModuleSection[];
     },
+    staleTime: 5 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
 
@@ -56,6 +58,7 @@ export default function Aulas() {
       if (error) throw error;
       return data;
     },
+    staleTime: 5 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
 
@@ -70,6 +73,7 @@ export default function Aulas() {
       if (error) throw error;
       return data;
     },
+    staleTime: 5 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
 
@@ -86,10 +90,15 @@ export default function Aulas() {
       return data;
     },
     enabled: !!user,
+    staleTime: 5 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
 
   const isLoading = isLoadingModules || isLoadingLessons;
+
+  // Preload module cover images
+  const coverUrls = (modulesData || []).map((m) => m.cover_image_url);
+  useImagePreload(coverUrls, { width: 200, quality: 50 });
 
   // Build modules with progress
   const modules: ModuleWithProgress[] = (modulesData || []).map((module) => {
