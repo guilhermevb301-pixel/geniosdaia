@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Edit, Trash2, ArrowLeft, X, Image, FolderOpen, Layers } from "lucide-react";
+import { Plus, Edit, Trash2, ArrowLeft, X, Image, FolderOpen, Layers, ArrowUp, ArrowDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { validateImageFile, ALLOWED_IMAGE_EXTENSIONS } from "@/lib/fileValidation";
