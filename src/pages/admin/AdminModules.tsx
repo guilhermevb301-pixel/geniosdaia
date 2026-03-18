@@ -526,7 +526,23 @@ export default function AdminModules() {
                         {modules?.filter((m) => m.section_id === section.id).length || 0} módulos
                       </Badge>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={index === 0 || reorderSectionsMutation.isPending}
+                        onClick={() => handleMoveSection(index, "up")}
+                      >
+                        <ArrowUp className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={index === sections.length - 1 || reorderSectionsMutation.isPending}
+                        onClick={() => handleMoveSection(index, "down")}
+                      >
+                        <ArrowDown className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
