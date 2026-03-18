@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Edit, Trash2, ArrowLeft, X, Image, FolderOpen, Layers } from "lucide-react";
+import { Plus, Edit, Trash2, ArrowLeft, X, Image, FolderOpen, Layers, ArrowUp, ArrowDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { validateImageFile, ALLOWED_IMAGE_EXTENSIONS } from "@/lib/fileValidation";
@@ -145,6 +145,37 @@ export default function AdminModules() {
       toast({ variant: "destructive", title: "Erro ao excluir seção", description: error.message });
     },
   });
+
+  const reorderSectionsMutation = useMutation({
+    mutationFn: async (reorderedSections: { id: string; order_index: number }[]) => {
+      const updates = reorderedSections.map(({ id, order_index }) =>
+        supabase.from("module_sections").update({ order_index }).eq("id", id)
+      );
+      const results = await Promise.all(updates);
+      const failed = results.find((r) => r.error);
+      if (failed?.error) throw failed.error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["module_sections"] });
+      toast({ title: "Ordem das seções atualizada!" });
+    },
+    onError: (error) => {
+      toast({ variant: "destructive", title: "Erro ao reordenar", description: error.message });
+    },
+  });
+
+  function handleMoveSection(index: number, direction: "up" | "down") {
+    if (!sections) return;
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= sections.length) return;
+
+    const reordered = [...sections];
+    const [moved] = reordered.splice(index, 1);
+    reordered.splice(newIndex, 0, moved);
+
+    const updates = reordered.map((s, i) => ({ id: s.id, order_index: i }));
+    reorderSectionsMutation.mutate(updates);
+  }
 
   // Module mutations
   const createMutation = useMutation({
@@ -495,7 +526,23 @@ export default function AdminModules() {
                         {modules?.filter((m) => m.section_id === section.id).length || 0} módulos
                       </Badge>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={index === 0 || reorderSectionsMutation.isPending}
+                        onClick={() => handleMoveSection(index, "up")}
+                      >
+                        <ArrowUp className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={index === sections.length - 1 || reorderSectionsMutation.isPending}
+                        onClick={() => handleMoveSection(index, "down")}
+                      >
+                        <ArrowDown className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"
