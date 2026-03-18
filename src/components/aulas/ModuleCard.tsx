@@ -43,7 +43,8 @@ export function ModuleCard({
                 className="transition-transform duration-300 group-hover:scale-105"
                 containerClassName="h-full w-full"
                 fallbackIcon={<BookOpen className="h-12 w-12 text-primary/40" />}
-                optimizedWidth={300}
+                optimizedWidth={200}
+                optimizedQuality={50}
                 priority={priority}
               />
             ) : (

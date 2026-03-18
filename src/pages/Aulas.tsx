@@ -96,6 +96,10 @@ export default function Aulas() {
 
   const isLoading = isLoadingModules || isLoadingLessons;
 
+  // Preload module cover images
+  const coverUrls = (modulesData || []).map((m) => m.cover_image_url);
+  useImagePreload(coverUrls, { width: 200, quality: 50 });
+
   // Build modules with progress
   const modules: ModuleWithProgress[] = (modulesData || []).map((module) => {
     const moduleLessons = (lessonsData || []).filter(
