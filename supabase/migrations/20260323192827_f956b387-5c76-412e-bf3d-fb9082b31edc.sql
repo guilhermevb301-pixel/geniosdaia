@@ -1,0 +1,1 @@
+UPDATE modules SET cover_image_url = 'https://nxfketidvevdqtfxgdlw.supabase.co/storage/v1/object/public/modules/covers/pagina-vendas.png' WHERE id = 'd7b56db0-52d2-41e8-8469-386cd5ad465d';
