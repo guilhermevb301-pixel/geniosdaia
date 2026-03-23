@@ -1,0 +1,1 @@
+UPDATE modules SET cover_image_url = 'https://nxfketidvevdqtfxgdlw.supabase.co/storage/v1/object/public/modules/covers/genios-clones-ia.jpeg' WHERE id IN ('7c645e12-86bd-4b53-ac39-b3bd4af654d8', 'a0d54832-f009-4cc3-a384-303d958aa727', '84baf9e5-553b-48fc-bf7e-4d70357d50da');
