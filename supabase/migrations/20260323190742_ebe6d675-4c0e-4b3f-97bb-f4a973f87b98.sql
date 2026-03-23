@@ -1,0 +1,1 @@
+UPDATE modules SET cover_image_url = 'https://nxfketidvevdqtfxgdlw.supabase.co/storage/v1/object/public/modules/covers/monetizacao-influencers.png' WHERE id = '5102702c-10f8-4b50-86d3-30cceaa2f3b9';
