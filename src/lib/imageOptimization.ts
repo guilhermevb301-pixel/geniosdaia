@@ -103,20 +103,20 @@ export function clearImageUrlCache(): void {
  */
 export const IMAGE_PRESETS = {
   // Module thumbnails in grids (3-4 columns)
-  thumbnail: { width: 400, quality: 70, format: 'webp' as const },
+  thumbnail: { width: 600, quality: 80, format: 'webp' as const },
 
   // Smaller cards (5+ columns)
-  smallThumbnail: { width: 300, quality: 70, format: 'webp' as const },
+  smallThumbnail: { width: 450, quality: 80, format: 'webp' as const },
 
   // Icons and avatars
-  icon: { width: 100, quality: 75, format: 'webp' as const },
+  icon: { width: 150, quality: 80, format: 'webp' as const },
 
   // Modal/detail images
-  modal: { width: 800, quality: 80, format: 'webp' as const },
+  modal: { width: 1000, quality: 85, format: 'webp' as const },
 
   // Hero/banner images
-  hero: { width: 1200, quality: 75, format: 'webp' as const },
+  hero: { width: 1600, quality: 82, format: 'webp' as const },
 
   // Continue learning cards
-  card: { width: 350, quality: 70, format: 'webp' as const },
+  card: { width: 500, quality: 80, format: 'webp' as const },
 } as const;
