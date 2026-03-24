@@ -85,11 +85,8 @@ export function TopBar({ onMenuClick, showMenu }: TopBarProps) {
           </Link>
         </Button>
 
-        <Button variant="ghost" size="icon" className="relative">
+        <Button variant="ghost" size="icon" className="relative" aria-label="Notificações">
           <Bell className="h-5 w-5" />
-          <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-accent text-[10px] font-bold text-accent-foreground flex items-center justify-center">
-            2
-          </span>
         </Button>
 
         <DropdownMenu>

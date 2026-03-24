@@ -27,7 +27,7 @@ export default function Login() {
       toast({
         variant: "destructive",
         title: "Erro ao fazer login",
-        description: error.message,
+        description: "Email ou senha incorretos. Verifique suas credenciais.",
       });
     } else {
       navigate("/");

@@ -8,7 +8,7 @@ export function SupportWidget() {
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
   return (
-    <Card className="fixed bottom-4 left-[calc(16rem+1rem)] z-50 w-64 bg-card border-border shadow-lg">
+    <Card className="fixed bottom-4 right-4 md:right-auto md:left-[calc(16rem+1rem)] z-50 w-64 bg-card border-border shadow-lg">
       <CardContent className="p-4 space-y-3">
         <div>
           <h4 className="font-medium text-sm text-foreground">Precisa de Ajuda?</h4>

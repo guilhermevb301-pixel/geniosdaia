@@ -49,11 +49,20 @@ export default function Register() {
       return;
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "A senha deve ter no mínimo 6 caracteres",
+        description: "A senha deve ter no mínimo 8 caracteres",
+      });
+      return;
+    }
+
+    if (!/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "A senha deve conter pelo menos uma letra maiúscula e um número",
       });
       return;
     }
@@ -73,10 +82,13 @@ export default function Register() {
     setLoading(false);
 
     if (error) {
+      const friendlyMessage = error.message.includes("already registered")
+        ? "Este email já está cadastrado. Tente fazer login."
+        : "Não foi possível criar sua conta. Tente novamente.";
       toast({
         variant: "destructive",
         title: "Erro ao criar conta",
-        description: error.message,
+        description: friendlyMessage,
       });
     } else {
       toast({

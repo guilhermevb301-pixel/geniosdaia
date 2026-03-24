@@ -34,7 +34,9 @@ import AdminGpts from "./pages/admin/AdminGpts";
 import AdminBanners from "./pages/admin/AdminBanners";
 import AdminAppearance from "./pages/admin/AdminAppearance";
 import MenteeEditor from "./pages/admin/MenteeEditor";
+import ForgotPassword from "./pages/ForgotPassword";
 import NotFound from "./pages/NotFound";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -54,10 +56,12 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <ErrorBoundary>
           <Routes>
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/certificado/:code" element={<VerifyCertificate />} />
             
             {/* Protected routes */}
@@ -256,6 +260,7 @@ const App = () => (
             
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </ErrorBoundary>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
