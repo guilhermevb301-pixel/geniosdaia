@@ -32,7 +32,7 @@ export function ImageWithSkeleton({
   objectPosition = "center",
   fallbackIcon,
   optimizedWidth,
-  optimizedQuality = 75,
+  optimizedQuality = 80,
   priority = false,
 }: ImageWithSkeletonProps) {
   const [isLoaded, setIsLoaded] = useState(false);
