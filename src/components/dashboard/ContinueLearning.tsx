@@ -7,7 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { getOptimizedImageUrl } from "@/lib/imageOptimization";
+import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton";
 
 interface ModuleProgress {
   id: string;
@@ -149,11 +149,14 @@ export function ContinueLearning() {
             {/* Thumbnail */}
             <div className="relative h-20 sm:h-24 overflow-hidden">
               {module.cover_image_url ? (
-                <img
-                  src={getOptimizedImageUrl(module.cover_image_url, { width: 300 }) || module.cover_image_url}
+                <ImageWithSkeleton
+                  src={module.cover_image_url}
                   alt={module.title}
-                  loading="eager"
-                  className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="group-hover:scale-105 transition-transform duration-300"
+                  containerClassName="h-full w-full"
+                  optimizedWidth={350}
+                  optimizedQuality={70}
+                  priority={true}
                 />
               ) : (
                 <div className="h-full w-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
