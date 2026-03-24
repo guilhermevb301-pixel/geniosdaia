@@ -1473,6 +1473,26 @@ export type Database = {
         Returns: boolean
       }
       is_mentee: { Args: { _user_id: string }; Returns: boolean }
+      safe_insert_xp: {
+        Args: {
+          p_action_type: string
+          p_amount: number
+          p_reference_id?: string
+        }
+        Returns: undefined
+      }
+      verify_certificate: {
+        Args: { p_code: string }
+        Returns: {
+          certificate_code: string
+          id: string
+          issued_at: string
+          module_id: string
+          module_title: string
+          user_id: string
+          user_name: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user" | "mentor"
