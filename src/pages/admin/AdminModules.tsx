@@ -233,6 +233,37 @@ export default function AdminModules() {
     },
   });
 
+  const reorderModulesMutation = useMutation({
+    mutationFn: async (updates: { id: string; order_index: number }[]) => {
+      const results = await Promise.all(
+        updates.map(({ id, order_index }) =>
+          supabase.from("modules").update({ order_index }).eq("id", id)
+        )
+      );
+      const failed = results.find((r) => r.error);
+      if (failed?.error) throw failed.error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["modules"] });
+      toast({ title: "Ordem dos módulos atualizada!" });
+    },
+    onError: (error) => {
+      toast({ variant: "destructive", title: "Erro ao reordenar módulos", description: error.message });
+    },
+  });
+
+  function handleMoveModule(sectionModules: Module[], index: number, direction: "up" | "down") {
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= sectionModules.length) return;
+
+    const reordered = [...sectionModules];
+    const [moved] = reordered.splice(index, 1);
+    reordered.splice(newIndex, 0, moved);
+
+    const updates = reordered.map((m, i) => ({ id: m.id, order_index: i }));
+    reorderModulesMutation.mutate(updates);
+  }
+
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
