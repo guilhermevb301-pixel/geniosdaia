@@ -233,6 +233,37 @@ export default function AdminModules() {
     },
   });
 
+  const reorderModulesMutation = useMutation({
+    mutationFn: async (updates: { id: string; order_index: number }[]) => {
+      const results = await Promise.all(
+        updates.map(({ id, order_index }) =>
+          supabase.from("modules").update({ order_index }).eq("id", id)
+        )
+      );
+      const failed = results.find((r) => r.error);
+      if (failed?.error) throw failed.error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["modules"] });
+      toast({ title: "Ordem dos módulos atualizada!" });
+    },
+    onError: (error) => {
+      toast({ variant: "destructive", title: "Erro ao reordenar módulos", description: error.message });
+    },
+  });
+
+  function handleMoveModule(sectionModules: Module[], index: number, direction: "up" | "down") {
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= sectionModules.length) return;
+
+    const reordered = [...sectionModules];
+    const [moved] = reordered.splice(index, 1);
+    reordered.splice(newIndex, 0, moved);
+
+    const updates = reordered.map((m, i) => ({ id: m.id, order_index: i }));
+    reorderModulesMutation.mutate(updates);
+  }
+
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -583,59 +614,86 @@ export default function AdminModules() {
                 <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
               </div>
             ) : modules && modules.length > 0 ? (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {modules.map((module, index) => (
-                  <Card key={module.id} className="overflow-hidden">
-                    <div className="aspect-video bg-muted relative">
-                      {module.cover_image_url ? (
-                        <img
-                          src={module.cover_image_url}
-                          alt={module.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex items-center justify-center h-full bg-gradient-to-br from-primary/20 to-primary/5">
-                          <Image className="h-10 w-10 text-muted-foreground" />
-                        </div>
-                      )}
-                      <div className="absolute top-2 left-2 bg-background/80 px-2 py-1 rounded text-xs font-medium">
-                        Módulo {index + 1}
+              <div className="space-y-6">
+                {/* Modules without section */}
+                {(() => {
+                  const noSectionModules = modules.filter((m) => !m.section_id).sort((a, b) => a.order_index - b.order_index);
+                  if (noSectionModules.length === 0) return null;
+                  return (
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">Sem seção</h3>
+                      <div className="space-y-2">
+                        {noSectionModules.map((module, index) => (
+                          <div key={module.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+                            <div className="flex flex-col gap-0.5">
+                              <Button variant="ghost" size="icon" className="h-6 w-6" disabled={index === 0 || reorderModulesMutation.isPending} onClick={() => handleMoveModule(noSectionModules, index, "up")}>
+                                <ArrowUp className="h-3 w-3" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-6 w-6" disabled={index === noSectionModules.length - 1 || reorderModulesMutation.isPending} onClick={() => handleMoveModule(noSectionModules, index, "down")}>
+                                <ArrowDown className="h-3 w-3" />
+                              </Button>
+                            </div>
+                            {module.cover_image_url ? (
+                              <img src={module.cover_image_url} alt={module.title} className="h-12 w-12 rounded object-cover flex-shrink-0" />
+                            ) : (
+                              <div className="h-12 w-12 rounded bg-muted flex items-center justify-center flex-shrink-0">
+                                <Image className="h-5 w-5 text-muted-foreground" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate">{module.title}</p>
+                              <p className="text-xs text-muted-foreground truncate">{module.description || "Sem descrição"}</p>
+                            </div>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <Button variant="ghost" size="sm" onClick={() => handleEdit(module)}><Edit className="h-4 w-4" /></Button>
+                              <Button variant="ghost" size="sm" onClick={() => { if (confirm("Tem certeza que deseja excluir este módulo?")) deleteMutation.mutate(module.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                    <CardContent className="p-4">
-                      <h3 className="font-semibold line-clamp-1">{module.title}</h3>
-                      <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                        {module.description || "Sem descrição"}
-                      </p>
-                      <div className="mt-2">
-                        <Badge variant="outline" className="text-xs">
-                          {getSectionName(module.section_id)}
-                        </Badge>
+                  );
+                })()}
+
+                {/* Modules grouped by section */}
+                {sections?.map((section) => {
+                  const sectionModules = modules.filter((m) => m.section_id === section.id).sort((a, b) => a.order_index - b.order_index);
+                  if (sectionModules.length === 0) return null;
+                  return (
+                    <div key={section.id} className="space-y-3">
+                      <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">{section.title}</h3>
+                      <div className="space-y-2">
+                        {sectionModules.map((module, index) => (
+                          <div key={module.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+                            <div className="flex flex-col gap-0.5">
+                              <Button variant="ghost" size="icon" className="h-6 w-6" disabled={index === 0 || reorderModulesMutation.isPending} onClick={() => handleMoveModule(sectionModules, index, "up")}>
+                                <ArrowUp className="h-3 w-3" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-6 w-6" disabled={index === sectionModules.length - 1 || reorderModulesMutation.isPending} onClick={() => handleMoveModule(sectionModules, index, "down")}>
+                                <ArrowDown className="h-3 w-3" />
+                              </Button>
+                            </div>
+                            {module.cover_image_url ? (
+                              <img src={module.cover_image_url} alt={module.title} className="h-12 w-12 rounded object-cover flex-shrink-0" />
+                            ) : (
+                              <div className="h-12 w-12 rounded bg-muted flex items-center justify-center flex-shrink-0">
+                                <Image className="h-5 w-5 text-muted-foreground" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate">{module.title}</p>
+                              <p className="text-xs text-muted-foreground truncate">{module.description || "Sem descrição"}</p>
+                            </div>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <Button variant="ghost" size="sm" onClick={() => handleEdit(module)}><Edit className="h-4 w-4" /></Button>
+                              <Button variant="ghost" size="sm" onClick={() => { if (confirm("Tem certeza que deseja excluir este módulo?")) deleteMutation.mutate(module.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                      <div className="flex items-center gap-2 mt-4">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(module)}
-                        >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Editar
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            if (confirm("Tem certeza que deseja excluir este módulo? Todas as aulas serão excluídas também.")) {
-                              deleteMutation.mutate(module.id);
-                            }
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
