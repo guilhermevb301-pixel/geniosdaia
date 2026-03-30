@@ -186,9 +186,9 @@ const App = () => (
             <Route
               path="/admin/templates"
               element={
-                <AdminRoute>
+                <MentorRoute>
                   <AdminTemplates />
-                </AdminRoute>
+                </MentorRoute>
               }
             />
             <Route
