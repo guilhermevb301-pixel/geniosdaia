@@ -618,6 +618,7 @@ export default function AdminTemplates() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 Nenhum template criado ainda. Clique em "Novo Template" para começar.
