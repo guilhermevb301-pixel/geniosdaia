@@ -527,6 +527,7 @@ export default function AdminTemplates() {
                 <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
               </div>
             ) : templates && templates.length > 0 ? (
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -617,6 +618,7 @@ export default function AdminTemplates() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 Nenhum template criado ainda. Clique em "Novo Template" para começar.
