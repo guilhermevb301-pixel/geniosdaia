@@ -21,7 +21,8 @@ import {
   Image,
   Video,
   Wand2,
-  Palette
+  Palette,
+  Lock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -197,23 +198,39 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
         </Collapsible>
 
         {/* Other Tools */}
-        {tools.map((item) => (
-          <Link
-            key={item.href}
-            to={item.href}
-            onClick={handleClick}
-            onMouseEnter={() => handlePrefetch(item.href)}
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
-              isActive(item.href)
-                ? "bg-accent text-accent-foreground"
-                : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
-            )}
-          >
-            <item.icon className={cn("h-5 w-5", iconColorClass)} />
-            {item.label}
-          </Link>
-        ))}
+        {tools.map((item) => {
+          const isDesafios = item.href === "/desafios";
+          if (isDesafios && !isAdmin) {
+            return (
+              <div
+                key={item.href}
+                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium mb-1 opacity-40 cursor-not-allowed select-none"
+                title="Em breve"
+              >
+                <item.icon className="h-5 w-5 text-sidebar-foreground/50" />
+                <span>{item.label}</span>
+                <Lock className="h-3.5 w-3.5 ml-auto text-sidebar-foreground/50" />
+              </div>
+            );
+          }
+          return (
+            <Link
+              key={item.href}
+              to={item.href}
+              onClick={handleClick}
+              onMouseEnter={() => handlePrefetch(item.href)}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
+                isActive(item.href)
+                  ? "bg-accent text-accent-foreground"
+                  : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
+              )}
+            >
+              <item.icon className={cn("h-5 w-5", iconColorClass)} />
+              {item.label}
+            </Link>
+          );
+        })}
 
         {/* Spacer */}
         <div className="my-4 border-t border-sidebar-border" />

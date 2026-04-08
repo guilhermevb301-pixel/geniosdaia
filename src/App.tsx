@@ -134,9 +134,9 @@ const App = () => (
             <Route
               path="/desafios"
               element={
-                <ProtectedRoute>
+                <AdminRoute>
                   <Desafios />
-                </ProtectedRoute>
+                </AdminRoute>
               }
             />
             <Route
