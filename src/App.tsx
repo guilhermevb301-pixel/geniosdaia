@@ -64,6 +64,7 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/certificado/:code" element={<VerifyCertificate />} />
+            <Route path="/acesso-negado" element={<AcessoNegado />} />
             
             {/* Protected routes */}
             <Route
