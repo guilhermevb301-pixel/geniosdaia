@@ -1,49 +1,76 @@
 
 
-# Corrigir Bugs da Pagina de Aulas
+# Plano: Controle de Acesso por Compradores Autorizados (Kiwify)
 
-## Problema Principal
-Quando o usuario sai e volta para a pagina `/aulas`, os modulos somem e a pagina fica "desconfigurada" (sem modulos, sem fotos). Isso acontece porque:
+## Antes de começar
 
-1. **Sem estado de carregamento**: A pagina nao verifica se os dados estao carregando. Quando as queries ainda estao buscando dados, `modulesData` e `undefined`, que vira um array vazio, mostrando o estado "Sem modulos disponiveis" em vez de um loading spinner.
+Preciso saber: **qual é a URL da página de compra na Kiwify** para o botão "Comprar agora"? (ex: `https://pay.kiwify.com.br/seu-produto`)
 
-2. **Queries independentes sem sincronizacao**: A pagina faz 4 queries separadas (sections, modules, lessons, progress) e renderiza com base no que estiver disponivel no momento, causando flickers.
+Vou prosseguir com um placeholder que você poderá substituir depois.
 
-3. **Imagens nao reaparecem**: O componente `ImageWithSkeleton` usa estado interno (`isLoaded`, `hasError`). Quando o componente remonta, ele comeca do zero e pode falhar se a URL mudar levemente ou se houver problema de cache.
+---
 
-## Solucao
+## Visão geral
 
-### 1. Adicionar estado de carregamento na pagina Aulas
-- Verificar `isLoading` / `isPending` das queries de modules e lessons
-- Mostrar um skeleton/spinner enquanto os dados carregam, em vez do estado vazio
-- Isso evita o flash de "Sem modulos disponiveis"
+O sistema vai funcionar assim:
 
-### 2. Mostrar skeletons nos cards enquanto carregam
-- Criar um componente `ModuleCardSkeleton` com a mesma estrutura visual do `ModuleCard`
-- Exibir grid de skeletons durante o carregamento
+```text
+Kiwify (compra) → Webhook → compradores_autorizados (INSERT email)
+Kiwify (reembolso) → Webhook → compradores_autorizados (DELETE email)
 
-### 3. Manter dados anteriores durante refetch
-- Usar `placeholderData: keepPreviousData` nas queries para manter os dados antigos visiveis enquanto busca novos
-- Isso elimina o "piscar" ao navegar de volta
+Usuário faz login → Verifica email na tabela → Acesso liberado ou bloqueado
+```
 
-## Detalhes Tecnicos
+---
 
-**Arquivos afetados:**
+## Etapas
 
-1. **`src/pages/Aulas.tsx`**
-   - Extrair `isLoading` das queries de modules e lessons
-   - Importar `keepPreviousData` do React Query e usar como `placeholderData`
-   - Renderizar skeleton grid quando `isLoading` for true em vez do empty state
-   - So mostrar empty state quando os dados carregaram E estao vazios
+### 1. Criar tabela `compradores_autorizados`
 
-2. **`src/components/aulas/ModuleGrid.tsx`**
-   - Aceitar prop `isLoading` opcional
-   - Renderizar grid de skeletons quando `isLoading` for true
+Migration SQL:
+- `id` uuid PK
+- `email` text unique not null
+- `created_at` timestamptz default now()
+- RLS: SELECT para authenticated (verificar próprio email), ALL para admins/mentors gerenciarem
+- Policy pública de SELECT restrita ao próprio email para a verificação funcionar
 
-3. **`src/components/aulas/ModuleCardSkeleton.tsx`** (novo arquivo)
-   - Componente skeleton com mesma estrutura do `ModuleCard` (AspectRatio 3/4, titulo, barra de progresso)
+### 2. Criar Edge Function `kiwify-webhook`
 
-4. **`src/pages/ModuleLessons.tsx`**
-   - Adicionar `keepPreviousData` nas queries de lessons e progress
-   - Garantir que invalidacoes de cache (apos marcar aula completa) afetem tambem a query global de lessons
+- Recebe POST sem JWT (webhook externo)
+- Lê `event` e `customer.email` do body
+- `compra_aprovada` → INSERT email (on conflict do nothing)
+- `compra_reembolsada`, `chargeback`, `subscription_canceled` → DELETE por email
+- Retorna 200 sempre
+- CORS headers incluídos
+- Usa service role key para bypass de RLS
+
+### 3. Criar hook `useIsAuthorizedBuyer`
+
+- Query na tabela `compradores_autorizados` filtrando pelo email do usuário autenticado
+- Retorna `{ isAuthorized, loading }`
+
+### 4. Atualizar `ProtectedRoute`
+
+- Após confirmar que o usuário está logado, verificar `useIsAuthorizedBuyer`
+- Admins e mentors passam direto (bypass da verificação)
+- Se não autorizado → redirecionar para `/acesso-negado`
+
+### 5. Criar página `/acesso-negado`
+
+- Mensagem: "Você ainda não tem acesso. Adquira o produto para continuar."
+- Botão "Comprar agora" com link para a URL da Kiwify
+- Faz logout automático ao montar a página
+- Rota pública (não protegida)
+
+### 6. Registrar rota no App.tsx
+
+- Adicionar `/acesso-negado` como rota pública
+
+---
+
+## Detalhes técnicos
+
+- A Edge Function usa `SUPABASE_SERVICE_ROLE_KEY` (já configurado) para fazer INSERT/DELETE sem RLS
+- Admins/mentors não são bloqueados mesmo sem compra (bypass via `has_role`)
+- A tabela precisa de uma policy que permita SELECT para authenticated users verificarem seu próprio email
 
