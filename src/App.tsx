@@ -36,6 +36,7 @@ import AdminAppearance from "./pages/admin/AdminAppearance";
 import MenteeEditor from "./pages/admin/MenteeEditor";
 import ForgotPassword from "./pages/ForgotPassword";
 import NotFound from "./pages/NotFound";
+import AcessoNegado from "./pages/AcessoNegado";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const queryClient = new QueryClient({
