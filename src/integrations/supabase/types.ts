@@ -241,6 +241,24 @@ export type Database = {
           },
         ]
       }
+      compradores_autorizados: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+        }
+        Relationships: []
+      }
       custom_gpts: {
         Row: {
           created_at: string | null

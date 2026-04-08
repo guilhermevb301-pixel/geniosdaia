@@ -36,6 +36,7 @@ import AdminAppearance from "./pages/admin/AdminAppearance";
 import MenteeEditor from "./pages/admin/MenteeEditor";
 import ForgotPassword from "./pages/ForgotPassword";
 import NotFound from "./pages/NotFound";
+import AcessoNegado from "./pages/AcessoNegado";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const queryClient = new QueryClient({
@@ -63,6 +64,7 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/certificado/:code" element={<VerifyCertificate />} />
+            <Route path="/acesso-negado" element={<AcessoNegado />} />
             
             {/* Protected routes */}
             <Route
