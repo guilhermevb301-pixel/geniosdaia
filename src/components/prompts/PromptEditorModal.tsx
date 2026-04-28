@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Video, X, Upload } from "lucide-react";
+import { Video, X, Upload, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -25,6 +25,7 @@ export interface PromptData {
   thumbnail_url: string | null;
   thumbnail_focus: string | null;
   example_video_url: string | null;
+  is_locked: boolean;
   variations?: {
     id: string;
     content: string;
@@ -57,6 +58,7 @@ export function PromptEditorModal({
     category: editingPrompt?.category || defaultCategory,
     tags: editingPrompt?.tags?.join(", ") || "",
   });
+  const [isLocked, setIsLocked] = useState(editingPrompt?.is_locked ?? false);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string>(editingPrompt?.thumbnail_url || "");
   const [thumbnailFocus, setThumbnailFocus] = useState<string>(editingPrompt?.thumbnail_focus || "center");
@@ -105,6 +107,7 @@ export function PromptEditorModal({
     setThumbnailFile(null);
     setThumbnailPreview(editingPrompt?.thumbnail_url || "");
     setThumbnailFocus(editingPrompt?.thumbnail_focus || "center");
+    setIsLocked(editingPrompt?.is_locked ?? false);
     setVideoFile(null);
     setVideoPreview(editingPrompt?.example_video_url || "");
     setVideoUrl(editingPrompt?.example_video_url || "");
@@ -192,6 +195,7 @@ export function PromptEditorModal({
           thumbnail_url: thumbnailUrl,
           thumbnail_focus: thumbnailFocus,
           example_video_url: exampleVideoUrl,
+          is_locked: isLocked,
         })
         .select()
         .single();
@@ -263,6 +267,7 @@ export function PromptEditorModal({
           thumbnail_url: thumbnailUrl,
           thumbnail_focus: thumbnailFocus,
           example_video_url: exampleVideoUrl,
+          is_locked: isLocked,
         })
         .eq("id", editingPrompt.id);
 
@@ -469,6 +474,38 @@ export function PromptEditorModal({
               onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
               placeholder="marketing, storytelling, viral"
             />
+          </div>
+
+          {/* Lock toggle */}
+          <div className="flex items-center justify-between rounded-lg border border-border p-3 bg-muted/30">
+            <div className="flex items-center gap-2.5">
+              <Lock className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-medium text-foreground">Conteúdo Restrito</p>
+                <p className="text-xs text-muted-foreground">
+                  Exibe o prompt com cadeado — texto oculto para membros comuns
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isLocked}
+              onClick={() => setIsLocked(!isLocked)}
+              className={`
+                relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent
+                transition-colors duration-200 focus:outline-none
+                ${isLocked ? "bg-primary" : "bg-muted-foreground/30"}
+              `}
+            >
+              <span
+                className={`
+                  pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow-lg
+                  transform transition-transform duration-200
+                  ${isLocked ? "translate-x-5" : "translate-x-0"}
+                `}
+              />
+            </button>
           </div>
 
           {/* Video Upload Section */}

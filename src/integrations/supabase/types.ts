@@ -967,6 +967,7 @@ export type Database = {
           example_images: string[] | null
           example_video_url: string | null
           id: string
+          is_locked: boolean
           tags: string[] | null
           thumbnail_focus: string | null
           thumbnail_url: string | null
@@ -981,6 +982,7 @@ export type Database = {
           example_images?: string[] | null
           example_video_url?: string | null
           id?: string
+          is_locked?: boolean
           tags?: string[] | null
           thumbnail_focus?: string | null
           thumbnail_url?: string | null
@@ -995,6 +997,7 @@ export type Database = {
           example_images?: string[] | null
           example_video_url?: string | null
           id?: string
+          is_locked?: boolean
           tags?: string[] | null
           thumbnail_focus?: string | null
           thumbnail_url?: string | null

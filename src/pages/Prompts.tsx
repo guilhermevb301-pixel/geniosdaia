@@ -1,10 +1,8 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useSearchParams } from "react-router-dom";
-import { Video, Image, Search, Wand2, Plus, Pencil, Trash2 } from "lucide-react";
+import { Search, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { PromptCard } from "@/components/prompts/PromptCard";
 import { ModifierCard } from "@/components/prompts/ModifierCard";
@@ -12,7 +10,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useImagePreload } from "@/hooks/useImagePreload";
 import { useIsMentor } from "@/hooks/useIsMentor";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { PromptEditorModal, DeletePromptDialog, PromptCategory, PromptData } from "@/components/prompts/PromptEditorModal";
 
 interface Prompt {
@@ -26,6 +23,7 @@ interface Prompt {
   thumbnail_focus: string | null;
   example_images: string[] | null;
   example_video_url: string | null;
+  is_locked: boolean;
   created_at: string;
   variations?: {
     id: string;
@@ -36,17 +34,18 @@ interface Prompt {
   }[];
 }
 
-const categories = [
-  { value: "image" as PromptCategory, label: "Imagens", icon: Image },
-  { value: "video" as PromptCategory, label: "Vídeos", icon: Video },
-  { value: "modifier" as PromptCategory, label: "Modificador de Imagens", icon: Wand2 },
+type ActiveTab = "all" | PromptCategory;
+
+const TABS: { value: ActiveTab; label: string }[] = [
+  { value: "all", label: "Todos" },
+  { value: "image", label: "Imagem" },
+  { value: "video", label: "Vídeo" },
+  { value: "modifier", label: "Modificador" },
 ];
 
 export default function Prompts() {
-  const [searchParams] = useSearchParams();
-  const categoryParam = searchParams.get("category") as PromptCategory | null;
-
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState<ActiveTab>("all");
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState<PromptData | null>(null);
   const [deletePromptId, setDeletePromptId] = useState<string | null>(null);
@@ -74,55 +73,34 @@ export default function Prompts() {
     },
   });
 
-  const matchesSearch = (prompt: Prompt, query: string) => {
-    const lowerQuery = query.toLowerCase();
-    return (
-      prompt.title.toLowerCase().includes(lowerQuery) ||
-      prompt.description?.toLowerCase().includes(lowerQuery) ||
-      prompt.tags?.some((tag) => tag.toLowerCase().includes(lowerQuery))
-    );
-  };
-
-  // Filter categories based on URL param
-  const filteredCategories = useMemo(() => {
-    if (categoryParam && categories.some(c => c.value === categoryParam)) {
-      return categories.filter(c => c.value === categoryParam);
+  const filtered = useMemo(() => {
+    if (!prompts) return [];
+    let list = [...prompts];
+    if (activeTab !== "all") {
+      list = list.filter((p) => p.category === activeTab);
     }
-    return categories;
-  }, [categoryParam]);
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(
+        (p) =>
+          p.title.toLowerCase().includes(q) ||
+          p.description?.toLowerCase().includes(q) ||
+          p.tags?.some((t) => t.toLowerCase().includes(q))
+      );
+    }
+    return list;
+  }, [prompts, activeTab, searchQuery]);
 
-  // Get active category for dynamic title
-  const activeCategory = categoryParam 
-    ? categories.find(c => c.value === categoryParam)
-    : null;
-
-  const groupedPrompts = useMemo(() => {
-    return filteredCategories.map((cat) => ({
-      ...cat,
-      prompts:
-        prompts?.filter(
-          (p) =>
-            p.category === cat.value &&
-            (searchQuery === "" || matchesSearch(p, searchQuery))
-        ) || [],
-    }));
-  }, [prompts, searchQuery, filteredCategories]);
-
-  // Preload first 6 critical images from first category with prompts
-  const criticalImages = useMemo(() => {
-    const firstCategoryWithPrompts = groupedPrompts.find((g) => g.prompts.length > 0);
-    return (
-      firstCategoryWithPrompts?.prompts
-        .slice(0, 6)
-        .map((p) => p.thumbnail_url)
-        .filter(Boolean) || []
-    );
-  }, [groupedPrompts]);
+  // Preload first 8 critical images for performance
+  const criticalImages = useMemo(
+    () => filtered.slice(0, 8).map((p) => p.thumbnail_url).filter(Boolean),
+    [filtered]
+  );
   useImagePreload(criticalImages, { width: 400 });
 
-  const handleNewPrompt = (category: PromptCategory) => {
+  const handleNewPrompt = () => {
     setEditingPrompt(null);
-    setDefaultCategory(category);
+    setDefaultCategory(activeTab === "all" ? "image" : (activeTab as PromptCategory));
     setIsEditorOpen(true);
   };
 
@@ -132,226 +110,134 @@ export default function Prompts() {
     setIsEditorOpen(true);
   };
 
-  // Get default open accordion items - from URL param or categories with prompts
-  const defaultOpenCategories = useMemo(() => {
-    if (categoryParam && categories.some(c => c.value === categoryParam)) {
-      return [categoryParam];
-    }
-    return groupedPrompts.filter((g) => g.prompts.length > 0).map((g) => g.value);
-  }, [categoryParam, groupedPrompts]);
+  const counts = useMemo(() => {
+    if (!prompts) return {} as Record<ActiveTab, number>;
+    return {
+      all: prompts.length,
+      image: prompts.filter((p) => p.category === "image").length,
+      video: prompts.filter((p) => p.category === "video").length,
+      modifier: prompts.filter((p) => p.category === "modifier").length,
+    };
+  }, [prompts]);
 
   return (
     <AppLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        {/* ── Header ────────────────────────────────────────── */}
+        <div className="flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">
-              {activeCategory ? `Prompts de ${activeCategory.label}` : "Banco de Prompts"}
-            </h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="text-2xl font-bold text-foreground">Banco de Prompts</h1>
+            <p className="text-muted-foreground text-sm mt-0.5">
               Prompts prontos para usar com IAs de geração de conteúdo
             </p>
           </div>
           {canManage && (
-            <Button onClick={() => handleNewPrompt(activeCategory?.value || "image")}>
-              <Plus className="h-4 w-4 mr-2" />
+            <Button onClick={handleNewPrompt} size="sm">
+              <Plus className="h-4 w-4 mr-1.5" />
               Novo Prompt
             </Button>
           )}
         </div>
 
-        {/* Search */}
-        <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
+        {/* ── Search bar ────────────────────────────────────── */}
+        <div className="relative w-full max-w-md">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <input
+            type="text"
             placeholder="Buscar prompts..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
+            className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-xl text-sm text-foreground placeholder:text-muted-foreground outline-none focus:border-primary transition-colors"
           />
         </div>
 
-        {/* Content */}
+        {/* ── Category tabs ─────────────────────────────────── */}
+        <div className="flex gap-2 flex-wrap">
+          {TABS.map((tab) => (
+            <button
+              key={tab.value}
+              onClick={() => setActiveTab(tab.value)}
+              className={`
+                flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all
+                ${
+                  activeTab === tab.value
+                    ? "bg-primary text-white shadow-sm"
+                    : "bg-card border border-border text-muted-foreground hover:text-foreground hover:border-primary/50"
+                }
+              `}
+            >
+              {tab.label}
+              {counts[tab.value] !== undefined && (
+                <span
+                  className={`
+                    text-xs px-1.5 py-0.5 rounded-full font-semibold
+                    ${activeTab === tab.value ? "bg-white/20" : "bg-muted"}
+                  `}
+                >
+                  {counts[tab.value]}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Content ───────────────────────────────────────── */}
         {isLoading ? (
-          <div className="space-y-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-16 rounded-lg" />
+          <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="aspect-[3/4] w-full rounded-xl" />
+                <Skeleton className="h-4 w-3/4 rounded" />
+              </div>
             ))}
           </div>
-        ) : activeCategory ? (
-          // Single category view - no accordion, just the grid
-          <div>
-            {groupedPrompts[0]?.prompts.length > 0 ? (
-              activeCategory.value === "modifier" ? (
-                // Modifier category: use ModifierCard in a single column
-                <div className="space-y-4">
-                  {groupedPrompts[0].prompts.map((prompt) => (
-                    <ModifierCard
-                      key={prompt.id}
-                      prompt={prompt}
-                      canManage={canManage}
-                      onEdit={() => handleEditPrompt(prompt)}
-                      onDelete={() => setDeletePromptId(prompt.id)}
-                    />
-                  ))}
-                </div>
-              ) : (
-                // Image/Video categories: use PromptCard in grid
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {groupedPrompts[0].prompts.map((prompt, index) => (
-                    <div key={prompt.id} className="relative group">
-                      <PromptCard prompt={prompt} priority={index < 6} />
-                      {canManage && (
-                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                          <Button
-                            variant="secondary"
-                            size="icon"
-                            className="h-8 w-8 bg-background/90 backdrop-blur-sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEditPrompt(prompt);
-                            }}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            size="icon"
-                            className="h-8 w-8 bg-background/90 backdrop-blur-sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeletePromptId(prompt.id);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <activeCategory.icon className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                <p>Nenhum prompt de {activeCategory.label.toLowerCase()}</p>
-                {searchQuery && (
-                  <p className="text-sm mt-1">Tente buscar por outros termos</p>
-                )}
-                {canManage && !searchQuery && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-3"
-                    onClick={() => handleNewPrompt(activeCategory.value)}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Adicionar Prompt
-                  </Button>
-                )}
-              </div>
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
+            <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
+              <Search className="h-7 w-7 text-muted-foreground" />
+            </div>
+            <p className="text-foreground font-medium">Nenhum prompt encontrado</p>
+            <p className="text-muted-foreground text-sm">
+              {searchQuery ? "Tente buscar por outros termos" : "Nenhum prompt nesta categoria ainda"}
+            </p>
+            {canManage && !searchQuery && (
+              <Button variant="outline" size="sm" onClick={handleNewPrompt} className="mt-2">
+                <Plus className="h-4 w-4 mr-1.5" />
+                Adicionar Prompt
+              </Button>
             )}
           </div>
-        ) : (
-          // All categories view - with accordion
-          <Accordion
-            type="multiple"
-            defaultValue={defaultOpenCategories}
-            className="space-y-2"
-          >
-            {groupedPrompts.map((group) => (
-              <AccordionItem
-                key={group.value}
-                value={group.value}
-                className="border rounded-lg px-4 bg-card"
-              >
-                <AccordionTrigger className="hover:no-underline py-4">
-                  <div className="flex items-center gap-3">
-                    <group.icon className="h-5 w-5 text-primary" />
-                    <span className="font-semibold">{group.label}</span>
-                    <span className="text-sm text-muted-foreground">
-                      ({group.prompts.length})
-                    </span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="pb-4">
-                  {group.prompts.length > 0 ? (
-                    group.value === "modifier" ? (
-                      <div className="space-y-4">
-                        {group.prompts.map((prompt) => (
-                          <ModifierCard
-                            key={prompt.id}
-                            prompt={prompt}
-                            canManage={canManage}
-                            onEdit={() => handleEditPrompt(prompt)}
-                            onDelete={() => setDeletePromptId(prompt.id)}
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {group.prompts.map((prompt, index) => (
-                          <div key={prompt.id} className="relative group">
-                            <PromptCard prompt={prompt} priority={index < 6} />
-                            {canManage && (
-                              <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                <Button
-                                  variant="secondary"
-                                  size="icon"
-                                  className="h-8 w-8 bg-background/90 backdrop-blur-sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleEditPrompt(prompt);
-                                  }}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="secondary"
-                                  size="icon"
-                                  className="h-8 w-8 bg-background/90 backdrop-blur-sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setDeletePromptId(prompt.id);
-                                  }}
-                                >
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <group.icon className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                      <p>Nenhum prompt de {group.label.toLowerCase()}</p>
-                      {searchQuery && (
-                        <p className="text-sm mt-1">Tente buscar por outros termos</p>
-                      )}
-                      {canManage && !searchQuery && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mt-3"
-                          onClick={() => handleNewPrompt(group.value)}
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Adicionar Prompt
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </AccordionContent>
-              </AccordionItem>
+        ) : activeTab === "modifier" ? (
+          // Modifier: single-column list
+          <div className="space-y-3 max-w-2xl">
+            {filtered.map((prompt) => (
+              <ModifierCard
+                key={prompt.id}
+                prompt={prompt}
+                canManage={canManage}
+                onEdit={() => handleEditPrompt(prompt)}
+                onDelete={() => setDeletePromptId(prompt.id)}
+              />
             ))}
-          </Accordion>
+          </div>
+        ) : (
+          // Image / Video / All: portrait grid
+          <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+            {filtered.map((prompt, index) => (
+              <div key={prompt.id} className="relative group">
+                <PromptCard
+                  prompt={prompt}
+                  priority={index < 8}
+                  canManage={canManage}
+                  onEdit={() => handleEditPrompt(prompt)}
+                  onDelete={() => setDeletePromptId(prompt.id)}
+                />
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
-      {/* Editor Modal */}
       <PromptEditorModal
         open={isEditorOpen}
         onOpenChange={setIsEditorOpen}
@@ -359,7 +245,6 @@ export default function Prompts() {
         defaultCategory={defaultCategory}
       />
 
-      {/* Delete Dialog */}
       <DeletePromptDialog
         promptId={deletePromptId}
         onClose={() => setDeletePromptId(null)}

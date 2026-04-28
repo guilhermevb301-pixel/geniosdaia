@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { Copy, Video, Image, Bot, Wand2, ChevronLeft, ChevronRight, Download } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { Copy, Video, Image, Bot, Wand2, ChevronLeft, ChevronRight, Download, Lock, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -27,39 +26,40 @@ interface Prompt {
   thumbnail_focus: string | null;
   example_images: string[] | null;
   example_video_url: string | null;
+  is_locked: boolean;
   variations?: PromptVariation[];
 }
 
 interface PromptCardProps {
   prompt: Prompt;
-  /** If true, images load eagerly (for above-the-fold cards) */
   priority?: boolean;
+  canManage?: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
-const categoryIcons = {
-  video: Video,
-  image: Image,
-  agent: Bot,
-  modifier: Wand2,
+const categoryConfig = {
+  video: { icon: Video, label: "Vídeo", color: "bg-blue-500/15 text-blue-400 border-blue-500/30" },
+  image: { icon: Image, label: "Imagem", color: "bg-purple-500/15 text-purple-400 border-purple-500/30" },
+  agent: { icon: Bot, label: "Agente", color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" },
+  modifier: { icon: Wand2, label: "Modificador", color: "bg-amber-500/15 text-amber-400 border-amber-500/30" },
 };
 
-export function PromptCard({ prompt, priority = false }: PromptCardProps) {
+export function PromptCard({ prompt, priority = false, canManage, onEdit, onDelete }: PromptCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [currentVariationIndex, setCurrentVariationIndex] = useState(0);
-  const Icon = categoryIcons[prompt.category];
 
-  // Sort variations by order_index
+  const config = categoryConfig[prompt.category] || categoryConfig.image;
+  const Icon = config.icon;
+
   const variations = (prompt.variations || []).sort((a, b) => a.order_index - b.order_index);
   const hasVariations = variations.length > 0;
   const currentVariation = variations[currentVariationIndex];
   const isVideoCategory = prompt.category === 'video';
 
-  // Reset variation index when modal opens
   useEffect(() => {
-    if (isModalOpen) {
-      setCurrentVariationIndex(0);
-    }
+    if (isModalOpen) setCurrentVariationIndex(0);
   }, [isModalOpen]);
 
   const handleCopy = async (content: string) => {
@@ -77,40 +77,28 @@ export function PromptCard({ prompt, priority = false }: PromptCardProps) {
       const response = await fetch(url);
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
-      
-      const filename = url.split('/').pop() || 'video.mp4';
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = filename;
+      link.download = url.split('/').pop() || 'video.mp4';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
-      
       toast.success("Download concluído!");
-    } catch (error) {
-      console.error("Erro ao baixar vídeo:", error);
+    } catch {
       toast.error("Erro ao baixar vídeo");
     }
   };
 
-  const goToPrevious = () => {
-    setCurrentVariationIndex((prev) => Math.max(0, prev - 1));
-  };
-
-  const goToNext = () => {
-    setCurrentVariationIndex((prev) => Math.min(variations.length - 1, prev + 1));
-  };
-
   return (
     <>
-      {/* Card Clicável - Estilo Galeria */}
-      <Card
+      {/* ── Card ──────────────────────────────────────── */}
+      <div
+        className="group relative cursor-pointer rounded-xl overflow-hidden border border-border bg-card hover:border-primary/60 hover:shadow-lg hover:shadow-primary/10 transition-all duration-200"
         onClick={() => setIsModalOpen(true)}
-        className="group overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
       >
-        {/* Imagem de capa com foco ajustável */}
-        <div className="aspect-video bg-muted overflow-hidden">
+        {/* Thumbnail — portrait 3:4 */}
+        <div className="relative aspect-[3/4] bg-muted overflow-hidden">
           {prompt.thumbnail_url ? (
             <ImageWithSkeleton
               src={prompt.thumbnail_url}
@@ -118,135 +106,175 @@ export function PromptCard({ prompt, priority = false }: PromptCardProps) {
               className="transition-transform duration-300 group-hover:scale-105"
               containerClassName="w-full h-full"
               objectPosition={prompt.thumbnail_focus || 'center'}
-              fallbackIcon={<Icon className="h-12 w-12 text-muted-foreground/40" />}
+              fallbackIcon={<Icon className="h-10 w-10 text-muted-foreground/30" />}
               optimizedWidth={400}
               priority={priority}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
-              <Icon className="h-12 w-12 text-muted-foreground/40" />
+              <Icon className="h-10 w-10 text-muted-foreground/30" />
+            </div>
+          )}
+
+          {/* Lock overlay */}
+          {prompt.is_locked && (
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2">
+              <div className="bg-white/10 rounded-full p-3">
+                <Lock className="h-6 w-6 text-white" />
+              </div>
+              <span className="text-white text-xs font-semibold tracking-wide px-3 text-center">
+                Conteúdo Restrito
+              </span>
+            </div>
+          )}
+
+          {/* Category badge — top-left */}
+          <div className="absolute top-2 left-2">
+            <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${config.color}`}>
+              <Icon className="h-2.5 w-2.5" />
+              {config.label}
+            </span>
+          </div>
+
+          {/* Admin controls — top-right on hover */}
+          {canManage && (
+            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                className="h-7 w-7 rounded-lg bg-background/90 backdrop-blur-sm border border-border flex items-center justify-center hover:bg-background"
+                onClick={(e) => { e.stopPropagation(); onEdit?.(); }}
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+              <button
+                className="h-7 w-7 rounded-lg bg-background/90 backdrop-blur-sm border border-border flex items-center justify-center hover:bg-destructive/20"
+                onClick={(e) => { e.stopPropagation(); onDelete?.(); }}
+              >
+                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+              </button>
             </div>
           )}
         </div>
 
-        {/* Título abaixo da imagem */}
+        {/* Title row */}
         <div className="p-3">
-          <div className="flex items-center gap-2">
-            <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
-            <span className="font-medium line-clamp-2 text-sm text-foreground">{prompt.title}</span>
-          </div>
+          <p className="text-sm font-medium text-foreground line-clamp-2 leading-snug">
+            {prompt.title}
+          </p>
+          {prompt.tags && prompt.tags.length > 0 && (
+            <div className="flex gap-1 mt-1.5 flex-wrap">
+              {prompt.tags.slice(0, 2).map((tag) => (
+                <span key={tag} className="text-[10px] text-muted-foreground bg-muted rounded-full px-1.5 py-0.5">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
-      </Card>
+      </div>
 
-      {/* Modal com detalhes */}
+      {/* ── Detail Modal ──────────────────────────────── */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-muted">
-                <Icon className="h-5 w-5 text-muted-foreground" />
+              <div className={`p-2 rounded-lg border ${config.color}`}>
+                <Icon className="h-4 w-4" />
               </div>
-              <DialogTitle className="text-lg">{prompt.title}</DialogTitle>
+              <div className="flex-1 min-w-0">
+                <DialogTitle className="text-base">{prompt.title}</DialogTitle>
+                {prompt.is_locked && (
+                  <span className="inline-flex items-center gap-1 text-xs text-amber-400 mt-0.5">
+                    <Lock className="h-3 w-3" />
+                    Conteúdo restrito
+                  </span>
+                )}
+              </div>
             </div>
           </DialogHeader>
 
-          {/* Descrição */}
           {prompt.description && (
             <p className="text-muted-foreground text-sm">{prompt.description}</p>
           )}
 
-          {/* Tags */}
           {prompt.tags && prompt.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1.5">
               {prompt.tags.map((tag) => (
-                <Badge key={tag} variant="secondary" className="text-xs">
-                  {tag}
-                </Badge>
+                <Badge key={tag} variant="secondary" className="text-xs">{tag}</Badge>
               ))}
             </div>
           )}
 
-          {/* Conteúdo com Variações */}
-          {hasVariations ? (
+          {/* Locked state */}
+          {prompt.is_locked ? (
+            <div className="flex flex-col items-center gap-4 py-8">
+              <div className="h-16 w-16 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                <Lock className="h-8 w-8 text-amber-400" />
+              </div>
+              <div className="text-center space-y-1">
+                <p className="font-semibold text-foreground">Conteúdo Restrito</p>
+                <p className="text-sm text-muted-foreground">
+                  Este prompt está disponível apenas para membros com acesso especial.
+                </p>
+              </div>
+              {/* Blurred preview */}
+              <div
+                className="w-full bg-muted rounded-lg p-4 select-none pointer-events-none"
+                style={{ filter: "blur(5px)" }}
+                aria-hidden
+              >
+                <pre className="text-xs font-mono text-foreground whitespace-pre-wrap line-clamp-4">
+                  Ultra-realistic professional portrait photography, cinematic
+                  lighting setup, shallow depth of field, Sony A7R IV, 85mm f/1.4,
+                  natural skin texture, bokeh background, golden hour...
+                </pre>
+              </div>
+            </div>
+          ) : hasVariations ? (
+            /* Variations */
             <div className="space-y-4">
-              {/* Navegação de Variações */}
               <div className="flex items-center justify-between bg-muted/50 rounded-lg p-3">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={goToPrevious}
-                  disabled={currentVariationIndex === 0}
-                  className="h-8 w-8"
-                >
+                <Button variant="ghost" size="icon" onClick={() => setCurrentVariationIndex(v => Math.max(0, v - 1))} disabled={currentVariationIndex === 0} className="h-8 w-8">
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <span className="text-sm font-medium">
                   Prompt {currentVariationIndex + 1} de {variations.length}
                 </span>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={goToNext}
-                  disabled={currentVariationIndex === variations.length - 1}
-                  className="h-8 w-8"
-                >
+                <Button variant="ghost" size="icon" onClick={() => setCurrentVariationIndex(v => Math.min(variations.length - 1, v + 1))} disabled={currentVariationIndex === variations.length - 1} className="h-8 w-8">
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
 
-              {/* Conteúdo da Variação Atual */}
               {currentVariation && (
                 <div className="space-y-4">
-                  {/* Video da Variação (para categoria video) */}
                   {isVideoCategory && currentVariation.video_url && (
                     <div className="space-y-2">
-                      <video
-                        src={currentVariation.video_url}
-                        controls
-                        className="w-full rounded-lg"
-                      />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDownloadVideo(currentVariation.video_url!)}
-                        className="w-full"
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        Baixar vídeo
+                      <video src={currentVariation.video_url} controls className="w-full rounded-lg" />
+                      <Button variant="outline" size="sm" onClick={() => handleDownloadVideo(currentVariation.video_url!)} className="w-full">
+                        <Download className="h-4 w-4 mr-2" />Baixar vídeo
                       </Button>
                     </div>
                   )}
-
-                  {/* Imagem da Variação (para categorias image/agent) */}
                   {!isVideoCategory && currentVariation.image_url && (
                     <img
                       src={getOptimizedImageUrl(currentVariation.image_url, { width: 800 }) || currentVariation.image_url}
-                      alt={`Resultado do Prompt ${currentVariationIndex + 1}`}
+                      alt={`Resultado ${currentVariationIndex + 1}`}
                       className="w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
                       loading="lazy"
                       onClick={() => setSelectedImage(currentVariation.image_url)}
                     />
                   )}
-
-                  {/* Texto do Prompt */}
                   <div className="bg-muted rounded-lg p-4 max-h-64 overflow-y-auto">
-                    <pre className="text-sm whitespace-pre-wrap font-mono text-foreground">
-                      {currentVariation.content}
-                    </pre>
+                    <pre className="text-sm whitespace-pre-wrap font-mono text-foreground">{currentVariation.content}</pre>
                   </div>
-
-                  {/* Botão de Copiar */}
                   <Button onClick={() => handleCopy(currentVariation.content)} className="w-full">
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copiar Prompt {currentVariationIndex + 1}
+                    <Copy className="h-4 w-4 mr-2" />Copiar Prompt {currentVariationIndex + 1}
                   </Button>
                 </div>
               )}
             </div>
           ) : (
-            /* Fallback para prompts sem variações (legado) */
+            /* Simple prompt (no variations) */
             <div className="space-y-4">
-              {/* Thumbnail principal */}
               {prompt.thumbnail_url && (
                 <img
                   src={getOptimizedImageUrl(prompt.thumbnail_url, { width: 800 }) || prompt.thumbnail_url}
@@ -255,18 +283,12 @@ export function PromptCard({ prompt, priority = false }: PromptCardProps) {
                   loading="lazy"
                 />
               )}
-
-              {/* Conteúdo do Prompt */}
               <div className="bg-muted rounded-lg p-4 max-h-64 overflow-y-auto">
-                <pre className="text-sm whitespace-pre-wrap font-mono text-foreground">
-                  {prompt.content}
-                </pre>
+                <pre className="text-sm whitespace-pre-wrap font-mono text-foreground">{prompt.content}</pre>
               </div>
-
-              {/* Galeria de imagens de exemplo (legado) */}
               {prompt.example_images && prompt.example_images.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="text-sm font-medium text-muted-foreground">Exemplos de imagem</h4>
+                  <p className="text-xs font-medium text-muted-foreground">Exemplos</p>
                   <div className="grid grid-cols-3 gap-2">
                     {prompt.example_images.map((img, i) => (
                       <img
@@ -281,50 +303,31 @@ export function PromptCard({ prompt, priority = false }: PromptCardProps) {
                   </div>
                 </div>
               )}
-
-              {/* Botão de copiar */}
               <Button onClick={() => handleCopy(prompt.content)} className="w-full">
-                <Copy className="h-4 w-4 mr-2" />
-                Copiar Prompt
+                <Copy className="h-4 w-4 mr-2" />Copiar Prompt
               </Button>
             </div>
           )}
 
-          {/* Vídeo de exemplo - SEMPRE visível se existir */}
           {prompt.example_video_url && (
-            <div className="space-y-3 border-t pt-4 mt-4">
-              <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <Video className="h-4 w-4" />
-                Vídeo de exemplo
-              </h4>
-              <video
-                src={prompt.example_video_url}
-                controls
-                className="w-full rounded-lg"
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleDownloadVideo(prompt.example_video_url!)}
-                className="w-full"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Baixar vídeo
+            <div className="space-y-3 border-t pt-4 mt-2">
+              <p className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                <Video className="h-3.5 w-3.5" />Vídeo de exemplo
+              </p>
+              <video src={prompt.example_video_url} controls className="w-full rounded-lg" />
+              <Button variant="outline" size="sm" onClick={() => handleDownloadVideo(prompt.example_video_url!)} className="w-full">
+                <Download className="h-4 w-4 mr-2" />Baixar vídeo
               </Button>
             </div>
           )}
         </DialogContent>
       </Dialog>
 
-      {/* Modal de imagem ampliada */}
+      {/* Fullscreen image */}
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
         <DialogContent className="max-w-4xl p-4 flex items-center justify-center">
           {selectedImage && (
-            <img
-              src={selectedImage}
-              alt="Exemplo ampliado"
-              className="max-w-full max-h-[80vh] object-contain rounded-lg"
-            />
+            <img src={selectedImage} alt="Exemplo ampliado" className="max-w-full max-h-[80vh] object-contain rounded-lg" />
           )}
         </DialogContent>
       </Dialog>
