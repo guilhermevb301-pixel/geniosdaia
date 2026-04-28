@@ -83,6 +83,8 @@ export default function AdminLessons() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [videoSourceType, setVideoSourceType] = useState<"youtube" | "upload">("youtube");
+  const [downloadFile, setDownloadFile] = useState<File | null>(null);
+  const [isUploadingDownload, setIsUploadingDownload] = useState(false);
 
   // DnD sensors
   const sensors = useSensors(
@@ -281,6 +283,7 @@ export default function AdminLessons() {
     setVideoFile(null);
     setUploadProgress(0);
     setVideoSourceType("youtube");
+    setDownloadFile(null);
   }
 
   function handleEdit(lesson: Lesson) {
@@ -363,12 +366,34 @@ export default function AdminLessons() {
       setUploadProgress(0);
     }
 
+    // Upload downloadable file if provided
+    let finalDownloadUrl = downloadUrl;
+    if (downloadFile) {
+      setIsUploadingDownload(true);
+      try {
+        const ext = downloadFile.name.split('.').pop();
+        const fileName = `${crypto.randomUUID()}.${ext}`;
+        const { data: signedData, error: signedError } = await supabase.storage
+          .from("lesson-files")
+          .createSignedUploadUrl(fileName);
+        if (signedError || !signedData) throw signedError || new Error("Falha ao gerar URL de upload");
+        await fetch(signedData.signedUrl, { method: "PUT", body: downloadFile });
+        const { data: urlData } = supabase.storage.from("lesson-files").getPublicUrl(fileName);
+        finalDownloadUrl = urlData.publicUrl;
+      } catch (err: any) {
+        toast({ variant: "destructive", title: "Erro no upload do arquivo", description: err.message });
+        setIsUploadingDownload(false);
+        return;
+      }
+      setIsUploadingDownload(false);
+    }
+
     const lessonData = {
       module_id: moduleId,
       title,
       description: description || null,
       youtube_url: finalYoutubeUrl,
-      download_url: downloadUrl || null,
+      download_url: finalDownloadUrl || null,
       duration: duration || null,
       order_index: lessons ? lessons.filter(l => l.module_id === moduleId).length : 0,
     };
@@ -530,16 +555,42 @@ export default function AdminLessons() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="download" className="flex items-center gap-2">
+                    <Label className="flex items-center gap-2">
                       <Download className="h-4 w-4" />
-                      URL Download
+                      Material para Download
                     </Label>
-                    <Input
-                      id="download"
-                      value={downloadUrl}
-                      onChange={(e) => setDownloadUrl(e.target.value)}
-                      placeholder="URL para download (opcional)"
-                    />
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 cursor-pointer border border-dashed border-border rounded-md px-3 py-2 hover:bg-muted/50 transition-colors">
+                        <Upload className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                        <span className="text-sm text-muted-foreground truncate">
+                          {downloadFile ? downloadFile.name : "Enviar arquivo (PDF, ZIP, DOCX…)"}
+                        </span>
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept=".pdf,.zip,.docx,.doc,.xlsx,.xls,.pptx,.ppt,.txt,.csv,.png,.jpg,.jpeg"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] || null;
+                            setDownloadFile(file);
+                            if (file) setDownloadUrl("");
+                          }}
+                        />
+                      </label>
+                      <Input
+                        value={downloadUrl}
+                        onChange={(e) => { setDownloadUrl(e.target.value); if (e.target.value) setDownloadFile(null); }}
+                        placeholder="Ou cole uma URL externa"
+                        disabled={!!downloadFile}
+                      />
+                      {isUploadingDownload && (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Loader2 className="h-3 w-3 animate-spin" /> Enviando arquivo…
+                        </p>
+                      )}
+                      {editingLesson?.download_url && !downloadFile && !downloadUrl && (
+                        <p className="text-xs text-muted-foreground truncate">Atual: {editingLesson.download_url}</p>
+                      )}
+                    </div>
                   </div>
                 </div>
 

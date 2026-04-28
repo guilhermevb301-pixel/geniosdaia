@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BookOpen, Play, PlayCircle } from "lucide-react";
+import { BookOpen, Download, Play, PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LinkifyText } from "@/components/ui/linkify-text";
@@ -11,6 +11,7 @@ interface Lesson {
   completed: boolean;
   videoUrl?: string;
   description?: string;
+  downloadUrl?: string;
 }
 
 interface VideoPlayerProps {
@@ -133,10 +134,23 @@ export function VideoPlayer({ lesson, onMarkComplete }: VideoPlayerProps) {
         </div>
 
         {lesson.description && (
-          <LinkifyText 
-            text={lesson.description} 
-            className="text-muted-foreground whitespace-pre-wrap" 
+          <LinkifyText
+            text={lesson.description}
+            className="text-muted-foreground whitespace-pre-wrap"
           />
+        )}
+
+        {lesson.downloadUrl && (
+          <a
+            href={lesson.downloadUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            download
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/20 hover:border-primary/40 text-primary font-medium text-sm transition-all duration-200 w-full sm:w-auto justify-center sm:justify-start"
+          >
+            <Download className="h-4 w-4 flex-shrink-0" />
+            Baixar material da aula
+          </a>
         )}
       </div>
     </div>

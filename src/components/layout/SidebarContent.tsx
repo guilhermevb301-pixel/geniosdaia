@@ -37,7 +37,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getPrefetchHandler } from "@/lib/prefetchRoutes";
 
 const tools = [
-  { label: "Templates", href: "/templates", icon: Zap },
   { label: "Meus GPTs", href: "/meus-gpts", icon: MessageSquare },
   { label: "Eventos", href: "/eventos", icon: Calendar },
   { label: "Desafios", href: "/desafios", icon: Trophy },
