@@ -18,9 +18,6 @@ import {
   Award,
   NotebookPen,
   Bot,
-  Image,
-  Video,
-  Wand2,
   Palette,
   Lock
 } from "lucide-react";
@@ -45,11 +42,6 @@ const tools = [
   { label: "Desafios", href: "/desafios", icon: Trophy },
 ];
 
-const promptCategories = [
-  { label: "Imagens", value: "image", icon: Image },
-  { label: "Vídeos", value: "video", icon: Video },
-  { label: "Modificador de Imagens", value: "modifier", icon: Wand2 },
-];
 
 interface SidebarContentProps {
   onNavigate?: () => void;
@@ -63,19 +55,13 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
   const { isMentee } = useIsMentee();
   const { iconColor } = useSidebarSettings();
   const [adminOpen, setAdminOpen] = useState(true);
-  const [promptsOpen, setPromptsOpen] = useState(location.pathname === "/prompts");
-  
+
   // Dynamic icon color class
   const iconColorClass = `text-${iconColor}`;
 
   const isActive = (href: string) => location.pathname === href;
   const isAdminSection = location.pathname.startsWith("/admin");
   const isPromptsSection = location.pathname === "/prompts";
-
-  const isPromptCategoryActive = (category: string) => {
-    const params = new URLSearchParams(location.search);
-    return location.pathname === "/prompts" && params.get("category") === category;
-  };
 
   const handleClick = () => {
     onNavigate?.();
@@ -152,50 +138,21 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           Templates
         </Link>
 
-        {/* Banco de Prompts - Collapsible */}
-        <Collapsible open={promptsOpen} onOpenChange={setPromptsOpen}>
-          <CollapsibleTrigger className="w-full">
-            <div
-              className={cn(
-                "flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
-                isPromptsSection
-                  ? "bg-accent text-accent-foreground"
-                  : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
-              )}
-            >
-              <div className="flex items-center gap-3">
-                <Lightbulb className={cn("h-5 w-5", iconColorClass)} />
-                <span>Banco de Prompts</span>
-              </div>
-              <ChevronDown
-                className={cn(
-                  "h-4 w-4 transition-transform",
-                  promptsOpen && "rotate-180"
-                )}
-              />
-            </div>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className={cn("ml-4 mt-1 space-y-1 border-l-2 pl-4", iconColor === "primary" ? "border-primary/30" : `border-${iconColor}/30`)}>
-              {promptCategories.map((cat) => (
-                <Link
-                  key={cat.value}
-                  to={`/prompts?category=${cat.value}`}
-                  onClick={handleClick}
-                  className={cn(
-                    "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
-                    isPromptCategoryActive(cat.value)
-                      ? `${iconColorClass} bg-${iconColor}/10`
-                      : "text-sidebar-foreground/90 hover:text-sidebar-foreground hover:bg-muted"
-                  )}
-                >
-                  <cat.icon className="h-4 w-4" />
-                  {cat.label}
-                </Link>
-              ))}
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
+        {/* Banco de Prompts - link direto */}
+        <Link
+          to="/prompts"
+          onClick={handleClick}
+          onMouseEnter={() => handlePrefetch("/prompts")}
+          className={cn(
+            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
+            isPromptsSection
+              ? "bg-accent text-accent-foreground"
+              : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
+          )}
+        >
+          <Lightbulb className={cn("h-5 w-5", iconColorClass)} />
+          Banco de Prompts
+        </Link>
 
         {/* Other Tools */}
         {tools.map((item) => {
