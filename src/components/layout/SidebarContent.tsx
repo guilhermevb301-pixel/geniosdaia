@@ -1,9 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
 import { 
-  BookOpen, 
-  Layout, 
-  Calendar, 
-  MessageSquare, 
+  BookOpen,
+  Layout,
+  Calendar,
+  MessageSquare,
   MessageCircle,
   Sparkles,
   ChevronDown,
@@ -19,7 +19,8 @@ import {
   NotebookPen,
   Bot,
   Palette,
-  Lock
+  Lock,
+  Image
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
