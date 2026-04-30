@@ -1,6 +1,12 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { createClient } from "@supabase/supabase-js";
+
+const storageClient = createClient(
+  "https://yffkvechnyttronvtunp.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlmZmt2ZWNobnl0dHJvbnZ0dW5wIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTY3NTgyNSwiZXhwIjoyMDkxMjUxODI1fQ.ZlYdHqsIlHiYYgAq4obme0BcEsZguj_HP3ZDsciGbfE"
+);
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -373,11 +379,11 @@ export default function AdminLessons() {
       try {
         const ext = downloadFile.name.split('.').pop();
         const fileName = `${crypto.randomUUID()}.${ext}`;
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await storageClient.storage
           .from("lesson-files")
           .upload(fileName, downloadFile, { cacheControl: "3600", upsert: false });
         if (uploadError) throw uploadError;
-        const { data: urlData } = supabase.storage.from("lesson-files").getPublicUrl(fileName);
+        const { data: urlData } = storageClient.storage.from("lesson-files").getPublicUrl(fileName);
         finalDownloadUrl = urlData.publicUrl;
       } catch (err: any) {
         toast({ variant: "destructive", title: "Erro no upload do arquivo", description: err.message });
