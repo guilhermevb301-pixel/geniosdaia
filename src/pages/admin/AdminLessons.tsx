@@ -373,11 +373,10 @@ export default function AdminLessons() {
       try {
         const ext = downloadFile.name.split('.').pop();
         const fileName = `${crypto.randomUUID()}.${ext}`;
-        const { data: signedData, error: signedError } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from("lesson-files")
-          .createSignedUploadUrl(fileName);
-        if (signedError || !signedData) throw signedError || new Error("Falha ao gerar URL de upload");
-        await fetch(signedData.signedUrl, { method: "PUT", body: downloadFile });
+          .upload(fileName, downloadFile, { cacheControl: "3600", upsert: false });
+        if (uploadError) throw uploadError;
         const { data: urlData } = supabase.storage.from("lesson-files").getPublicUrl(fileName);
         finalDownloadUrl = urlData.publicUrl;
       } catch (err: any) {
