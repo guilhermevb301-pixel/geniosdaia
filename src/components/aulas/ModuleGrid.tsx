@@ -1,6 +1,16 @@
 import { ModuleCard } from "./ModuleCard";
 import { ModuleCardSkeleton } from "./ModuleCardSkeleton";
 
+const DEFAULT_COVERS: Record<string, string> = {
+  "VENDA SUA IA": "https://yffkvechnyttronvtunp.supabase.co/storage/v1/object/public/lesson-files/covers/capa-venda-sua-ia.png",
+};
+
+function resolveCover(title: string, url: string | null): string | null {
+  if (url) return url;
+  const key = Object.keys(DEFAULT_COVERS).find((k) => title.toUpperCase().includes(k));
+  return key ? DEFAULT_COVERS[key] : null;
+}
+
 interface Module {
   id: string;
   title: string;
@@ -40,7 +50,7 @@ export function ModuleGrid({ modules, isLoading }: ModuleGridProps) {
           id={module.id}
           title={module.title}
           description={module.description}
-          coverImageUrl={module.cover_image_url}
+          coverImageUrl={resolveCover(module.title, module.cover_image_url)}
           completedLessons={module.completedLessons}
           totalLessons={module.totalLessons}
           orderIndex={module.order_index}

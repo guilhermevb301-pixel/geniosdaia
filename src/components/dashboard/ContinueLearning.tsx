@@ -1,6 +1,15 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Play, ArrowRight, BookOpen } from "lucide-react";
+
+const DEFAULT_COVERS: Record<string, string> = {
+  "VENDA SUA IA": "https://yffkvechnyttronvtunp.supabase.co/storage/v1/object/public/lesson-files/covers/capa-venda-sua-ia.png",
+};
+function resolveCover(title: string, url: string | null): string | null {
+  if (url) return url;
+  const key = Object.keys(DEFAULT_COVERS).find((k) => title.toUpperCase().includes(k));
+  return key ? DEFAULT_COVERS[key] : null;
+}
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -148,9 +157,9 @@ export function ContinueLearning() {
           >
             {/* Thumbnail */}
             <div className="relative h-20 sm:h-24 overflow-hidden">
-              {module.cover_image_url ? (
+              {resolveCover(module.title, module.cover_image_url) ? (
                 <ImageWithSkeleton
-                  src={module.cover_image_url}
+                  src={resolveCover(module.title, module.cover_image_url)!}
                   alt={module.title}
                   className="group-hover:scale-105 transition-transform duration-300"
                   containerClassName="h-full w-full"
