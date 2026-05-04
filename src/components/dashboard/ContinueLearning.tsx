@@ -4,6 +4,7 @@ import { Play, ArrowRight, BookOpen } from "lucide-react";
 
 const DEFAULT_COVERS: Record<string, string> = {
   "VENDA SUA IA": "https://yffkvechnyttronvtunp.supabase.co/storage/v1/object/public/lesson-files/covers/capa-venda-sua-ia.png",
+  "SEEDANCE 2": "https://yffkvechnyttronvtunp.supabase.co/storage/v1/object/public/lesson-files/covers/capa-seedance-2.png",
 };
 function resolveCover(title: string, url: string | null): string | null {
   if (url) return url;
