@@ -54,6 +54,12 @@ export function PromptCard({ prompt, priority = false, canManage, onEdit, onDele
   const Icon = config.icon;
 
   const variations = (prompt.variations || []).sort((a, b) => a.order_index - b.order_index);
+
+  const thumbnailSrc =
+    prompt.thumbnail_url ||
+    prompt.example_images?.[0] ||
+    variations[0]?.image_url ||
+    null;
   const hasVariations = variations.length > 0;
   const currentVariation = variations[currentVariationIndex];
   const isVideoCategory = prompt.category === 'video';
@@ -99,9 +105,9 @@ export function PromptCard({ prompt, priority = false, canManage, onEdit, onDele
       >
         {/* Thumbnail — portrait 3:4 */}
         <div className="relative aspect-[3/4] bg-muted overflow-hidden">
-          {prompt.thumbnail_url ? (
+          {thumbnailSrc ? (
             <ImageWithSkeleton
-              src={prompt.thumbnail_url}
+              src={thumbnailSrc}
               alt={prompt.title}
               className="transition-transform duration-300 group-hover:scale-105"
               containerClassName="w-full h-full"
