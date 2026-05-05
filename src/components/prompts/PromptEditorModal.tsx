@@ -195,7 +195,6 @@ export function PromptEditorModal({
           thumbnail_url: thumbnailUrl,
           thumbnail_focus: thumbnailFocus,
           example_video_url: exampleVideoUrl,
-          is_locked: isLocked,
         })
         .select()
         .single();
@@ -267,7 +266,6 @@ export function PromptEditorModal({
           thumbnail_url: thumbnailUrl,
           thumbnail_focus: thumbnailFocus,
           example_video_url: exampleVideoUrl,
-          is_locked: isLocked,
         })
         .eq("id", editingPrompt.id);
 
