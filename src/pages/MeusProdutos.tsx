@@ -33,7 +33,7 @@ const PRODUCTS: Product[] = [
     icon: Bot,
     iconColor: "text-blue-400",
     href: "/aulas",
-    buyUrl: "https://pay.kiwify.com.br/agente-atendimento",
+    buyUrl: "https://pay.kiwify.com.br/gg698sf",
   },
   {
     slug: "banco-prompts",
@@ -43,7 +43,7 @@ const PRODUCTS: Product[] = [
     icon: BookOpen,
     iconColor: "text-yellow-400",
     href: "/prompts",
-    buyUrl: "https://pay.kiwify.com.br/banco-prompts",
+    buyUrl: "https://pay.kiwify.com.br/6g5t8Mg",
   },
   {
     slug: "videos-cinematograficos",
@@ -53,7 +53,7 @@ const PRODUCTS: Product[] = [
     icon: Video,
     iconColor: "text-red-400",
     href: "/aulas",
-    buyUrl: "https://pay.kiwify.com.br/videos-cinematograficos",
+    buyUrl: "https://pay.kiwify.com.br/a8LzNm8",
   },
   {
     slug: "fotos-profissionais",
@@ -63,7 +63,7 @@ const PRODUCTS: Product[] = [
     icon: Image,
     iconColor: "text-green-400",
     href: "/aulas",
-    buyUrl: "https://pay.kiwify.com.br/fotos-profissionais",
+    buyUrl: "https://pay.kiwify.com.br/HdtzNv8",
   },
   {
     slug: "influencer-ia",
@@ -73,7 +73,7 @@ const PRODUCTS: Product[] = [
     icon: Users,
     iconColor: "text-pink-400",
     href: "/aulas",
-    buyUrl: "https://pay.kiwify.com.br/influencer-ia",
+    buyUrl: "https://pay.kiwify.com.br/Itaz5PH",
   },
   {
     slug: "clone-criativo",
@@ -83,7 +83,7 @@ const PRODUCTS: Product[] = [
     icon: Copy,
     iconColor: "text-orange-400",
     href: "/aulas",
-    buyUrl: "https://pay.kiwify.com.br/clone-criativo",
+    buyUrl: "https://pay.kiwify.com.br/vcFgUbO",
   },
 ];
 
