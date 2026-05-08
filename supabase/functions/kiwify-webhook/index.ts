@@ -15,6 +15,93 @@ const VALID_PRODUCTS = [
   "clone-criativo",
 ] as const;
 
+const PRODUCT_NAMES: Record<string, string> = {
+  "genios-ia": "Gênios da IA",
+  "agente-atendimento": "Agente de Atendimento IA + Claude Code",
+  "banco-prompts": "Banco de 200 Prompts",
+  "videos-cinematograficos": "Vídeos Cinematográficos com IA",
+  "fotos-profissionais": "Fotos Profissionais com IA",
+  "influencer-ia": "Influencer de IA Ultra-realista",
+  "clone-criativo": "Método Clone Criativo",
+};
+
+async function sendWhatsApp(phone: string, name: string, productSlug: string) {
+  const apiUrl = Deno.env.get("EVOLUTION_API_URL");
+  const apiKey = Deno.env.get("EVOLUTION_API_KEY");
+  const instance = Deno.env.get("EVOLUTION_INSTANCE");
+
+  if (!apiUrl || !apiKey || !instance) {
+    console.error("Evolution API env vars not set");
+    return;
+  }
+
+  // Remove + e espaços do número
+  const number = phone.replace(/\D/g, "");
+  const productName = PRODUCT_NAMES[productSlug] || productSlug;
+
+  const text =
+    `Olá, ${name}! 🎉\n\n` +
+    `Sua compra foi confirmada! Seja bem-vindo(a) ao *${productName}*!\n\n` +
+    `🔗 *Acesse sua área de membros:*\nhttps://membrosgenios.com/\n\n` +
+    `📧 *Login:* ${""/* será preenchido abaixo */}\n` +
+    `🔑 *Senha de acesso:* 123456\n\n` +
+    `Qualquer dúvida é só chamar. Bons estudos! 🚀`;
+
+  try {
+    const url = `${apiUrl}/message/sendText/${encodeURIComponent(instance)}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: apiKey,
+      },
+      body: JSON.stringify({ number, text }),
+    });
+    const json = await res.json();
+    console.log("WhatsApp sent:", JSON.stringify(json));
+  } catch (err) {
+    console.error("WhatsApp error:", err);
+  }
+}
+
+async function sendWhatsAppWithEmail(phone: string, name: string, email: string, productSlug: string) {
+  const apiUrl = Deno.env.get("EVOLUTION_API_URL");
+  const apiKey = Deno.env.get("EVOLUTION_API_KEY");
+  const instance = Deno.env.get("EVOLUTION_INSTANCE");
+
+  if (!apiUrl || !apiKey || !instance) {
+    console.error("Evolution API env vars not set");
+    return;
+  }
+
+  const number = phone.replace(/\D/g, "");
+  const productName = PRODUCT_NAMES[productSlug] || productSlug;
+
+  const text =
+    `Olá, ${name}! 🎉\n\n` +
+    `Sua compra foi confirmada! Seja bem-vindo(a) ao *${productName}*!\n\n` +
+    `🔗 *Acesse sua área de membros:*\nhttps://membrosgenios.com/\n\n` +
+    `📧 *Login:* ${email}\n` +
+    `🔑 *Senha de acesso:* 123456\n\n` +
+    `Qualquer dúvida é só chamar. Bons estudos! 🚀`;
+
+  try {
+    const url = `${apiUrl}/message/sendText/${encodeURIComponent(instance)}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: apiKey,
+      },
+      body: JSON.stringify({ number, text }),
+    });
+    const json = await res.json();
+    console.log("WhatsApp sent:", JSON.stringify(json));
+  } catch (err) {
+    console.error("WhatsApp error:", err);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -28,7 +115,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Produto identificado pelo query param: ?product=agente-atendimento
     const url = new URL(req.url);
     const productSlug = (url.searchParams.get("product") || "genios-ia") as typeof VALID_PRODUCTS[number];
 
@@ -42,7 +128,12 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const event = body?.event;
-    const email = body?.customer?.email?.toLowerCase()?.trim();
+
+    // Kiwify pode mandar customer com C maiúsculo ou minúsculo
+    const customer = body?.customer || body?.Customer || {};
+    const email = customer?.email?.toLowerCase()?.trim();
+    const name = customer?.full_name || customer?.name || "Aluno";
+    const phone = customer?.mobile || customer?.phone || "";
 
     console.log(`Kiwify webhook: event=${event}, product=${productSlug}, email=${email}`);
 
@@ -100,19 +191,24 @@ Deno.serve(async (req) => {
       } else if (!createError) {
         console.log(`Auth user created for ${email}`);
       }
+
+      // 5. Manda WhatsApp de boas-vindas com login + senha
+      if (phone) {
+        await sendWhatsAppWithEmail(phone, name, email, productSlug);
+      } else {
+        console.log("No phone number — skipping WhatsApp");
+      }
     } else if (
       event === "compra_reembolsada" ||
       event === "chargeback" ||
       event === "subscription_canceled"
     ) {
-      // Remove produto específico
       await supabase
         .from("user_products")
         .delete()
         .eq("email", email)
         .eq("product_slug", productSlug);
 
-      // Se não tem mais nenhum produto, remove acesso geral
       const { data: remaining } = await supabase
         .from("user_products")
         .select("id")
