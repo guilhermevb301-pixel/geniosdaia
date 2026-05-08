@@ -19,11 +19,11 @@ const PRODUCTS: Product[] = [
     slug: "genios-ia",
     name: "Gênios da IA",
     description: "Curso completo — do zero a projetos de IA vendáveis. Acesso a todo o ecossistema.",
-    price: "R$497",
+    price: "R$997",
     icon: Sparkles,
     iconColor: "text-purple-400",
     href: "/aulas",
-    buyUrl: "https://pay.kiwify.com.br/genios-ia",
+    buyUrl: "https://pay.kiwify.com.br/dZG6AiO",
   },
   {
     slug: "agente-atendimento",
