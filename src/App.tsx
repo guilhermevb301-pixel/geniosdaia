@@ -23,6 +23,7 @@ import Certificados from "./pages/Certificados";
 import VerifyCertificate from "./pages/VerifyCertificate";
 import MeuCaderno from "./pages/MeuCaderno";
 import MeusGpts from "./pages/MeusGpts";
+import MeusProdutos from "./pages/MeusProdutos";
 import AdminModules from "./pages/admin/AdminModules";
 import AdminLessons from "./pages/admin/AdminLessons";
 import AdminTemplates from "./pages/admin/AdminTemplates";
@@ -67,6 +68,14 @@ const App = () => (
             <Route path="/acesso-negado" element={<AcessoNegado />} />
             
             {/* Protected routes */}
+            <Route
+              path="/meus-produtos"
+              element={
+                <ProtectedRoute>
+                  <MeusProdutos />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/"
               element={
