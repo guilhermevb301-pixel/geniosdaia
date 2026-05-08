@@ -26,9 +26,11 @@ interface Module {
 interface ModuleGridProps {
   modules: Module[];
   isLoading?: boolean;
+  locked?: boolean;
+  buyUrl?: string;
 }
 
-export function ModuleGrid({ modules, isLoading }: ModuleGridProps) {
+export function ModuleGrid({ modules, isLoading, locked = false, buyUrl }: ModuleGridProps) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -56,6 +58,8 @@ export function ModuleGrid({ modules, isLoading }: ModuleGridProps) {
           totalLessons={module.totalLessons}
           orderIndex={module.order_index}
           priority={index < 5}
+          locked={locked}
+          buyUrl={buyUrl}
         />
       ))}
     </div>

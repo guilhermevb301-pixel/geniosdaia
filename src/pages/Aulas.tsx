@@ -5,12 +5,23 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { CourseProgress } from "@/components/aulas/CourseProgress";
 import { ModuleGrid } from "@/components/aulas/ModuleGrid";
 import { useImagePreload } from "@/hooks/useImagePreload";
+import { useUserProducts, type ProductSlug } from "@/hooks/useUserProducts";
+
+const BUY_URLS: Record<string, string> = {
+  "genios-ia": "https://pay.kiwify.com.br/dZG6AiO",
+  "agente-atendimento": "https://pay.kiwify.com.br/gg698sf",
+  "videos-cinematograficos": "https://pay.kiwify.com.br/a8LzNm8",
+  "fotos-profissionais": "https://pay.kiwify.com.br/HdtzNv8",
+  "influencer-ia": "https://pay.kiwify.com.br/Itaz5PH",
+  "clone-criativo": "https://pay.kiwify.com.br/vcFgUbO",
+};
 
 interface ModuleSection {
   id: string;
   title: string;
   order_index: number;
   created_at: string;
+  product_slug: string | null;
 }
 
 interface ModuleWithProgress {
@@ -31,6 +42,7 @@ interface SectionGroup {
 
 export default function Aulas() {
   const { user } = useAuth();
+  const { hasProduct, isLoading: isLoadingProducts } = useUserProducts();
 
   // Fetch sections
   const { data: sectionsData } = useQuery({
@@ -94,7 +106,12 @@ export default function Aulas() {
     placeholderData: keepPreviousData,
   });
 
-  const isLoading = isLoadingModules || isLoadingLessons;
+  const isLoading = isLoadingModules || isLoadingLessons || isLoadingProducts;
+
+  const isSectionLocked = (section: ModuleSection): boolean => {
+    if (!section.product_slug) return false;
+    return !hasProduct(section.product_slug as ProductSlug);
+  };
 
   // Preload module cover images
   const coverUrls = (modulesData || []).map((m) => m.cover_image_url);
@@ -165,14 +182,30 @@ export default function Aulas() {
               )}
 
               {/* Section groups with their modules */}
-              {sectionGroups.map(({ section, modules: sectionModules }) => (
-                <div key={section.id} className="space-y-4">
-                  <h2 className="text-xl font-semibold text-foreground">
-                    {section.title}
-                  </h2>
-                  <ModuleGrid modules={sectionModules} />
-                </div>
-              ))}
+              {sectionGroups.map(({ section, modules: sectionModules }) => {
+                const locked = isSectionLocked(section);
+                const buyUrl = section.product_slug ? BUY_URLS[section.product_slug] : undefined;
+                return (
+                  <div key={section.id} className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <h2 className={`text-xl font-semibold ${locked ? "text-muted-foreground" : "text-foreground"}`}>
+                        {section.title}
+                      </h2>
+                      {locked && buyUrl && (
+                        <a
+                          href={buyUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs font-medium px-2 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                        >
+                          Desbloquear →
+                        </a>
+                      )}
+                    </div>
+                    <ModuleGrid modules={sectionModules} locked={locked} buyUrl={buyUrl} />
+                  </div>
+                );
+              })}
 
               {/* Empty state when no modules at all */}
               {modules.length === 0 && (
