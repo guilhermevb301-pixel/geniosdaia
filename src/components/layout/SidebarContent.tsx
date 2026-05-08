@@ -8,7 +8,6 @@ import {
   Sparkles,
   ChevronDown,
   Zap,
-  ShoppingBag,
   Settings,
   Users,
   FileText,
@@ -105,21 +104,6 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
         >
           <Layout className={cn("h-5 w-5", iconColorClass)} />
           Dashboard
-        </Link>
-
-        {/* Meus Produtos */}
-        <Link
-          to="/meus-produtos"
-          onClick={handleClick}
-          className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
-            isActive("/meus-produtos")
-              ? "bg-accent text-accent-foreground"
-              : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
-          )}
-        >
-          <ShoppingBag className={cn("h-5 w-5", iconColorClass)} />
-          Meus Produtos
         </Link>
 
         {/* Aulas */}
