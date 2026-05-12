@@ -98,8 +98,8 @@ export function ImageWithSkeleton({
         </div>
       )}
 
-      {/* Blur placeholder - loads instantly (tiny ~500 byte image) */}
-      {blurSrc && !hasError && (
+      {/* Blur placeholder - loads when card enters viewport */}
+      {blurSrc && isInView && !hasError && (
         <img
           src={blurSrc}
           alt=""
