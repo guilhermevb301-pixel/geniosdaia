@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Search, Users, Filter, Crown, Star, GraduationCap, User } from "lucide-react";
+import { Search, Users, Filter, Crown, Star, GraduationCap, User, UserPlus } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -7,17 +7,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { UserCard } from "@/components/admin/UserCard";
 import { RoleChangeModal } from "@/components/admin/RoleChangeModal";
-import { useAllUsers, type UserWithRoles } from "@/hooks/useAllUsers";
+import { AddUserModal } from "@/components/admin/AddUserModal";
+import { useAllUsers, type UserWithRoles, type CreateUserPayload } from "@/hooks/useAllUsers";
 import { cn } from "@/lib/utils";
 
 type RoleFilter = "all" | "admin" | "mentor" | "mentee" | "user";
 
 export default function AdminUsers() {
-  const { users, isLoading, changeRole } = useAllUsers();
+  const { users, isLoading, changeRole, createUser } = useAllUsers();
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [selectedUser, setSelectedUser] = useState<UserWithRoles | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAddOpen, setIsAddOpen] = useState(false);
 
   const filteredUsers = useMemo(() => {
     return users.filter((user) => {
@@ -75,6 +77,12 @@ export default function AdminUsers() {
     });
   };
 
+  const handleCreateUser = (payload: CreateUserPayload) => {
+    createUser.mutate(payload, {
+      onSuccess: () => setIsAddOpen(false),
+    });
+  };
+
   return (
     <AppLayout>
       <div className="space-y-6 max-w-6xl">
@@ -89,6 +97,10 @@ export default function AdminUsers() {
               Gerencie os cargos e permissões dos usuários da plataforma
             </p>
           </div>
+          <Button onClick={() => setIsAddOpen(true)} className="gap-2 shrink-0">
+            <UserPlus className="h-4 w-4" />
+            Adicionar usuário
+          </Button>
         </div>
 
         {/* Search and Filters */}
@@ -178,6 +190,14 @@ export default function AdminUsers() {
         onOpenChange={setIsModalOpen}
         onChangeRole={handleRoleChange}
         isLoading={changeRole.isPending}
+      />
+
+      {/* Add User Modal */}
+      <AddUserModal
+        open={isAddOpen}
+        onOpenChange={setIsAddOpen}
+        onCreate={handleCreateUser}
+        isLoading={createUser.isPending}
       />
     </AppLayout>
   );

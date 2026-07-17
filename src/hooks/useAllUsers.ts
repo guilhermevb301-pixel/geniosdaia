@@ -105,6 +105,13 @@ export interface RoleChangePayload {
   };
 }
 
+export interface CreateUserPayload {
+  email: string;
+  name?: string;
+  password?: string;
+  products: string[];
+}
+
 export function useAllUsers() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -253,5 +260,57 @@ export function useAllUsers() {
     },
   });
 
-  return { users, isLoading, changeRole };
+  const createUser = useMutation({
+    mutationFn: async (payload: CreateUserPayload) => {
+      const { data, error } = await supabase.functions.invoke("admin-create-user", {
+        body: payload,
+      });
+
+      // Erro de transporte / status !2xx
+      if (error) {
+        // Tenta extrair a mensagem retornada pela function
+        let message = error.message;
+        try {
+          const ctx = (error as { context?: Response }).context;
+          if (ctx && typeof ctx.json === "function") {
+            const parsed = await ctx.json();
+            if (parsed?.error) message = parsed.error;
+          }
+        } catch {
+          /* ignore */
+        }
+        throw new Error(message);
+      }
+
+      // Erro de negócio devolvido no corpo
+      if (data?.error) throw new Error(data.error);
+
+      return data as {
+        ok: boolean;
+        email: string;
+        userExisted: boolean;
+        products: string[];
+        password: string | null;
+      };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["allUsers"] });
+      toast({
+        title: data.userExisted ? "Acesso liberado" : "Usuário criado",
+        description: data.userExisted
+          ? `${data.email} já tinha conta — os produtos foram liberados.`
+          : `${data.email} criado com senha "${data.password}".`,
+      });
+    },
+    onError: (error: Error) => {
+      console.error("Error creating user:", error);
+      toast({
+        title: "Erro ao criar usuário",
+        description: error.message || "Não foi possível criar o usuário.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  return { users, isLoading, changeRole, createUser };
 }
