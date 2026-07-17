@@ -45,8 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, options?: SignUpOptions) => {
     const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
+      email: email.trim().toLowerCase(),
+      password: password.trim(),
       options: {
         emailRedirectTo: window.location.origin,
       },
@@ -65,9 +65,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
+    // Normaliza: remove espaços acidentais (comum em teclado mobile/copy-paste)
+    // e força e-mail em minúsculas — senão o login falha com "senha incorreta".
     const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+      email: email.trim().toLowerCase(),
+      password: password.trim(),
     });
     return { error };
   };
