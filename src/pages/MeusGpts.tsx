@@ -34,12 +34,15 @@ export default function MeusGpts() {
     <AppLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold">Meus GPTs</h1>
-          <p className="text-muted-foreground">
+        <div className="space-y-3">
+          <p className="eyebrow text-primary">Ferramentas</p>
+          <h1>Meus GPTs</h1>
+          <p className="max-w-[52ch] text-sm leading-relaxed text-muted-foreground">
             GPTs personalizados para acelerar seu aprendizado
           </p>
         </div>
+
+        <div className="rule my-10" />
 
         {/* Loading State */}
         {isLoading ? (

@@ -97,13 +97,16 @@ export default function Mentoria() {
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
             <MessageSquare className="h-5 w-5 text-primary" />
           </div>
-          <div>
-            <h1 className="text-2xl font-semibold">Mentoria Individual</h1>
-            <p className="text-sm text-muted-foreground">
+          <div className="space-y-3">
+            <p className="eyebrow text-primary">Comunidade</p>
+            <h1>Mentoria Individual</h1>
+            <p className="max-w-[52ch] text-sm leading-relaxed text-muted-foreground">
               Responda 3 perguntas rápidas e fale direto com o Gui
             </p>
           </div>
         </div>
+
+        <div className="rule my-10" />
 
         {/* Form */}
         <Card className="bg-card border-border">

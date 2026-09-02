@@ -90,9 +90,10 @@ export default function Templates() {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Templates n8n</h1>
-            <p className="text-muted-foreground">
+          <div className="space-y-3">
+            <p className="eyebrow text-primary">Biblioteca</p>
+            <h1>Templates n8n</h1>
+            <p className="max-w-[52ch] text-sm leading-relaxed text-muted-foreground">
               Workflows prontos para usar em suas automações
             </p>
           </div>
@@ -113,6 +114,8 @@ export default function Templates() {
             </div>
           </div>
         </div>
+
+        <div className="rule my-10" />
 
         {/* Templates Grid */}
         {isLoading ? (

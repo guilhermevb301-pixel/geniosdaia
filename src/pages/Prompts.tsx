@@ -125,9 +125,10 @@ export default function Prompts() {
       <div className="space-y-6">
         {/* ── Header ────────────────────────────────────────── */}
         <div className="flex items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Banco de Prompts</h1>
-            <p className="text-muted-foreground text-sm mt-0.5">
+          <div className="space-y-3">
+            <p className="eyebrow text-primary">Biblioteca</p>
+            <h1>Banco de Prompts</h1>
+            <p className="max-w-[52ch] text-sm leading-relaxed text-muted-foreground">
               Prompts prontos para usar com IAs de geração de conteúdo
             </p>
           </div>
@@ -138,6 +139,8 @@ export default function Prompts() {
             </Button>
           )}
         </div>
+
+        <div className="rule my-10" />
 
         {/* ── Search bar ────────────────────────────────────── */}
         <div className="relative w-full max-w-md">

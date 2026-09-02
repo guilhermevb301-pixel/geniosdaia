@@ -120,9 +120,9 @@ export function ContinueLearning() {
           </Button>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center mb-3">
-              <BookOpen className="h-6 w-6 text-muted-foreground" />
+          <div className="flex flex-col items-center justify-center py-4 text-center">
+            <div className="mb-2.5 flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+              <BookOpen className="h-5 w-5 text-muted-foreground" />
             </div>
             <p className="text-sm text-muted-foreground">
               Você ainda não começou nenhum módulo

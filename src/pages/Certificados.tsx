@@ -196,12 +196,13 @@ export default function Certificados() {
     return (
       <AppLayout>
         <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-3">
-              <Award className="h-8 w-8 text-primary" />
-              Meus Certificados
-            </h1>
+          <div className="space-y-3">
+            <p className="eyebrow text-primary">Sua evolução</p>
+            <h1>Meus Certificados</h1>
           </div>
+
+          <div className="rule my-10" />
+
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map((i) => (
               <Skeleton key={i} className="h-24 w-full" />
@@ -216,15 +217,15 @@ export default function Certificados() {
     <AppLayout>
       <div className="space-y-8">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <Award className="h-8 w-8 text-primary" />
-            Meus Certificados
-          </h1>
-          <p className="text-muted-foreground mt-1">
+        <div className="space-y-3">
+          <p className="eyebrow text-primary">Sua evolução</p>
+          <h1>Meus Certificados</h1>
+          <p className="max-w-[52ch] text-sm leading-relaxed text-muted-foreground">
             Certificados conquistados ao concluir módulos
           </p>
         </div>
+
+        <div className="rule my-10" />
 
         {/* Earned Certificates */}
         {certificates.length > 0 && (

@@ -1,7 +1,6 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AnnouncementCarousel } from "@/components/dashboard/AnnouncementCarousel";
 import { WelcomeHero } from "@/components/dashboard/WelcomeHero";
-import { StatsCards } from "@/components/dashboard/StatsCards";
 import { ContinueLearning } from "@/components/dashboard/ContinueLearning";
 import { RankingLists } from "@/components/dashboard/RankingLists";
 import { EvolutionCard } from "@/components/dashboard/EvolutionCard";
@@ -38,9 +37,6 @@ export default function Dashboard() {
 
         {/* Continuar de Onde Parou */}
         <ContinueLearning />
-
-        {/* Cards de Estatísticas */}
-        <StatsCards />
 
         {/* Gamification Row - Evolution + Challenge */}
         <div className="grid gap-4 md:grid-cols-2">

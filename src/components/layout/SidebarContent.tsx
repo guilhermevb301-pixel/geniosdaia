@@ -96,11 +96,11 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           className={cn(
             NAV_ITEM_BASE,
             isActive("/")
-              ? "text-foreground before:h-5 [&>svg]:text-primary"
-              : "text-muted-foreground hover:text-foreground"
+              ? "text-foreground before:h-5"
+              : "text-muted-foreground hover:text-foreground [&>svg]:opacity-70 hover:[&>svg]:opacity-100"
           )}
         >
-          <Layout className={"h-5 w-5 shrink-0"} />
+          <Layout className="h-5 w-5 shrink-0 text-primary" />
           Dashboard
         </Link>
 
@@ -112,11 +112,11 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           className={cn(
             NAV_ITEM_BASE,
             isActive("/aulas")
-              ? "text-foreground before:h-5 [&>svg]:text-primary"
-              : "text-muted-foreground hover:text-foreground"
+              ? "text-foreground before:h-5"
+              : "text-muted-foreground hover:text-foreground [&>svg]:opacity-70 hover:[&>svg]:opacity-100"
           )}
         >
-          <BookOpen className={"h-5 w-5 shrink-0"} />
+          <BookOpen className="h-5 w-5 shrink-0 text-primary" />
           Aulas
         </Link>
 
@@ -128,11 +128,11 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           className={cn(
             NAV_ITEM_BASE,
             isActive("/templates")
-              ? "text-foreground before:h-5 [&>svg]:text-primary"
-              : "text-muted-foreground hover:text-foreground"
+              ? "text-foreground before:h-5"
+              : "text-muted-foreground hover:text-foreground [&>svg]:opacity-70 hover:[&>svg]:opacity-100"
           )}
         >
-          <Zap className={"h-5 w-5 shrink-0"} />
+          <Zap className="h-5 w-5 shrink-0 text-primary" />
           Templates
         </Link>
 
@@ -144,11 +144,11 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           className={cn(
             NAV_ITEM_BASE,
             isPromptsSection
-              ? "text-foreground before:h-5 [&>svg]:text-primary"
-              : "text-muted-foreground hover:text-foreground"
+              ? "text-foreground before:h-5"
+              : "text-muted-foreground hover:text-foreground [&>svg]:opacity-70 hover:[&>svg]:opacity-100"
           )}
         >
-          <Lightbulb className={"h-5 w-5 shrink-0"} />
+          <Lightbulb className="h-5 w-5 shrink-0 text-primary" />
           Banco de Prompts
         </Link>
 
@@ -177,11 +177,11 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
               className={cn(
                 NAV_ITEM_BASE,
                 isActive(item.href)
-                  ? "text-foreground before:h-5 [&>svg]:text-primary"
-                  : "text-muted-foreground hover:text-foreground"
+                  ? "text-foreground before:h-5"
+                  : "text-muted-foreground hover:text-foreground [&>svg]:opacity-70 hover:[&>svg]:opacity-100"
               )}
             >
-              <item.icon className={"h-5 w-5 shrink-0"} />
+              <item.icon className="h-5 w-5 shrink-0 text-primary" />
               {item.label}
             </Link>
           );
@@ -197,11 +197,11 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           className={cn(
             NAV_ITEM_BASE,
             isActive("/certificados")
-              ? "text-foreground before:h-5 [&>svg]:text-primary"
-              : "text-muted-foreground hover:text-foreground"
+              ? "text-foreground before:h-5"
+              : "text-muted-foreground hover:text-foreground [&>svg]:opacity-70 hover:[&>svg]:opacity-100"
           )}
         >
-          <Award className={"h-5 w-5 shrink-0"} />
+          <Award className="h-5 w-5 shrink-0 text-primary" />
           Certificados
         </Link>
 
@@ -211,11 +211,11 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           className={cn(
             NAV_ITEM_BASE,
             isActive("/meu-caderno")
-              ? "text-foreground before:h-5 [&>svg]:text-primary"
-              : "text-muted-foreground hover:text-foreground"
+              ? "text-foreground before:h-5"
+              : "text-muted-foreground hover:text-foreground [&>svg]:opacity-70 hover:[&>svg]:opacity-100"
           )}
         >
-          <NotebookPen className={"h-5 w-5 shrink-0"} />
+          <NotebookPen className="h-5 w-5 shrink-0 text-primary" />
           Meu Caderno
         </Link>
 
@@ -226,11 +226,11 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           className={cn(
             NAV_ITEM_BASE,
             isActive("/mentoria")
-              ? "text-foreground before:h-5 [&>svg]:text-primary"
-              : "text-muted-foreground hover:text-foreground"
+              ? "text-foreground before:h-5"
+              : "text-muted-foreground hover:text-foreground [&>svg]:opacity-70 hover:[&>svg]:opacity-100"
           )}
         >
-          <MessageSquare className={"h-5 w-5 shrink-0"} />
+          <MessageSquare className="h-5 w-5 shrink-0 text-primary" />
           Aplicar Mentoria
         </Link>
 
@@ -242,11 +242,11 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
             className={cn(
               NAV_ITEM_BASE,
               isActive("/minha-mentoria")
-                ? "text-foreground before:h-5 [&>svg]:text-primary"
-                : "text-muted-foreground hover:text-foreground"
+                ? "text-foreground before:h-5"
+                : "text-muted-foreground hover:text-foreground [&>svg]:opacity-70 hover:[&>svg]:opacity-100"
             )}
           >
-            <GraduationCap className={"h-5 w-5 shrink-0"} />
+            <GraduationCap className="h-5 w-5 shrink-0 text-primary" />
             Minha Mentoria
           </Link>
         )}
@@ -260,8 +260,8 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                   className={cn(
                     "flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                     isAdminSection
-                      ? "text-foreground before:h-5 [&>svg]:text-primary"
-                      : "text-muted-foreground hover:text-foreground"
+                      ? "text-foreground before:h-5"
+                      : "text-muted-foreground hover:text-foreground [&>svg]:opacity-70 hover:[&>svg]:opacity-100"
                   )}
                 >
                   <div className="flex items-center gap-3">

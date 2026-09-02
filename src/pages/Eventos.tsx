@@ -74,12 +74,15 @@ export default function Eventos() {
     <AppLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-semibold">Eventos</h1>
-          <p className="text-sm text-muted-foreground">
+        <div className="space-y-3">
+          <p className="eyebrow text-primary">Comunidade</p>
+          <h1>Eventos</h1>
+          <p className="max-w-[52ch] text-sm leading-relaxed text-muted-foreground">
             Workshops, lives e encontros da comunidade
           </p>
         </div>
+
+        <div className="rule my-10" />
 
         {/* Events List */}
         <div className="space-y-3">

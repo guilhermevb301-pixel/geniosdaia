@@ -52,9 +52,9 @@ export function WeeklyChallengeCard() {
 
   if (!activeChallenge) {
     return (
-      <Card className="relative overflow-hidden bg-gradient-to-br from-muted/50 to-muted/30 border-muted">
-        <CardContent className="p-4 text-center">
-          <Trophy className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+      <Card className="relative flex items-center justify-center overflow-hidden">
+        <CardContent className="flex flex-col items-center p-6 text-center">
+          <Trophy className="mb-2 h-6 w-6 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
             Nenhum desafio ativo no momento
           </p>

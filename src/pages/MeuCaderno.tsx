@@ -672,15 +672,15 @@ export default function MeuCaderno() {
   return (
     <AppLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <BookOpen className="h-8 w-8 text-primary" />
-            Meu Caderno
-          </h1>
-          <p className="text-muted-foreground mt-1">
+        <div className="space-y-3">
+          <p className="eyebrow text-primary">Sua evolução</p>
+          <h1>Meu Caderno</h1>
+          <p className="max-w-[52ch] text-sm leading-relaxed text-muted-foreground">
             Tarefas, notas e favoritos em um só lugar
           </p>
         </div>
+
+        <div className="rule my-10" />
 
         <Tabs defaultValue="tasks" className="w-full">
           <TabsList>

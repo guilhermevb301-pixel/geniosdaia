@@ -4,7 +4,6 @@ import { ArrowRight, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import guiHero from "@/assets/gui-hero.jpg";
 
 function greeting(): string {
   const hour = new Date().getHours();
@@ -13,8 +12,38 @@ function greeting(): string {
   return "Boa noite";
 }
 
+/**
+ * Primeiro nome do aluno. Cai para o início do e-mail apenas quando ele
+ * parece um nome de verdade — "joao@..." vira "Joao", mas "guilhermevb301@..."
+ * é descartado para não saudar o aluno com um usuário cheio de números.
+ */
+function firstNameOf(fullName?: string | null, email?: string | null): string | null {
+  const fromName = fullName?.trim().split(/\s+/)[0];
+  if (fromName) return fromName;
+
+  const fromEmail = email?.split("@")[0]?.split(/[.+_-]/)[0];
+  if (!fromEmail || !/^[a-zà-ú]{2,}$/i.test(fromEmail)) return null;
+  return fromEmail.charAt(0).toUpperCase() + fromEmail.slice(1);
+}
+
 export function WelcomeHero() {
   const { user } = useAuth();
+
+  // Nome salvo no perfil, quando existir
+  const { data: profile } = useQuery({
+    queryKey: ["user_profile_name", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from("user_profiles")
+        .select("display_name")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user,
+    staleTime: 10 * 60 * 1000,
+  });
 
   // Última aula assistida, para o CTA principal
   const { data: lastLesson } = useQuery({
@@ -35,60 +64,40 @@ export function WelcomeHero() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const firstName = (user?.user_metadata?.full_name as string | undefined)?.split(" ")[0];
+  const name = firstNameOf(
+    profile?.display_name ?? (user?.user_metadata?.full_name as string | undefined),
+    user?.email,
+  );
   const lesson = lastLesson?.lessons as { title: string; module_id: string } | null | undefined;
 
   return (
-    <section className="relative overflow-hidden rounded-lg border border-primary/20 bg-card">
-      {/* Retrato à direita: mostrado por inteiro, sem cortar o rosto */}
-      <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[38%] items-end justify-end sm:flex">
-        <img
-          src={guiHero}
-          alt=""
-          aria-hidden="true"
-          className="h-full max-h-full w-auto object-contain object-bottom"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-card via-card/50 to-transparent" />
+    <section className="relative overflow-hidden">
+      <div className="space-y-3">
+        <p className="eyebrow text-primary">{greeting()}</p>
+        <h1>{name ? `Olá, ${name}` : "Olá"}</h1>
+        <p className="max-w-[52ch] text-sm leading-relaxed text-muted-foreground">
+          {lesson
+            ? "Você parou no meio de uma aula — continue de onde parou."
+            : "Comece pelo primeiro módulo e monte seu primeiro agente ainda hoje."}
+        </p>
       </div>
 
-      {/* Brilho verde sutil atrás do texto */}
-      <div className="pointer-events-none absolute -left-24 top-1/2 h-64 w-64 -translate-y-1/2 rounded-full bg-primary/10 blur-3xl" />
-
-      <div className="relative flex min-h-[260px] flex-col justify-center gap-5 p-6 sm:max-w-[62%] md:p-8">
-        <div className="space-y-1.5">
-          <p className="text-xs font-medium uppercase tracking-widest text-primary">
-            {greeting()}
-            {firstName ? `, ${firstName}` : ""}
-          </p>
-          <h1 className="text-2xl font-bold leading-tight md:text-3xl">
-            Pronto pra colocar mais uma{" "}
-            <span className="text-primary [font-size:inherit] [font-weight:inherit] [line-height:inherit]">
-              IA pra trabalhar
-            </span>{" "}
-            hoje?
-          </h1>
-          <p className="max-w-md text-sm text-muted-foreground">
-            {lesson
-              ? "Você parou no meio de uma aula. Continue de onde parou."
-              : "Comece pelo primeiro módulo e monte seu primeiro agente ainda hoje."}
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <Button asChild size="lg">
-            <Link to={lesson ? `/aulas/${lesson.module_id}` : "/aulas"}>
-              <Play className="h-4 w-4" />
-              {lesson ? "Continuar assistindo" : "Começar agora"}
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="lg">
-            <Link to="/aulas">
-              Ver todos os módulos
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </Button>
-        </div>
+      <div className="mt-7 flex flex-wrap items-center gap-3">
+        <Button asChild>
+          <Link to={lesson ? `/aulas/${lesson.module_id}` : "/aulas"}>
+            <Play className="h-4 w-4" />
+            {lesson ? "Continuar assistindo" : "Começar agora"}
+          </Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link to="/aulas">
+            Ver todos os módulos
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </Button>
       </div>
+
+      <div className="rule mt-10" />
     </section>
   );
 }

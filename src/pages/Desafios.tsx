@@ -165,13 +165,16 @@ export default function Desafios() {
         {/* Header */}
         <div className="flex items-center gap-3">
           <Trophy className="h-8 w-8 text-accent" />
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Arena dos Gênios</h1>
-            <p className="text-muted-foreground text-sm">
+          <div className="space-y-3">
+            <p className="eyebrow text-primary">Comunidade</p>
+            <h1>Arena dos Gênios</h1>
+            <p className="max-w-[52ch] text-sm leading-relaxed text-muted-foreground">
               Participe de desafios semanais, mostre suas habilidades e conquiste prêmios!
             </p>
           </div>
         </div>
+
+        <div className="rule my-10" />
 
         {/* Tabs Navigation */}
         <Tabs defaultValue="active" className="space-y-6">

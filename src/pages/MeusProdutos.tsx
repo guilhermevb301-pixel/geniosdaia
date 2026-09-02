@@ -93,12 +93,15 @@ export default function MeusProdutos() {
   return (
     <AppLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Meus Produtos</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+        <div className="space-y-3">
+          <p className="eyebrow text-primary">Sua conta</p>
+          <h1>Meus Produtos</h1>
+          <p className="max-w-[52ch] text-sm leading-relaxed text-muted-foreground">
             Acesse os produtos que você comprou. Os demais estão disponíveis para aquisição.
           </p>
         </div>
+
+        <div className="rule my-10" />
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {PRODUCTS.map((product) => {

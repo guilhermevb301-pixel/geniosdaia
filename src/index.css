@@ -182,9 +182,9 @@
     letter-spacing: -0.011em;
   }
 
-  /* Títulos de página: serif display, sem itálico (o itálico fica só na marca) */
+  /* Títulos de página: serif display em verde (o itálico fica só na marca) */
   h1 {
-    @apply text-[2.5rem];
+    @apply text-[2.5rem] text-primary;
     font-family: var(--font-display);
     font-weight: 400;
     line-height: 1.05;
