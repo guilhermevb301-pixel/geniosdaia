@@ -3,9 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { CourseProgress } from "@/components/aulas/CourseProgress";
-import { ModuleGrid } from "@/components/aulas/ModuleGrid";
+import { ModuleCarousel } from "@/components/aulas/ModuleCarousel";
 import { useImagePreload } from "@/hooks/useImagePreload";
 import { useUserProducts, type ProductSlug } from "@/hooks/useUserProducts";
+import { getSectionIcon } from "@/lib/sectionIcons";
 
 const BUY_URLS: Record<string, string> = {
   "genios-ia": "https://pay.kiwify.com.br/dZG6AiO",
@@ -173,12 +174,12 @@ export default function Aulas() {
         {/* Modules organized by sections */}
         <div className="space-y-8">
           {isLoading ? (
-            <ModuleGrid modules={[]} isLoading />
+            <ModuleCarousel modules={[]} isLoading />
           ) : (
             <>
               {/* Modules without section first */}
               {modulesWithoutSection.length > 0 && (
-                <ModuleGrid modules={modulesWithoutSection} />
+                <ModuleCarousel modules={modulesWithoutSection} />
               )}
 
               {/* Section groups with their modules */}
@@ -186,7 +187,7 @@ export default function Aulas() {
                 const locked = isSectionLocked(section);
                 const buyUrl = section.product_slug ? BUY_URLS[section.product_slug] : undefined;
                 return (
-                  <div key={section.id} className="space-y-4">
+                  <div key={section.id} className="space-y-3">
                     <div className="flex items-center gap-2">
                       <h2 className={`text-xl font-semibold ${locked ? "text-muted-foreground" : "text-foreground"}`}>
                         {section.title}
@@ -202,7 +203,12 @@ export default function Aulas() {
                         </a>
                       )}
                     </div>
-                    <ModuleGrid modules={sectionModules} locked={locked} buyUrl={buyUrl} />
+                    <ModuleCarousel
+                      modules={sectionModules}
+                      locked={locked}
+                      buyUrl={buyUrl}
+                      sectionIconUrl={getSectionIcon(section.product_slug)}
+                    />
                   </div>
                 );
               })}

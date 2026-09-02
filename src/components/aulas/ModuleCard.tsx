@@ -11,6 +11,7 @@ interface ModuleCardProps {
   title: string;
   description?: string | null;
   coverImageUrl?: string | null;
+  sectionIconUrl?: string | null;
   completedLessons: number;
   totalLessons: number;
   orderIndex: number;
@@ -24,6 +25,7 @@ export function ModuleCard({
   title,
   description,
   coverImageUrl,
+  sectionIconUrl,
   completedLessons,
   totalLessons,
   orderIndex,
@@ -40,65 +42,77 @@ export function ModuleCard({
   };
 
   const cardContent = (
-    <Card className={`group overflow-hidden transition-all duration-300 h-full ${locked ? "cursor-pointer opacity-70" : "hover:scale-[1.02] hover:shadow-lg cursor-pointer"}`}>
+    <Card className={`group overflow-hidden transition-all duration-300 h-full ${locked ? "cursor-pointer opacity-70" : "hover:-translate-y-0.5 cursor-pointer"}`}>
       <div className="relative">
-        <AspectRatio ratio={3 / 4}>
+        <AspectRatio ratio={1}>
           {coverImageUrl ? (
             <ImageWithSkeleton
               src={coverImageUrl}
               alt={title}
               className={`transition-transform duration-300 ${locked ? "grayscale" : "group-hover:scale-105"}`}
               containerClassName="h-full w-full"
-              fallbackIcon={<BookOpen className="h-12 w-12 text-primary/40" />}
-              optimizedWidth={500}
+              fallbackIcon={
+                sectionIconUrl ? (
+                  <img src={sectionIconUrl} alt={title} className="h-full w-full object-cover" />
+                ) : (
+                  <BookOpen className="h-8 w-8 text-primary/40" />
+                )
+              }
+              optimizedWidth={300}
               optimizedQuality={80}
               priority={priority}
             />
+          ) : sectionIconUrl ? (
+            <img
+              src={sectionIconUrl}
+              alt={title}
+              className={`h-full w-full object-cover transition-transform duration-300 ${locked ? "grayscale" : "group-hover:scale-105"}`}
+            />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
-              <BookOpen className="h-12 w-12 text-primary/40" />
+              <BookOpen className="h-8 w-8 text-primary/40" />
             </div>
           )}
         </AspectRatio>
 
         {locked && (
-          <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2">
-            <div className="rounded-full bg-muted p-3">
-              <Lock className="h-5 w-5 text-muted-foreground" />
+          <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] flex flex-col items-center justify-center gap-1.5">
+            <div className="rounded-full bg-muted p-2">
+              <Lock className="h-4 w-4 text-muted-foreground" />
             </div>
-            <span className="text-xs font-semibold text-muted-foreground">Bloqueado</span>
+            <span className="text-[10px] font-semibold text-muted-foreground">Bloqueado</span>
           </div>
         )}
 
         {!locked && isCompleted && (
-          <Badge className="absolute right-2 top-2 bg-primary hover:bg-primary/90">
+          <Badge className="absolute right-1.5 top-1.5 bg-primary hover:bg-primary/90 text-[10px] px-1.5 py-0">
             <CheckCircle2 className="mr-1 h-3 w-3" />
             Completo
           </Badge>
         )}
 
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background/80 to-transparent p-3">
-          <span className="text-xs font-medium text-muted-foreground">
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background/80 to-transparent p-2">
+          <span className="text-[10px] font-medium text-muted-foreground">
             Módulo {orderIndex + 1}
           </span>
         </div>
       </div>
 
-      <CardContent className="p-4 space-y-3">
+      <CardContent className="p-3 space-y-2">
         <div>
-          <h3 className={`font-semibold line-clamp-2 transition-colors ${locked ? "text-muted-foreground" : "text-foreground group-hover:text-primary"}`}>
+          <h3 className={`text-sm font-semibold line-clamp-2 transition-colors ${locked ? "text-muted-foreground" : "text-foreground group-hover:text-primary"}`}>
             {title}
           </h3>
           {description && (
-            <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+            <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
               {description}
             </p>
           )}
         </div>
 
         {!locked && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground">
                 {completedLessons}/{totalLessons} aulas
               </span>
@@ -106,7 +120,7 @@ export function ModuleCard({
                 {Math.round(progressPercent)}%
               </span>
             </div>
-            <Progress value={progressPercent} className="h-2" />
+            <Progress value={progressPercent} className="h-1.5" />
           </div>
         )}
       </CardContent>

@@ -38,11 +38,14 @@ export default function Login() {
     <div className="min-h-screen flex">
       {/* Left Side - Decorative */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-background">
-        <img 
-          src={loginHero} 
-          alt="Gênios da IA" 
-          className="absolute inset-0 w-full h-full object-cover object-center"
+        <img
+          src={loginHero}
+          alt="Gênios da IA"
+          className="absolute inset-0 w-full h-full object-cover object-center [filter:grayscale(1)_contrast(1.1)_brightness(0.85)]"
         />
+        {/* Emerald duotone tint */}
+        <div className="absolute inset-0 bg-primary mix-blend-color" />
+        <div className="absolute inset-0 bg-background/25" />
         {/* Overlay gradient */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent to-background/30" />
       </div>

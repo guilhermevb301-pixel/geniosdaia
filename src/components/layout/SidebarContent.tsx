@@ -98,7 +98,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           className={cn(
             "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
             isActive("/")
-              ? "bg-accent text-accent-foreground"
+              ? "bg-primary/10 text-primary border border-primary/20"
               : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
           )}
         >
@@ -114,7 +114,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           className={cn(
             "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
             isActive("/aulas")
-              ? "bg-accent text-accent-foreground"
+              ? "bg-primary/10 text-primary border border-primary/20"
               : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
           )}
         >
@@ -130,7 +130,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           className={cn(
             "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
             isActive("/templates")
-              ? "bg-accent text-accent-foreground"
+              ? "bg-primary/10 text-primary border border-primary/20"
               : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
           )}
         >
@@ -146,7 +146,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           className={cn(
             "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
             isPromptsSection
-              ? "bg-accent text-accent-foreground"
+              ? "bg-primary/10 text-primary border border-primary/20"
               : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
           )}
         >
@@ -179,7 +179,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
                 isActive(item.href)
-                  ? "bg-accent text-accent-foreground"
+                  ? "bg-primary/10 text-primary border border-primary/20"
                   : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
               )}
             >
@@ -199,7 +199,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           className={cn(
             "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
             isActive("/certificados")
-              ? "bg-accent text-accent-foreground"
+              ? "bg-primary/10 text-primary border border-primary/20"
               : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
           )}
         >
@@ -213,7 +213,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           className={cn(
             "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
             isActive("/meu-caderno")
-              ? "bg-accent text-accent-foreground"
+              ? "bg-primary/10 text-primary border border-primary/20"
               : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
           )}
         >
@@ -228,7 +228,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           className={cn(
             "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
             isActive("/mentoria")
-              ? "bg-accent text-accent-foreground"
+              ? "bg-primary/10 text-primary border border-primary/20"
               : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
           )}
         >
@@ -244,7 +244,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
             className={cn(
               "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
               isActive("/minha-mentoria")
-                ? "bg-accent text-accent-foreground"
+                ? "bg-primary/10 text-primary border border-primary/20"
                 : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
             )}
           >
@@ -262,7 +262,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                   className={cn(
                     "flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                     isAdminSection
-                      ? "bg-primary/10 text-primary"
+                      ? "bg-primary/10 text-primary border border-primary/20"
                       : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
                   )}
                 >
@@ -289,7 +289,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                         className={cn(
                           "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                           isActive("/admin/modules")
-                            ? "text-primary bg-primary/10"
+                            ? "text-primary bg-primary/10 border border-primary/20"
                             : "text-sidebar-foreground/90 hover:text-sidebar-foreground hover:bg-muted"
                         )}
                       >
@@ -302,7 +302,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                         className={cn(
                           "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                           isActive("/admin/lessons")
-                            ? "text-primary bg-primary/10"
+                            ? "text-primary bg-primary/10 border border-primary/20"
                             : "text-sidebar-foreground/90 hover:text-sidebar-foreground hover:bg-muted"
                         )}
                       >
@@ -315,7 +315,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                         className={cn(
                           "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                           isActive("/admin/prompts")
-                            ? "text-primary bg-primary/10"
+                            ? "text-primary bg-primary/10 border border-primary/20"
                             : "text-sidebar-foreground/90 hover:text-sidebar-foreground hover:bg-muted"
                         )}
                       >
@@ -328,7 +328,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                         className={cn(
                           "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                           isActive("/admin/templates")
-                            ? "text-primary bg-primary/10"
+                            ? "text-primary bg-primary/10 border border-primary/20"
                             : "text-sidebar-foreground/90 hover:text-sidebar-foreground hover:bg-muted"
                         )}
                       >
@@ -341,7 +341,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                         className={cn(
                           "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                           isActive("/admin/gpts")
-                            ? "text-primary bg-primary/10"
+                            ? "text-primary bg-primary/10 border border-primary/20"
                             : "text-sidebar-foreground/90 hover:text-sidebar-foreground hover:bg-muted"
                         )}
                       >
@@ -358,7 +358,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                     className={cn(
                       "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                       isActive("/admin/users")
-                        ? "text-primary bg-primary/10"
+                        ? "text-primary bg-primary/10 border border-primary/20"
                         : "text-sidebar-foreground/90 hover:text-sidebar-foreground hover:bg-muted"
                     )}
                   >
@@ -371,7 +371,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                     className={cn(
                       "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                       isActive("/admin/mentees")
-                        ? "text-primary bg-primary/10"
+                        ? "text-primary bg-primary/10 border border-primary/20"
                         : "text-sidebar-foreground/90 hover:text-sidebar-foreground hover:bg-muted"
                     )}
                   >
@@ -384,7 +384,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                     className={cn(
                       "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                       isActive("/admin/challenges")
-                        ? "text-primary bg-primary/10"
+                        ? "text-primary bg-primary/10 border border-primary/20"
                         : "text-sidebar-foreground/90 hover:text-sidebar-foreground hover:bg-muted"
                     )}
                   >
@@ -397,7 +397,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                     className={cn(
                       "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                       isActive("/admin/banners")
-                        ? "text-primary bg-primary/10"
+                        ? "text-primary bg-primary/10 border border-primary/20"
                         : "text-sidebar-foreground/90 hover:text-sidebar-foreground hover:bg-muted"
                     )}
                   >
@@ -410,7 +410,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                     className={cn(
                       "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                       isActive("/admin/appearance")
-                        ? "text-primary bg-primary/10"
+                        ? "text-primary bg-primary/10 border border-primary/20"
                         : "text-sidebar-foreground/90 hover:text-sidebar-foreground hover:bg-muted"
                     )}
                   >
