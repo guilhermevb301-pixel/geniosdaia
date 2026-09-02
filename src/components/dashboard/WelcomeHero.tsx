@@ -40,21 +40,21 @@ export function WelcomeHero() {
 
   return (
     <section className="relative overflow-hidden rounded-lg border border-primary/20 bg-card">
-      {/* Foto à direita, com fade para o fundo do card */}
-      <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 sm:block">
+      {/* Retrato à direita: mostrado por inteiro, sem cortar o rosto */}
+      <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[38%] items-end justify-end sm:flex">
         <img
           src={guiHero}
           alt=""
           aria-hidden="true"
-          className="h-full w-full object-cover object-[70%_18%]"
+          className="h-full max-h-full w-auto object-contain object-bottom"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-card via-card/60 to-card/10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-card via-card/50 to-transparent" />
       </div>
 
       {/* Brilho verde sutil atrás do texto */}
       <div className="pointer-events-none absolute -left-24 top-1/2 h-64 w-64 -translate-y-1/2 rounded-full bg-primary/10 blur-3xl" />
 
-      <div className="relative flex flex-col gap-5 p-6 sm:max-w-[62%] md:p-8">
+      <div className="relative flex min-h-[260px] flex-col justify-center gap-5 p-6 sm:max-w-[62%] md:p-8">
         <div className="space-y-1.5">
           <p className="text-xs font-medium uppercase tracking-widest text-primary">
             {greeting()}

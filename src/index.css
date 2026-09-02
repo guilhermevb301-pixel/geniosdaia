@@ -1,53 +1,53 @@
 /* Fontes self-hosted (evita o CSS bloqueante do Google Fonts) */
 @font-face {
-  font-family: 'Poppins';
+  font-family: 'Inter';
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/fonts/poppins-400.woff2') format('woff2');
+  src: url('/fonts/inter-400.woff2') format('woff2');
 }
 @font-face {
-  font-family: 'Poppins';
+  font-family: 'Inter';
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url('/fonts/poppins-500.woff2') format('woff2');
+  src: url('/fonts/inter-500.woff2') format('woff2');
 }
 @font-face {
-  font-family: 'Poppins';
+  font-family: 'Inter';
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url('/fonts/poppins-600.woff2') format('woff2');
+  src: url('/fonts/inter-600.woff2') format('woff2');
 }
 @font-face {
-  font-family: 'Poppins';
+  font-family: 'Inter';
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url('/fonts/poppins-700.woff2') format('woff2');
+  src: url('/fonts/inter-700.woff2') format('woff2');
 }
 @font-face {
-  font-family: 'Instrument Serif';
+  font-family: 'Playfair Display';
   font-style: normal;
-  font-weight: 400;
+  font-weight: 400 700;
   font-display: swap;
-  src: url('/fonts/instrument-serif.woff2') format('woff2');
+  src: url('/fonts/playfair.woff2') format('woff2');
 }
 @font-face {
-  font-family: 'Instrument Serif';
+  font-family: 'Playfair Display';
   font-style: italic;
-  font-weight: 400;
+  font-weight: 400 700;
   font-display: swap;
-  src: url('/fonts/instrument-serif-italic.woff2') format('woff2');
+  src: url('/fonts/playfair-italic.woff2') format('woff2');
 }
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Gênios da IA - Dark Theme Design System */
-/* Typography: Poppins */
+/* RealFrame IA - Dark Theme Design System */
+/* Typography: Playfair Display (display) + Inter (corpo) */
 
 @layer base {
   :root {
@@ -118,8 +118,8 @@
     --gradient-login: linear-gradient(135deg, hsl(156 40% 6%) 0%, hsl(156 90% 26%) 50%, hsl(150 95% 48%) 100%);
 
     /* Fonts */
-    --font-sans: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --font-display: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-display: 'Playfair Display', 'Iowan Old Style', Georgia, serif;
     --font-mono: 'SF Mono', 'Fira Code', monospace;
   }
 
@@ -175,27 +175,29 @@
   }
 
   body {
-    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    font-family: var(--font-sans) !important;
     @apply bg-background text-foreground antialiased;
     font-weight: 400;
     line-height: 1.25;
     letter-spacing: -0.011em;
   }
 
-  /* Títulos - serif display, seguindo a identidade editorial */
+  /* Títulos - serif display em itálico, seguindo a identidade editorial */
   h1 {
     @apply text-3xl;
     font-family: var(--font-display);
-    font-weight: 400;
-    line-height: 1.1;
+    font-style: italic;
+    font-weight: 500;
+    line-height: 1.15;
     letter-spacing: -0.01em;
   }
 
   h2 {
     @apply text-2xl;
     font-family: var(--font-display);
-    font-weight: 400;
-    line-height: 1.15;
+    font-style: italic;
+    font-weight: 500;
+    line-height: 1.2;
     letter-spacing: -0.005em;
   }
 
@@ -274,9 +276,11 @@
     border-color: hsl(var(--primary) / 0.4);
   }
 
-  /* Tipografia editorial */
+  /* Tipografia editorial: serif em itálico, como na referência */
   .font-display {
     font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 500;
   }
 
   /* Rótulo pequeno em caixa alta, bem espaçado (ex.: "BIBLIOTECA", "MÓDULO 01") */
