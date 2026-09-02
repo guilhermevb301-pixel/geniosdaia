@@ -1,7 +1,5 @@
 import { Link } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { BookOpen, CheckCircle2, Lock } from "lucide-react";
 import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton";
@@ -42,23 +40,28 @@ export function ModuleCard({
   };
 
   const cardContent = (
-    <Card className={`group overflow-hidden transition-all duration-300 h-full ${locked ? "cursor-pointer opacity-70" : "hover:-translate-y-0.5 cursor-pointer"}`}>
-      <div className="relative">
-        <AspectRatio ratio={1}>
+    <article className="group/card flex h-full flex-col">
+      {/* Capa */}
+      <div className="relative overflow-hidden rounded-lg border border-border transition-colors duration-300 group-hover/card:border-primary/40">
+        <AspectRatio ratio={4 / 3}>
           {coverImageUrl ? (
             <ImageWithSkeleton
               src={coverImageUrl}
               alt={title}
-              className={`transition-transform duration-500 ${locked ? "grayscale" : "group-hover:scale-105"}`}
+              className={`transition-all duration-500 ${
+                locked
+                  ? "grayscale"
+                  : "[filter:grayscale(0.92)_contrast(1.12)_brightness(0.6)] group-hover/card:scale-[1.03] group-hover/card:[filter:grayscale(0.15)_contrast(1.05)_brightness(0.95)]"
+              }`}
               containerClassName="h-full w-full"
               fallbackIcon={
                 sectionIconUrl ? (
                   <img src={sectionIconUrl} alt={title} className="h-full w-full object-cover" />
                 ) : (
-                  <BookOpen className="h-8 w-8 text-primary/40" />
+                  <BookOpen className="h-7 w-7 text-muted-foreground/40" />
                 )
               }
-              optimizedWidth={300}
+              optimizedWidth={400}
               optimizedQuality={80}
               priority={priority}
             />
@@ -66,84 +69,74 @@ export function ModuleCard({
             <img
               src={sectionIconUrl}
               alt={title}
-              className={`h-full w-full object-cover transition-transform duration-300 ${locked ? "grayscale" : "group-hover:scale-105"}`}
+              className={`h-full w-full object-cover transition-transform duration-500 ${
+                locked ? "grayscale" : "group-hover/card:scale-[1.03]"
+              }`}
             />
           ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5">
-              <BookOpen className="h-8 w-8 text-primary/40" />
+            <div className="flex h-full w-full items-center justify-center bg-muted">
+              <BookOpen className="h-7 w-7 text-muted-foreground/40" />
             </div>
           )}
         </AspectRatio>
 
-        {/* Vinheta escura + leve tint verde só nas bordas, mantendo a foto natural */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
-        <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100 bg-gradient-to-t from-primary/25 via-transparent to-transparent" />
+        {/* Número do módulo, discreto no canto */}
+        <span className="pointer-events-none absolute bottom-2.5 left-3 font-display text-[15px] leading-none tracking-wide text-white/75 drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]">
+          {String(orderIndex + 1).padStart(2, "0")}
+        </span>
 
         {locked && (
-          <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] flex flex-col items-center justify-center gap-1.5">
-            <div className="rounded-full bg-muted p-2">
-              <Lock className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <span className="text-[10px] font-semibold text-muted-foreground">Bloqueado</span>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-background/70 backdrop-blur-[1px]">
+            <Lock className="h-4 w-4 text-muted-foreground" />
+            <span className="eyebrow text-muted-foreground">Bloqueado</span>
           </div>
         )}
 
         {!locked && isCompleted && (
-          <Badge className="absolute right-1.5 top-1.5 bg-primary hover:bg-primary/90 text-[10px] px-1.5 py-0">
-            <CheckCircle2 className="mr-1 h-3 w-3" />
+          <span className="absolute right-2.5 top-2.5 flex items-center gap-1 rounded-full bg-background/85 px-2 py-0.5 text-[10px] font-medium text-primary backdrop-blur-sm">
+            <CheckCircle2 className="h-3 w-3" />
             Completo
-          </Badge>
+          </span>
         )}
-
-        {/* Número grande em marca d'água, como na referência editorial */}
-        <span
-          className="pointer-events-none absolute right-2 top-0 font-display text-4xl leading-none text-white/20 drop-shadow-[0_1px_8px_rgba(0,0,0,0.8)]"
-          aria-hidden="true"
-        >
-          {String(orderIndex + 1).padStart(2, "0")}
-        </span>
-
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-card to-transparent" />
       </div>
 
-      <CardContent className="p-3 space-y-2">
-        <div className="space-y-1">
-          <p className={`eyebrow ${locked ? "text-muted-foreground/70" : "text-primary"}`}>
-            Módulo {String(orderIndex + 1).padStart(2, "0")}
+      {/* Texto */}
+      <div className="flex flex-1 flex-col pt-3.5">
+        <h3
+          className={`mb-1 line-clamp-2 transition-colors ${
+            locked ? "text-muted-foreground" : "text-foreground group-hover/card:text-primary"
+          }`}
+        >
+          {title}
+        </h3>
+        {description && (
+          <p className="mb-3 line-clamp-2 text-[12.5px] leading-relaxed text-muted-foreground">
+            {description}
           </p>
-          <h3
-            className={`font-display text-lg leading-tight line-clamp-2 transition-colors ${
-              locked ? "text-muted-foreground" : "text-foreground group-hover:text-primary"
-            }`}
-          >
-            {title}
-          </h3>
-          {description && (
-            <p className="text-xs text-muted-foreground line-clamp-1">
-              {description}
-            </p>
-          )}
-        </div>
+        )}
 
         {!locked && (
-          <div className="flex items-center gap-2 text-[11px]">
-            <span className="flex shrink-0 items-center gap-1 text-muted-foreground">
-              <BookOpen className="h-3 w-3" />
-              {totalLessons} aulas
-            </span>
-            <Progress value={progressPercent} className="h-1 flex-1" />
-            <span className="shrink-0 font-medium tabular-nums text-primary">
-              {Math.round(progressPercent)}%
-            </span>
+          <div className="mt-auto flex items-center gap-3 pt-1 text-[11.5px] text-muted-foreground/80">
+            <span className="shrink-0">{totalLessons} aulas</span>
+            <Progress value={progressPercent} className="h-[2px] flex-1" />
+            <span className="shrink-0 tabular-nums">{Math.round(progressPercent)}%</span>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </article>
   );
 
   if (locked) {
-    return <div onClick={handleLockedClick}>{cardContent}</div>;
+    return (
+      <div onClick={handleLockedClick} className="h-full cursor-pointer">
+        {cardContent}
+      </div>
+    );
   }
 
-  return <Link to={`/aulas/${id}`}>{cardContent}</Link>;
+  return (
+    <Link to={`/aulas/${id}`} className="block h-full">
+      {cardContent}
+    </Link>
+  );
 }

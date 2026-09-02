@@ -36,7 +36,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getPrefetchHandler } from "@/lib/prefetchRoutes";
 
 const NAV_ITEM_BASE =
-  "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 mb-1 before:absolute before:left-0 before:top-1/2 before:h-0 before:w-[3px] before:-translate-y-1/2 before:rounded-full before:bg-primary before:transition-all before:duration-300";
+  "relative flex items-center gap-3 rounded-md px-2 py-2.5 text-[14px] transition-colors duration-200 before:absolute before:-left-3 before:top-1/2 before:h-0 before:w-[2px] before:-translate-y-1/2 before:rounded-full before:bg-primary before:transition-all before:duration-300";
 
 const tools = [
   { label: "Meus GPTs", href: "/meus-gpts", icon: MessageSquare },
@@ -77,20 +77,17 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
   return (
     <div className="flex h-full flex-col bg-sidebar">
       {/* Logo */}
-      <div className="flex h-20 items-center gap-3 border-b border-sidebar-border px-5">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl gradient-primary shadow-glow-sm">
-          <Sparkles className="h-6 w-6 text-primary-foreground" />
-        </div>
-        <div className="flex min-w-0 flex-col">
-          <span className="font-display text-2xl leading-none text-sidebar-foreground">
-            RealFrame <span className="text-primary [font-size:inherit]">IA</span>
-          </span>
-          <span className="eyebrow mt-1 text-muted-foreground">Área de membros</span>
-        </div>
+      <div className="px-6 pb-7 pt-8">
+        <span className="block font-display text-[2rem] leading-none text-sidebar-foreground">
+          RealFrame{" "}
+          <span className="text-primary [font-size:inherit] [font-style:italic]">IA</span>
+        </span>
+        <span className="eyebrow mt-2.5 block text-muted-foreground">Área de membros</span>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4">
+      <nav className="flex-1 overflow-y-auto px-5 pb-4">
+        <p className="eyebrow mb-3 px-2 text-muted-foreground/70">Conteúdo</p>
         {/* Dashboard */}
         <Link
           to="/"
@@ -99,8 +96,8 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           className={cn(
             NAV_ITEM_BASE,
             isActive("/")
-              ? "bg-primary/10 text-primary before:h-5"
-              : "text-sidebar-foreground/90 hover:bg-primary/5 hover:text-primary hover:before:h-3"
+              ? "text-foreground before:h-5 [&>svg]:text-primary"
+              : "text-muted-foreground hover:text-foreground"
           )}
         >
           <Layout className={"h-5 w-5 shrink-0"} />
@@ -115,8 +112,8 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           className={cn(
             NAV_ITEM_BASE,
             isActive("/aulas")
-              ? "bg-primary/10 text-primary before:h-5"
-              : "text-sidebar-foreground/90 hover:bg-primary/5 hover:text-primary hover:before:h-3"
+              ? "text-foreground before:h-5 [&>svg]:text-primary"
+              : "text-muted-foreground hover:text-foreground"
           )}
         >
           <BookOpen className={"h-5 w-5 shrink-0"} />
@@ -131,8 +128,8 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           className={cn(
             NAV_ITEM_BASE,
             isActive("/templates")
-              ? "bg-primary/10 text-primary before:h-5"
-              : "text-sidebar-foreground/90 hover:bg-primary/5 hover:text-primary hover:before:h-3"
+              ? "text-foreground before:h-5 [&>svg]:text-primary"
+              : "text-muted-foreground hover:text-foreground"
           )}
         >
           <Zap className={"h-5 w-5 shrink-0"} />
@@ -147,8 +144,8 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           className={cn(
             NAV_ITEM_BASE,
             isPromptsSection
-              ? "bg-primary/10 text-primary before:h-5"
-              : "text-sidebar-foreground/90 hover:bg-primary/5 hover:text-primary hover:before:h-3"
+              ? "text-foreground before:h-5 [&>svg]:text-primary"
+              : "text-muted-foreground hover:text-foreground"
           )}
         >
           <Lightbulb className={"h-5 w-5 shrink-0"} />
@@ -162,12 +159,12 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
             return (
               <div
                 key={item.href}
-                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium mb-1 opacity-40 cursor-not-allowed select-none"
+                className="flex cursor-not-allowed select-none items-center gap-3 rounded-md px-2 py-2.5 text-[14px] text-muted-foreground/45"
                 title="Em breve"
               >
-                <item.icon className="h-5 w-5 text-sidebar-foreground/50" />
-                <span>{item.label}</span>
-                <Lock className="h-3.5 w-3.5 ml-auto text-sidebar-foreground/50" />
+                <item.icon className="h-5 w-5 shrink-0" />
+                <span className="[font-size:inherit]">{item.label}</span>
+                <Lock className="ml-auto h-3.5 w-3.5" />
               </div>
             );
           }
@@ -180,8 +177,8 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
               className={cn(
                 NAV_ITEM_BASE,
                 isActive(item.href)
-                  ? "bg-primary/10 text-primary before:h-5"
-                  : "text-sidebar-foreground/90 hover:bg-primary/5 hover:text-primary hover:before:h-3"
+                  ? "text-foreground before:h-5 [&>svg]:text-primary"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               <item.icon className={"h-5 w-5 shrink-0"} />
@@ -190,8 +187,8 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           );
         })}
 
-        {/* Spacer */}
-        <div className="my-4 border-t border-sidebar-border" />
+        {/* Bloco pessoal */}
+        <p className="eyebrow mb-3 mt-8 px-2 text-muted-foreground/70">Você</p>
 
         {/* Personal Section */}
         <Link
@@ -200,8 +197,8 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           className={cn(
             NAV_ITEM_BASE,
             isActive("/certificados")
-              ? "bg-primary/10 text-primary before:h-5"
-              : "text-sidebar-foreground/90 hover:bg-primary/5 hover:text-primary hover:before:h-3"
+              ? "text-foreground before:h-5 [&>svg]:text-primary"
+              : "text-muted-foreground hover:text-foreground"
           )}
         >
           <Award className={"h-5 w-5 shrink-0"} />
@@ -214,8 +211,8 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           className={cn(
             NAV_ITEM_BASE,
             isActive("/meu-caderno")
-              ? "bg-primary/10 text-primary before:h-5"
-              : "text-sidebar-foreground/90 hover:bg-primary/5 hover:text-primary hover:before:h-3"
+              ? "text-foreground before:h-5 [&>svg]:text-primary"
+              : "text-muted-foreground hover:text-foreground"
           )}
         >
           <NotebookPen className={"h-5 w-5 shrink-0"} />
@@ -229,8 +226,8 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           className={cn(
             NAV_ITEM_BASE,
             isActive("/mentoria")
-              ? "bg-primary/10 text-primary before:h-5"
-              : "text-sidebar-foreground/90 hover:bg-primary/5 hover:text-primary hover:before:h-3"
+              ? "text-foreground before:h-5 [&>svg]:text-primary"
+              : "text-muted-foreground hover:text-foreground"
           )}
         >
           <MessageSquare className={"h-5 w-5 shrink-0"} />
@@ -245,8 +242,8 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
             className={cn(
               NAV_ITEM_BASE,
               isActive("/minha-mentoria")
-                ? "bg-primary/10 text-primary before:h-5"
-                : "text-sidebar-foreground/90 hover:bg-primary/5 hover:text-primary hover:before:h-3"
+                ? "text-foreground before:h-5 [&>svg]:text-primary"
+                : "text-muted-foreground hover:text-foreground"
             )}
           >
             <GraduationCap className={"h-5 w-5 shrink-0"} />
@@ -263,8 +260,8 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                   className={cn(
                     "flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                     isAdminSection
-                      ? "bg-primary/10 text-primary before:h-5"
-                      : "text-sidebar-foreground/90 hover:bg-primary/5 hover:text-primary hover:before:h-3"
+                      ? "text-foreground before:h-5 [&>svg]:text-primary"
+                      : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   <div className="flex items-center gap-3">
@@ -425,26 +422,19 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
         )}
       </nav>
 
-      {/* Footer - Support Widget */}
-      <div className="border-t border-sidebar-border p-3">
-        <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-          <div>
-            <h4 className="font-medium text-sm text-foreground">Precisa de Ajuda?</h4>
-            <p className="text-xs text-muted-foreground mt-1">
-              Entre em contato com nosso suporte
-            </p>
-          </div>
-          <a
-            href="https://wa.me/5571981939047?text=Ol%C3%A1!%20Preciso%20de%20ajuda%20com%20a%20plataforma%20G%C3%AAnios%20da%20IA."
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={handleClick}
-            className="flex items-center justify-center gap-2 w-full rounded-lg bg-success hover:bg-success/90 text-success-foreground py-2.5 text-sm font-medium transition-colors"
-          >
-            <MessageCircle className="h-4 w-4" />
-            Falar no WhatsApp
-          </a>
-        </div>
+      {/* Footer - Suporte */}
+      <div className="px-5 pb-7 pt-4">
+        <div className="rule mb-4" />
+        <a
+          href="https://wa.me/5571981939047?text=Ol%C3%A1!%20Preciso%20de%20ajuda%20com%20a%20plataforma%20RealFrame%20IA."
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={handleClick}
+          className="flex items-center gap-3 rounded-md px-2 py-2 text-[13px] text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <MessageCircle className="h-4 w-4 shrink-0" />
+          Falar com o suporte
+        </a>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { Bell, Search, User, LogOut, BookOpen, Menu } from "lucide-react";
+import { Bell, Search, User, LogOut, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -33,7 +33,7 @@ export function TopBar({ onMenuClick, showMenu }: TopBarProps) {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background/80 backdrop-blur-sm px-4 md:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/85 px-5 backdrop-blur-md sm:px-8 md:px-12 lg:px-14">
       {/* Mobile Menu Button + Search */}
       <div className="flex items-center gap-2 flex-1 max-w-md">
         {showMenu && (
@@ -46,7 +46,7 @@ export function TopBar({ onMenuClick, showMenu }: TopBarProps) {
           <Input
             type="search"
             placeholder="Buscar aulas, templates..."
-            className="pl-9 bg-muted border-0 focus-visible:ring-1"
+            className="border-border bg-transparent pl-9 text-[13px] focus-visible:ring-1"
           />
         </div>
       </div>
@@ -76,14 +76,6 @@ export function TopBar({ onMenuClick, showMenu }: TopBarProps) {
             <StreakCounter streak={currentStreak} size="sm" />
           )}
         </div>
-
-        {/* Área de Membros Button */}
-        <Button asChild variant="accent" size="sm">
-          <Link to="/aulas">
-            <BookOpen className="h-4 w-4 mr-2" />
-            Área de Membros
-          </Link>
-        </Button>
 
         <Button variant="ghost" size="icon" className="relative" aria-label="Notificações">
           <Bell className="h-5 w-5" />

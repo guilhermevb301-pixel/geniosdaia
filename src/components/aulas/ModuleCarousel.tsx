@@ -39,12 +39,12 @@ interface ModuleCarouselProps {
 }
 
 const ITEM_BASIS =
-  "basis-[42%] sm:basis-[30%] md:basis-[22%] lg:basis-[17%] xl:basis-[14%]";
+  "basis-[62%] sm:basis-[42%] md:basis-[30%] lg:basis-[24%] xl:basis-[20%]";
 
 export function ModuleCarousel({ modules, isLoading, locked = false, buyUrl, sectionIconUrl }: ModuleCarouselProps) {
   if (isLoading) {
     return (
-      <div className="flex gap-3 overflow-hidden">
+      <div className="flex gap-6 overflow-hidden">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className={`${ITEM_BASIS} shrink-0`}>
             <ModuleCardSkeleton />
@@ -63,9 +63,9 @@ export function ModuleCarousel({ modules, isLoading, locked = false, buyUrl, sec
       opts={{ align: "start", dragFree: true }}
       className="group/carousel px-1"
     >
-      <CarouselContent className="-ml-3">
+      <CarouselContent className="-ml-6">
         {modules.map((module, index) => (
-          <CarouselItem key={module.id} className={`pl-3 ${ITEM_BASIS}`}>
+          <CarouselItem key={module.id} className={`pl-6 ${ITEM_BASIS}`}>
             <ModuleCard
               id={module.id}
               title={module.title}

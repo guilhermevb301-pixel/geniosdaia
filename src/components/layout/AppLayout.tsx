@@ -22,18 +22,18 @@ export function AppLayout({ children }: AppLayoutProps) {
       {/* Mobile: Sheet sidebar */}
       {isMobile && (
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-          <SheetContent side="left" className="p-0 w-64">
+          <SheetContent side="left" className="w-[272px] p-0">
             <SidebarContent onNavigate={() => setSidebarOpen(false)} />
           </SheetContent>
         </Sheet>
       )}
 
-      <div className={cn(!isMobile && "pl-64")}>
-        <TopBar 
-          onMenuClick={() => setSidebarOpen(true)} 
-          showMenu={isMobile} 
+      <div className={cn(!isMobile && "pl-[272px]")}>
+        <TopBar
+          onMenuClick={() => setSidebarOpen(true)}
+          showMenu={isMobile}
         />
-        <main className="p-3 sm:p-4 md:p-6">{children}</main>
+        <main className="px-5 pb-20 pt-8 sm:px-8 md:px-12 md:pt-12 lg:px-14">{children}</main>
       </div>
     </div>
   );

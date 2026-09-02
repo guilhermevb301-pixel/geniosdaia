@@ -156,15 +156,17 @@ export default function Aulas() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
+      <div>
         {/* Header */}
-        <div className="space-y-1">
+        <div className="space-y-3">
           <p className="eyebrow text-primary">Biblioteca</p>
           <h1>Aulas</h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="max-w-[52ch] text-sm leading-relaxed text-muted-foreground">
             Tudo que você precisa para colocar IA pra trabalhar no seu negócio.
           </p>
         </div>
+
+        <div className="rule my-10" />
 
         {/* Progress Bar */}
         <CourseProgress
@@ -173,7 +175,7 @@ export default function Aulas() {
         />
 
         {/* Modules organized by sections */}
-        <div className="space-y-8">
+        <div className="mt-12 space-y-14">
           {isLoading ? (
             <ModuleCarousel modules={[]} isLoading />
           ) : (
@@ -188,11 +190,11 @@ export default function Aulas() {
                 const locked = isSectionLocked(section);
                 const buyUrl = section.product_slug ? BUY_URLS[section.product_slug] : undefined;
                 return (
-                  <div key={section.id} className="space-y-3">
+                  <div key={section.id} className="space-y-5">
                     <div className="flex items-center gap-3">
                       <h2
-                        className={`eyebrow !text-[11px] ${
-                          locked ? "text-muted-foreground" : "text-primary"
+                        className={`eyebrow ${
+                          locked ? "text-muted-foreground/60" : "text-muted-foreground"
                         }`}
                       >
                         {section.title.trim()}

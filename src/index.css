@@ -28,18 +28,18 @@
   src: url('/fonts/inter-700.woff2') format('woff2');
 }
 @font-face {
-  font-family: 'Playfair Display';
+  font-family: 'Instrument Serif';
   font-style: normal;
-  font-weight: 400 700;
+  font-weight: 400;
   font-display: swap;
-  src: url('/fonts/playfair.woff2') format('woff2');
+  src: url('/fonts/instrument-serif.woff2') format('woff2');
 }
 @font-face {
-  font-family: 'Playfair Display';
+  font-family: 'Instrument Serif';
   font-style: italic;
-  font-weight: 400 700;
+  font-weight: 400;
   font-display: swap;
-  src: url('/fonts/playfair-italic.woff2') format('woff2');
+  src: url('/fonts/instrument-serif-italic.woff2') format('woff2');
 }
 
 @tailwind base;
@@ -51,32 +51,32 @@
 
 @layer base {
   :root {
-    /* Dark Theme as Default */
-    --background: 160 12% 4%;
-    --foreground: 0 0% 98%;
+    /* Dark editorial — direção B */
+    --background: 120 4% 4%;
+    --foreground: 45 12% 94%;
 
-    --card: 160 12% 7%;
-    --card-foreground: 0 0% 98%;
+    --card: 100 4% 7%;
+    --card-foreground: 45 12% 94%;
 
-    --popover: 160 12% 8%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 100 4% 8%;
+    --popover-foreground: 45 12% 94%;
 
-    /* Primary: Emerald green */
-    --primary: 152 95% 45%;
-    --primary-foreground: 156 30% 5%;
-    --primary-glow: 150 100% 58%;
+    /* Primary: emerald sóbrio (#34d399) */
+    --primary: 160 64% 52%;
+    --primary-foreground: 150 30% 6%;
+    --primary-glow: 160 70% 60%;
 
-    /* Secondary: Muted */
-    --secondary: 160 12% 13%;
-    --secondary-foreground: 0 0% 98%;
+    /* Secondary */
+    --secondary: 100 4% 13%;
+    --secondary-foreground: 45 12% 94%;
 
     /* Muted */
-    --muted: 160 12% 11%;
-    --muted-foreground: 158 8% 60%;
+    --muted: 100 4% 11%;
+    --muted-foreground: 90 3% 60%;
 
-    /* Accent: Brighter green (hover / secondary emphasis) */
-    --accent: 150 95% 58%;
-    --accent-foreground: 156 30% 5%;
+    /* Accent */
+    --accent: 160 64% 52%;
+    --accent-foreground: 150 30% 6%;
 
     /* Success */
     --success: 160 100% 38%;
@@ -90,36 +90,36 @@
     --warning: 45 100% 61%;
     --warning-foreground: 220 16% 7%;
 
-    --border: 158 14% 14%;
-    --input: 160 12% 12%;
-    --ring: 152 95% 45%;
+    --border: 100 5% 15%;
+    --input: 100 4% 12%;
+    --ring: 160 64% 52%;
 
-    --radius: 0.875rem;
+    --radius: 0.625rem;
 
     /* Sidebar */
-    --sidebar-background: 160 12% 5%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 152 95% 45%;
-    --sidebar-primary-foreground: 156 30% 5%;
-    --sidebar-accent: 152 95% 45%;
-    --sidebar-accent-foreground: 156 30% 5%;
-    --sidebar-border: 158 14% 12%;
-    --sidebar-ring: 152 95% 45%;
+    --sidebar-background: 120 4% 4%;
+    --sidebar-foreground: 45 12% 94%;
+    --sidebar-primary: 160 64% 52%;
+    --sidebar-primary-foreground: 150 30% 6%;
+    --sidebar-accent: 160 64% 52%;
+    --sidebar-accent-foreground: 150 30% 6%;
+    --sidebar-border: 100 5% 14%;
+    --sidebar-ring: 160 64% 52%;
 
     /* Charts */
-    --chart-1: 152 95% 45%;
-    --chart-2: 150 90% 65%;
+    --chart-1: 160 64% 52%;
+    --chart-2: 160 50% 68%;
     --chart-3: 160 100% 38%;
     --chart-4: 0 84% 60%;
-    --chart-5: 152 12% 55%;
+    --chart-5: 90 3% 55%;
 
     /* Custom gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(156 90% 32%) 0%, hsl(150 95% 55%) 100%);
-    --gradient-login: linear-gradient(135deg, hsl(156 40% 6%) 0%, hsl(156 90% 26%) 50%, hsl(150 95% 48%) 100%);
+    --gradient-primary: linear-gradient(145deg, hsl(160 64% 52%) 0%, hsl(162 70% 26%) 100%);
+    --gradient-login: linear-gradient(135deg, hsl(150 20% 6%) 0%, hsl(162 60% 20%) 55%, hsl(160 64% 45%) 100%);
 
     /* Fonts */
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    --font-display: 'Playfair Display', 'Iowan Old Style', Georgia, serif;
+    --font-display: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
     --font-mono: 'SF Mono', 'Fira Code', monospace;
   }
 
@@ -182,31 +182,29 @@
     letter-spacing: -0.011em;
   }
 
-  /* Títulos - serif display em itálico, seguindo a identidade editorial */
+  /* Títulos de página: serif display, sem itálico (o itálico fica só na marca) */
   h1 {
-    @apply text-3xl;
+    @apply text-[2.5rem];
     font-family: var(--font-display);
-    font-style: italic;
-    font-weight: 500;
-    line-height: 1.15;
+    font-weight: 400;
+    line-height: 1.05;
     letter-spacing: -0.01em;
   }
 
   h2 {
-    @apply text-2xl;
+    @apply text-3xl;
     font-family: var(--font-display);
-    font-style: italic;
-    font-weight: 500;
-    line-height: 1.2;
-    letter-spacing: -0.005em;
+    font-weight: 400;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
   }
 
-  /* Subtítulos - font-weight: 500 */
+  /* Títulos de item (card, seção interna): sans, não serif */
   h3 {
-    @apply text-lg;
+    @apply text-base;
     font-weight: 500;
-    line-height: 1.25;
-    letter-spacing: -0.014em;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
   }
 
   h4 {
@@ -255,32 +253,27 @@
     background-clip: text;
   }
 
-  /* Emerald glow accents */
+  /* Elevação discreta: sombra suave, sem glow neon */
   .shadow-glow-ambient {
-    box-shadow:
-      inset 0 1px 0 hsl(var(--primary) / 0.06),
-      0 0 24px -8px hsl(var(--primary-glow) / 0.12);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.4);
   }
 
   .shadow-glow-sm {
-    box-shadow:
-      inset 0 1px 0 hsl(var(--primary) / 0.1),
-      0 0 24px hsl(var(--primary-glow) / 0.2);
+    box-shadow: 0 6px 20px -8px rgb(0 0 0 / 0.7);
   }
 
   .shadow-glow {
-    box-shadow: 0 0 28px hsl(var(--primary-glow) / 0.22);
+    box-shadow: 0 10px 32px -12px rgb(0 0 0 / 0.8);
   }
 
   .border-glow {
     border-color: hsl(var(--primary) / 0.4);
   }
 
-  /* Tipografia editorial: serif em itálico, como na referência */
+  /* Serif display — só marca e títulos de página */
   .font-display {
     font-family: var(--font-display);
-    font-style: italic;
-    font-weight: 500;
+    font-weight: 400;
   }
 
   /* Rótulo pequeno em caixa alta, bem espaçado (ex.: "BIBLIOTECA", "MÓDULO 01") */
@@ -288,9 +281,15 @@
     font-family: var(--font-sans);
     font-size: 0.625rem;
     font-weight: 600;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.2em;
     text-transform: uppercase;
     line-height: 1.2;
+  }
+
+  /* Régua fina de separação entre blocos */
+  .rule {
+    height: 1px;
+    background: hsl(var(--border));
   }
 
   /* Confetti animation */
