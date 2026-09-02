@@ -51,7 +51,7 @@ export function ModuleCard({
               className={`transition-all duration-500 ${
                 locked
                   ? "grayscale"
-                  : "[filter:grayscale(0.92)_contrast(1.12)_brightness(0.6)] group-hover/card:scale-[1.03] group-hover/card:[filter:grayscale(0.15)_contrast(1.05)_brightness(0.95)]"
+                  : "[filter:brightness(0.88)_saturate(0.95)] group-hover/card:scale-[1.03] group-hover/card:[filter:brightness(1)_saturate(1.05)]"
               }`}
               containerClassName="h-full w-full"
               fallbackIcon={
