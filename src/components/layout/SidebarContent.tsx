@@ -77,13 +77,15 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
   return (
     <div className="flex h-full flex-col bg-sidebar">
       {/* Logo */}
-      <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-6">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-primary">
-          <Sparkles className="h-5 w-5 text-primary-foreground" />
+      <div className="flex h-20 items-center gap-3 border-b border-sidebar-border px-5">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl gradient-primary shadow-glow-sm">
+          <Sparkles className="h-6 w-6 text-primary-foreground" />
         </div>
-        <div className="flex flex-col">
-          <span className="text-sm font-semibold text-sidebar-foreground">Gênios da IA</span>
-          <span className="text-xs text-muted-foreground">Plataforma de Automação</span>
+        <div className="flex min-w-0 flex-col">
+          <span className="font-display text-2xl leading-none text-sidebar-foreground">
+            RealFrame <span className="text-primary [font-size:inherit]">IA</span>
+          </span>
+          <span className="eyebrow mt-1 text-muted-foreground">Área de membros</span>
         </div>
       </div>
 

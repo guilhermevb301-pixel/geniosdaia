@@ -158,10 +158,11 @@ export default function Aulas() {
     <AppLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-semibold">Aulas</h1>
+        <div className="space-y-1">
+          <p className="eyebrow text-primary">Biblioteca</p>
+          <h1>Aulas</h1>
           <p className="text-sm text-muted-foreground">
-            Seu curso de automação com n8n
+            Tudo que você precisa para colocar IA pra trabalhar no seu negócio.
           </p>
         </div>
 
@@ -188,10 +189,15 @@ export default function Aulas() {
                 const buyUrl = section.product_slug ? BUY_URLS[section.product_slug] : undefined;
                 return (
                   <div key={section.id} className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <h2 className={`text-xl font-semibold ${locked ? "text-muted-foreground" : "text-foreground"}`}>
-                        {section.title}
+                    <div className="flex items-center gap-3">
+                      <h2
+                        className={`eyebrow !text-[11px] ${
+                          locked ? "text-muted-foreground" : "text-primary"
+                        }`}
+                      >
+                        {section.title.trim()}
                       </h2>
+                      <span className="h-px flex-1 bg-border" />
                       {locked && buyUrl && (
                         <a
                           href={buyUrl}

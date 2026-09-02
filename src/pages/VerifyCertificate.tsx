@@ -38,7 +38,7 @@ export default function VerifyCertificate() {
           <div className="flex items-center justify-center gap-2 mb-6">
             <Award className="h-6 w-6 text-primary" />
             <span className="text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Gênios da IA
+              RealFrame IA
             </span>
           </div>
 
@@ -53,7 +53,7 @@ export default function VerifyCertificate() {
               </h1>
               
               <p className="text-muted-foreground mb-6">
-                Este certificado é autêntico e foi emitido pela plataforma Gênios da IA.
+                Este certificado é autêntico e foi emitido pela plataforma RealFrame IA.
               </p>
 
               <div className="bg-muted/50 rounded-lg p-4 text-left space-y-3">

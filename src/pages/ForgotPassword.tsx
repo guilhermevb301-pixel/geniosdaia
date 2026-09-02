@@ -42,7 +42,7 @@ export default function ForgotPassword() {
           <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-primary">
             <Sparkles className="h-6 w-6 text-primary-foreground" />
           </div>
-          <span className="text-xl font-semibold text-foreground">Gênios da IA</span>
+          <span className="font-display text-2xl text-foreground">RealFrame IA</span>
         </div>
 
         {sent ? (
@@ -50,7 +50,7 @@ export default function ForgotPassword() {
             <div className="mx-auto h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
               <Mail className="h-8 w-8 text-primary" />
             </div>
-            <h1 className="text-2xl font-semibold text-foreground">Email enviado!</h1>
+            <h1 className="text-foreground">Email enviado!</h1>
             <p className="text-sm text-muted-foreground">
               Enviamos um link de recuperação para <strong>{email}</strong>.
               Verifique sua caixa de entrada e spam.
@@ -65,7 +65,7 @@ export default function ForgotPassword() {
         ) : (
           <>
             <div className="space-y-2">
-              <h1 className="text-2xl font-semibold text-foreground">Recuperar senha</h1>
+              <h1 className="text-foreground">Recuperar senha</h1>
               <p className="text-sm text-muted-foreground">
                 Digite seu email e enviaremos um link para redefinir sua senha.
               </p>

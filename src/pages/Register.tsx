@@ -125,12 +125,12 @@ export default function Register() {
             <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-primary">
               <Sparkles className="h-6 w-6 text-primary-foreground" />
             </div>
-            <span className="text-xl font-semibold text-foreground">Gênios da IA</span>
+            <span className="font-display text-2xl text-foreground">RealFrame IA</span>
           </div>
 
           {/* Header */}
           <div className="space-y-2">
-            <h1 className="text-2xl font-semibold text-foreground">Criar conta</h1>
+            <h1 className="text-foreground">Criar conta</h1>
             <p className="text-sm text-muted-foreground">
               Preencha os dados para se cadastrar
             </p>

@@ -80,7 +80,8 @@ export default {
 			sm: 'calc(var(--radius) - 4px)'
 		},
 		fontFamily: {
-			sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+			sans: ['Poppins', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+			display: ['Instrument Serif', 'Iowan Old Style', 'Georgia', 'serif'],
 			mono: ['Fira Code', 'ui-monospace', 'monospace']
 		},
 		keyframes: {

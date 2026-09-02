@@ -24,7 +24,7 @@ function CertificatePreview({ certificate }: { certificate: Certificate }) {
         <div className="flex items-center justify-center gap-2">
           <Award className="h-8 w-8 text-primary" />
           <span className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            Gênios da IA
+            RealFrame IA
           </span>
         </div>
 
@@ -74,7 +74,7 @@ function CertificateModal({
   const verificationUrl = `${window.location.origin}/certificado/${certificate.certificate_code}`;
 
   const handleShare = async () => {
-    const text = `Acabei de concluir o módulo "${certificate.module_title}" na plataforma Gênios da IA! 🎉\n\nVerifique meu certificado: ${verificationUrl}`;
+    const text = `Acabei de concluir o módulo "${certificate.module_title}" na plataforma RealFrame IA! 🎉\n\nVerifique meu certificado: ${verificationUrl}`;
     
     if (navigator.share) {
       try {

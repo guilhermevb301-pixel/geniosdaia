@@ -95,10 +95,10 @@ export function ModuleCard({
           </Badge>
         )}
 
+        {/* Número grande em marca d'água, como na referência editorial */}
         <span
-          className={`absolute left-2 top-1.5 text-sm font-bold tabular-nums drop-shadow-[0_1px_6px_rgba(0,0,0,0.9)] ${
-            locked ? "text-muted-foreground" : "text-primary"
-          }`}
+          className="pointer-events-none absolute right-2 top-0 font-display text-4xl leading-none text-white/20 drop-shadow-[0_1px_8px_rgba(0,0,0,0.8)]"
+          aria-hidden="true"
         >
           {String(orderIndex + 1).padStart(2, "0")}
         </span>
@@ -107,12 +107,19 @@ export function ModuleCard({
       </div>
 
       <CardContent className="p-3 space-y-2">
-        <div>
-          <h3 className={`text-sm font-semibold line-clamp-2 transition-colors ${locked ? "text-muted-foreground" : "text-foreground group-hover:text-primary"}`}>
+        <div className="space-y-1">
+          <p className={`eyebrow ${locked ? "text-muted-foreground/70" : "text-primary"}`}>
+            Módulo {String(orderIndex + 1).padStart(2, "0")}
+          </p>
+          <h3
+            className={`font-display text-lg leading-tight line-clamp-2 transition-colors ${
+              locked ? "text-muted-foreground" : "text-foreground group-hover:text-primary"
+            }`}
+          >
             {title}
           </h3>
           {description && (
-            <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+            <p className="text-xs text-muted-foreground line-clamp-1">
               {description}
             </p>
           )}

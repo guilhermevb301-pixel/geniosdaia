@@ -46,9 +46,9 @@ export function WelcomeHero() {
           src={guiHero}
           alt=""
           aria-hidden="true"
-          className="h-full w-full object-cover object-[center_20%]"
+          className="h-full w-full object-cover object-[70%_18%]"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-card via-card/70 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-card via-card/60 to-card/10" />
       </div>
 
       {/* Brilho verde sutil atrás do texto */}
