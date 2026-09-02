@@ -34,7 +34,7 @@ const defaultFormData: BannerFormData = {
   title: "Banner",
   subtitle: null,
   image_url: "",
-  gradient: "from-primary to-purple-600",
+  gradient: "from-primary to-emerald-900",
   button_text: null,
   button_url: "",
   order_index: 0,
@@ -144,7 +144,7 @@ export default function AdminBanners() {
       title: banner.title || "Banner",
       subtitle: null,
       image_url: banner.image_url || "",
-      gradient: banner.gradient || "from-primary to-purple-600",
+      gradient: banner.gradient || "from-primary to-emerald-900",
       button_text: null,
       button_url: banner.button_url,
       order_index: banner.order_index,
@@ -471,7 +471,7 @@ export default function AdminBanners() {
                   id="gradient"
                   value={formData.gradient || ""}
                   onChange={(e) => setFormData({ ...formData, gradient: e.target.value })}
-                  placeholder="from-primary to-purple-600"
+                  placeholder="from-primary to-emerald-900"
                 />
               </div>
 

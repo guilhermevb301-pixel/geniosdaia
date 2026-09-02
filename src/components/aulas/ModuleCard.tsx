@@ -49,7 +49,7 @@ export function ModuleCard({
             <ImageWithSkeleton
               src={coverImageUrl}
               alt={title}
-              className={`transition-transform duration-300 ${locked ? "grayscale" : "group-hover:scale-105"}`}
+              className={`transition-transform duration-500 ${locked ? "grayscale" : "group-hover:scale-105"}`}
               containerClassName="h-full w-full"
               fallbackIcon={
                 sectionIconUrl ? (
@@ -75,6 +75,10 @@ export function ModuleCard({
           )}
         </AspectRatio>
 
+        {/* Vinheta escura + leve tint verde só nas bordas, mantendo a foto natural */}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
+        <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100 bg-gradient-to-t from-primary/25 via-transparent to-transparent" />
+
         {locked && (
           <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] flex flex-col items-center justify-center gap-1.5">
             <div className="rounded-full bg-muted p-2">
@@ -91,11 +95,15 @@ export function ModuleCard({
           </Badge>
         )}
 
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background/80 to-transparent p-2">
-          <span className="text-[10px] font-medium text-muted-foreground">
-            Módulo {orderIndex + 1}
-          </span>
-        </div>
+        <span
+          className={`absolute left-2 top-1.5 text-sm font-bold tabular-nums drop-shadow-[0_1px_6px_rgba(0,0,0,0.9)] ${
+            locked ? "text-muted-foreground" : "text-primary"
+          }`}
+        >
+          {String(orderIndex + 1).padStart(2, "0")}
+        </span>
+
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-card to-transparent" />
       </div>
 
       <CardContent className="p-3 space-y-2">
@@ -111,16 +119,15 @@ export function ModuleCard({
         </div>
 
         {!locked && (
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">
-                {completedLessons}/{totalLessons} aulas
-              </span>
-              <span className="font-medium text-primary">
-                {Math.round(progressPercent)}%
-              </span>
-            </div>
-            <Progress value={progressPercent} className="h-1.5" />
+          <div className="flex items-center gap-2 text-[11px]">
+            <span className="flex shrink-0 items-center gap-1 text-muted-foreground">
+              <BookOpen className="h-3 w-3" />
+              {totalLessons} aulas
+            </span>
+            <Progress value={progressPercent} className="h-1 flex-1" />
+            <span className="shrink-0 font-medium tabular-nums text-primary">
+              {Math.round(progressPercent)}%
+            </span>
           </div>
         )}
       </CardContent>

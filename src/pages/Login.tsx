@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Sparkles } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import loginHero from "@/assets/login-hero.png";
+import loginHero from "@/assets/gui-hero.jpg";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -41,11 +41,10 @@ export default function Login() {
         <img
           src={loginHero}
           alt="Gênios da IA"
-          className="absolute inset-0 w-full h-full object-cover object-center [filter:grayscale(1)_contrast(1.1)_brightness(0.85)]"
+          className="absolute inset-0 w-full h-full object-cover object-center"
         />
-        {/* Emerald duotone tint */}
-        <div className="absolute inset-0 bg-primary mix-blend-color" />
-        <div className="absolute inset-0 bg-background/25" />
+        {/* Fade suave para o formulário */}
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-background/60" />
         {/* Overlay gradient */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent to-background/30" />
       </div>

@@ -82,7 +82,7 @@ export function AnnouncementCarousel() {
               {/* Container with responsive height via CSS variables */}
               <div className="w-full h-[var(--h-mobile)] sm:h-[var(--h-tablet)] md:h-[var(--h-laptop)] lg:h-[var(--h-desktop)]">
                 {/* Gradient fallback always visible behind image */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${banner.gradient || 'from-primary to-purple-600'}`} />
+                <div className={`absolute inset-0 bg-gradient-to-br ${banner.gradient || 'from-primary to-emerald-900'}`} />
                 
                 {/* Image with skeleton loading */}
                 {banner.image_url ? (

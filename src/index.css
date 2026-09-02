@@ -8,31 +8,31 @@
 @layer base {
   :root {
     /* Dark Theme as Default */
-    --background: 150 8% 4%;
+    --background: 160 12% 4%;
     --foreground: 0 0% 98%;
 
-    --card: 150 12% 7%;
+    --card: 160 12% 7%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 150 12% 7%;
+    --popover: 160 12% 8%;
     --popover-foreground: 0 0% 98%;
 
     /* Primary: Emerald green */
-    --primary: 158 84% 45%;
-    --primary-foreground: 150 20% 6%;
-    --primary-glow: 158 100% 58%;
+    --primary: 152 95% 45%;
+    --primary-foreground: 156 30% 5%;
+    --primary-glow: 150 100% 58%;
 
     /* Secondary: Muted */
-    --secondary: 150 10% 14%;
+    --secondary: 160 12% 13%;
     --secondary-foreground: 0 0% 98%;
 
     /* Muted */
-    --muted: 150 10% 12%;
-    --muted-foreground: 150 6% 55%;
+    --muted: 160 12% 11%;
+    --muted-foreground: 158 8% 60%;
 
     /* Accent: Brighter green (hover / secondary emphasis) */
-    --accent: 152 90% 55%;
-    --accent-foreground: 150 20% 6%;
+    --accent: 150 95% 58%;
+    --accent-foreground: 156 30% 5%;
 
     /* Success */
     --success: 160 100% 38%;
@@ -46,32 +46,32 @@
     --warning: 45 100% 61%;
     --warning-foreground: 220 16% 7%;
 
-    --border: 150 14% 15%;
-    --input: 150 10% 12%;
-    --ring: 158 84% 45%;
+    --border: 158 14% 14%;
+    --input: 160 12% 12%;
+    --ring: 152 95% 45%;
 
     --radius: 0.875rem;
 
     /* Sidebar */
-    --sidebar-background: 150 12% 5%;
+    --sidebar-background: 160 12% 5%;
     --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 158 84% 45%;
-    --sidebar-primary-foreground: 150 20% 6%;
-    --sidebar-accent: 158 84% 45%;
-    --sidebar-accent-foreground: 150 20% 6%;
-    --sidebar-border: 150 14% 13%;
-    --sidebar-ring: 158 84% 45%;
+    --sidebar-primary: 152 95% 45%;
+    --sidebar-primary-foreground: 156 30% 5%;
+    --sidebar-accent: 152 95% 45%;
+    --sidebar-accent-foreground: 156 30% 5%;
+    --sidebar-border: 158 14% 12%;
+    --sidebar-ring: 152 95% 45%;
 
     /* Charts */
-    --chart-1: 158 84% 45%;
-    --chart-2: 152 90% 65%;
+    --chart-1: 152 95% 45%;
+    --chart-2: 150 90% 65%;
     --chart-3: 160 100% 38%;
     --chart-4: 0 84% 60%;
-    --chart-5: 150 6% 55%;
+    --chart-5: 152 12% 55%;
 
     /* Custom gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(158 84% 40%) 0%, hsl(152 90% 55%) 100%);
-    --gradient-login: linear-gradient(135deg, hsl(150 20% 8%) 0%, hsl(158 84% 30%) 50%, hsl(152 90% 50%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(156 90% 32%) 0%, hsl(150 95% 55%) 100%);
+    --gradient-login: linear-gradient(135deg, hsl(156 40% 6%) 0%, hsl(156 90% 26%) 50%, hsl(150 95% 48%) 100%);
 
     /* Fonts - Poppins */
     --font-sans: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -207,8 +207,16 @@
   }
 
   /* Emerald glow accents */
+  .shadow-glow-ambient {
+    box-shadow:
+      inset 0 1px 0 hsl(var(--primary) / 0.06),
+      0 0 24px -8px hsl(var(--primary-glow) / 0.12);
+  }
+
   .shadow-glow-sm {
-    box-shadow: 0 0 16px hsl(var(--primary-glow) / 0.16);
+    box-shadow:
+      inset 0 1px 0 hsl(var(--primary) / 0.1),
+      0 0 24px hsl(var(--primary-glow) / 0.2);
   }
 
   .shadow-glow {

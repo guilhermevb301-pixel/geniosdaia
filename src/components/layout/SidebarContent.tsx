@@ -31,10 +31,12 @@ import {
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useIsMentor } from "@/hooks/useIsMentor";
 import { useIsMentee } from "@/hooks/useIsMentee";
-import { useSidebarSettings } from "@/hooks/useSidebarSettings";
 import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getPrefetchHandler } from "@/lib/prefetchRoutes";
+
+const NAV_ITEM_BASE =
+  "relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 mb-1 before:absolute before:left-0 before:top-1/2 before:h-0 before:w-[3px] before:-translate-y-1/2 before:rounded-full before:bg-primary before:transition-all before:duration-300";
 
 const tools = [
   { label: "Meus GPTs", href: "/meus-gpts", icon: MessageSquare },
@@ -53,11 +55,8 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
   const { isAdmin } = useIsAdmin();
   const { isMentor } = useIsMentor();
   const { isMentee } = useIsMentee();
-  const { iconColor } = useSidebarSettings();
   const [adminOpen, setAdminOpen] = useState(true);
 
-  // Dynamic icon color class
-  const iconColorClass = `text-${iconColor}`;
 
   const isActive = (href: string) => location.pathname === href;
   const isAdminSection = location.pathname.startsWith("/admin");
@@ -96,13 +95,13 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           onClick={handleClick}
           onMouseEnter={() => handlePrefetch("/")}
           className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
+            NAV_ITEM_BASE,
             isActive("/")
-              ? "bg-primary/10 text-primary border border-primary/20"
-              : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
+              ? "bg-primary/10 text-primary before:h-5"
+              : "text-sidebar-foreground/90 hover:bg-primary/5 hover:text-primary hover:before:h-3"
           )}
         >
-          <Layout className={cn("h-5 w-5", iconColorClass)} />
+          <Layout className={"h-5 w-5 shrink-0"} />
           Dashboard
         </Link>
 
@@ -112,13 +111,13 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           onClick={handleClick}
           onMouseEnter={() => handlePrefetch("/aulas")}
           className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
+            NAV_ITEM_BASE,
             isActive("/aulas")
-              ? "bg-primary/10 text-primary border border-primary/20"
-              : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
+              ? "bg-primary/10 text-primary before:h-5"
+              : "text-sidebar-foreground/90 hover:bg-primary/5 hover:text-primary hover:before:h-3"
           )}
         >
-          <BookOpen className={cn("h-5 w-5", iconColorClass)} />
+          <BookOpen className={"h-5 w-5 shrink-0"} />
           Aulas
         </Link>
 
@@ -128,13 +127,13 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           onClick={handleClick}
           onMouseEnter={() => handlePrefetch("/templates")}
           className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
+            NAV_ITEM_BASE,
             isActive("/templates")
-              ? "bg-primary/10 text-primary border border-primary/20"
-              : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
+              ? "bg-primary/10 text-primary before:h-5"
+              : "text-sidebar-foreground/90 hover:bg-primary/5 hover:text-primary hover:before:h-3"
           )}
         >
-          <Zap className={cn("h-5 w-5", iconColorClass)} />
+          <Zap className={"h-5 w-5 shrink-0"} />
           Templates
         </Link>
 
@@ -144,13 +143,13 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           onClick={handleClick}
           onMouseEnter={() => handlePrefetch("/prompts")}
           className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
+            NAV_ITEM_BASE,
             isPromptsSection
-              ? "bg-primary/10 text-primary border border-primary/20"
-              : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
+              ? "bg-primary/10 text-primary before:h-5"
+              : "text-sidebar-foreground/90 hover:bg-primary/5 hover:text-primary hover:before:h-3"
           )}
         >
-          <Lightbulb className={cn("h-5 w-5", iconColorClass)} />
+          <Lightbulb className={"h-5 w-5 shrink-0"} />
           Banco de Prompts
         </Link>
 
@@ -177,13 +176,13 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
               onClick={handleClick}
               onMouseEnter={() => handlePrefetch(item.href)}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
+                NAV_ITEM_BASE,
                 isActive(item.href)
-                  ? "bg-primary/10 text-primary border border-primary/20"
-                  : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
+                  ? "bg-primary/10 text-primary before:h-5"
+                  : "text-sidebar-foreground/90 hover:bg-primary/5 hover:text-primary hover:before:h-3"
               )}
             >
-              <item.icon className={cn("h-5 w-5", iconColorClass)} />
+              <item.icon className={"h-5 w-5 shrink-0"} />
               {item.label}
             </Link>
           );
@@ -197,13 +196,13 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           to="/certificados"
           onClick={handleClick}
           className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
+            NAV_ITEM_BASE,
             isActive("/certificados")
-              ? "bg-primary/10 text-primary border border-primary/20"
-              : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
+              ? "bg-primary/10 text-primary before:h-5"
+              : "text-sidebar-foreground/90 hover:bg-primary/5 hover:text-primary hover:before:h-3"
           )}
         >
-          <Award className={cn("h-5 w-5", iconColorClass)} />
+          <Award className={"h-5 w-5 shrink-0"} />
           Certificados
         </Link>
 
@@ -211,13 +210,13 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           to="/meu-caderno"
           onClick={handleClick}
           className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
+            NAV_ITEM_BASE,
             isActive("/meu-caderno")
-              ? "bg-primary/10 text-primary border border-primary/20"
-              : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
+              ? "bg-primary/10 text-primary before:h-5"
+              : "text-sidebar-foreground/90 hover:bg-primary/5 hover:text-primary hover:before:h-3"
           )}
         >
-          <NotebookPen className={cn("h-5 w-5", iconColorClass)} />
+          <NotebookPen className={"h-5 w-5 shrink-0"} />
           Meu Caderno
         </Link>
 
@@ -226,13 +225,13 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           to="/mentoria"
           onClick={handleClick}
           className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
+            NAV_ITEM_BASE,
             isActive("/mentoria")
-              ? "bg-primary/10 text-primary border border-primary/20"
-              : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
+              ? "bg-primary/10 text-primary before:h-5"
+              : "text-sidebar-foreground/90 hover:bg-primary/5 hover:text-primary hover:before:h-3"
           )}
         >
-          <MessageSquare className={cn("h-5 w-5", iconColorClass)} />
+          <MessageSquare className={"h-5 w-5 shrink-0"} />
           Aplicar Mentoria
         </Link>
 
@@ -242,13 +241,13 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
             to="/minha-mentoria"
             onClick={handleClick}
             className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors mb-1",
+              NAV_ITEM_BASE,
               isActive("/minha-mentoria")
-                ? "bg-primary/10 text-primary border border-primary/20"
-                : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
+                ? "bg-primary/10 text-primary before:h-5"
+                : "text-sidebar-foreground/90 hover:bg-primary/5 hover:text-primary hover:before:h-3"
             )}
           >
-            <GraduationCap className={cn("h-5 w-5", iconColorClass)} />
+            <GraduationCap className={"h-5 w-5 shrink-0"} />
             Minha Mentoria
           </Link>
         )}
@@ -262,8 +261,8 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                   className={cn(
                     "flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                     isAdminSection
-                      ? "bg-primary/10 text-primary border border-primary/20"
-                      : "text-sidebar-foreground/95 hover:bg-muted hover:text-sidebar-foreground"
+                      ? "bg-primary/10 text-primary before:h-5"
+                      : "text-sidebar-foreground/90 hover:bg-primary/5 hover:text-primary hover:before:h-3"
                   )}
                 >
                   <div className="flex items-center gap-3">

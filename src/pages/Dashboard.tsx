@@ -1,5 +1,6 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AnnouncementCarousel } from "@/components/dashboard/AnnouncementCarousel";
+import { WelcomeHero } from "@/components/dashboard/WelcomeHero";
 import { StatsCards } from "@/components/dashboard/StatsCards";
 import { ContinueLearning } from "@/components/dashboard/ContinueLearning";
 import { RankingLists } from "@/components/dashboard/RankingLists";
@@ -21,6 +22,9 @@ export default function Dashboard() {
   );
   useImagePreload(bannerImages, { width: 1200 });
 
+  // Só mostra o carrossel de anúncios quando há banner com conteúdo de verdade
+  const hasBanners = banners.some((b) => b.image_url || b.title?.trim() || b.subtitle?.trim());
+
   // Log daily activity on dashboard load
   useEffect(() => {
     logActivity();
@@ -29,8 +33,14 @@ export default function Dashboard() {
   return (
     <AppLayout>
       <div className="space-y-6 md:space-y-8">
-        {/* Carousel de Anúncios */}
-        <AnnouncementCarousel />
+        {/* Boas-vindas + CTA principal */}
+        <WelcomeHero />
+
+        {/* Continuar de Onde Parou */}
+        <ContinueLearning />
+
+        {/* Cards de Estatísticas */}
+        <StatsCards />
 
         {/* Gamification Row - Evolution + Challenge */}
         <div className="grid gap-4 md:grid-cols-2">
@@ -38,11 +48,8 @@ export default function Dashboard() {
           <WeeklyChallengeCard />
         </div>
 
-        {/* Cards de Estatísticas */}
-        <StatsCards />
-
-        {/* Continuar de Onde Parou */}
-        <ContinueLearning />
+        {/* Anúncios (só aparecem quando há banner com conteúdo) */}
+        {hasBanners && <AnnouncementCarousel />}
 
         {/* Rankings */}
         <RankingLists />
