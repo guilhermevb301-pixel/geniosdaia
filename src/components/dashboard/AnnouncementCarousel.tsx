@@ -83,7 +83,7 @@ export function AnnouncementCarousel() {
               <div className="w-full h-[var(--h-mobile)] sm:h-[var(--h-tablet)] md:h-[var(--h-laptop)] lg:h-[var(--h-desktop)]">
                 {/* Gradient fallback always visible behind image */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${banner.gradient || 'from-primary to-emerald-900'}`} />
-                
+
                 {/* Image with skeleton loading */}
                 {banner.image_url ? (
                   <ImageWithSkeleton
@@ -96,6 +96,30 @@ export function AnnouncementCarousel() {
                     priority={true} // Banners are always above-the-fold
                   />
                 ) : null}
+
+                {/* Escurece a base para o texto ficar legível */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+
+                {/* Título e subtítulo do banner */}
+                {(banner.title || banner.subtitle) && (
+                  <div className="absolute inset-x-0 bottom-0 p-4">
+                    {banner.title && (
+                      <p className="text-[15px] font-semibold leading-tight text-white drop-shadow">
+                        {banner.title}
+                      </p>
+                    )}
+                    {banner.subtitle && (
+                      <p className="mt-0.5 text-[13px] leading-snug text-white/85 drop-shadow">
+                        {banner.subtitle}
+                      </p>
+                    )}
+                    {banner.button_text && (
+                      <span className="mt-2 inline-block text-[11px] font-medium text-white/90 underline underline-offset-2">
+                        {banner.button_text}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           );

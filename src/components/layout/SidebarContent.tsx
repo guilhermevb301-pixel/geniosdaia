@@ -34,6 +34,7 @@ import { useIsMentee } from "@/hooks/useIsMentee";
 import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getPrefetchHandler } from "@/lib/prefetchRoutes";
+import { SidebarUserFooter } from "./SidebarUserFooter";
 
 const NAV_ITEM_BASE =
   "relative flex items-center gap-3 rounded-md px-2 py-2.5 text-[14px] transition-colors duration-200 before:absolute before:-left-3 before:top-1/2 before:h-0 before:w-[2px] before:-translate-y-1/2 before:rounded-full before:bg-primary before:transition-all before:duration-300";
@@ -87,7 +88,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-5 pb-4">
-        <p className="eyebrow mb-3 px-2 text-muted-foreground/70">Conteúdo</p>
+        <p className="eyebrow mb-3 px-2 text-muted-foreground">Conteúdo</p>
         {/* Dashboard */}
         <Link
           to="/"
@@ -188,7 +189,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
         })}
 
         {/* Bloco pessoal */}
-        <p className="eyebrow mb-3 mt-8 px-2 text-muted-foreground/70">Você</p>
+        <p className="eyebrow mb-3 mt-8 px-2 text-muted-foreground">Você</p>
 
         {/* Personal Section */}
         <Link
@@ -420,22 +421,25 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
             </Collapsible>
           </div>
         )}
-      </nav>
 
-      {/* Footer - Suporte */}
-      <div className="px-5 pb-7 pt-4">
-        <div className="rule mb-4" />
+        {/* Comunidade */}
+        <p className="eyebrow mb-3 mt-8 px-2 text-muted-foreground">Comunidade</p>
         <a
-          href="https://wa.me/5571981939047?text=Ol%C3%A1!%20Preciso%20de%20ajuda%20com%20a%20plataforma%20RealFrame%20IA."
+          href="https://wa.me/5571981939047?text=Ol%C3%A1!%20Quero%20entrar%20no%20grupo%20da%20RealFrame%20IA."
           target="_blank"
           rel="noopener noreferrer"
           onClick={handleClick}
-          className="flex items-center gap-3 rounded-md px-2 py-2 text-[13px] text-muted-foreground transition-colors hover:text-foreground"
+          className={cn(
+            NAV_ITEM_BASE,
+            "text-muted-foreground hover:text-foreground [&>svg]:opacity-70 hover:[&>svg]:opacity-100",
+          )}
         >
-          <MessageCircle className="h-4 w-4 shrink-0" />
-          Falar com o suporte
+          <MessageCircle className="h-5 w-5 shrink-0 text-primary" />
+          Entrar no grupo
         </a>
-      </div>
+      </nav>
+
+      <SidebarUserFooter onNavigate={handleClick} />
     </div>
   );
 }

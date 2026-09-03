@@ -1,9 +1,9 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AnnouncementCarousel } from "@/components/dashboard/AnnouncementCarousel";
 import { WelcomeHero } from "@/components/dashboard/WelcomeHero";
-import { ContinueLearning } from "@/components/dashboard/ContinueLearning";
+import { JourneyStrip } from "@/components/dashboard/JourneyStrip";
+import { NextStepCard } from "@/components/dashboard/NextStepCard";
 import { RankingLists } from "@/components/dashboard/RankingLists";
-import { EvolutionCard } from "@/components/dashboard/EvolutionCard";
 import { WeeklyChallengeCard } from "@/components/dashboard/WeeklyChallengeCard";
 import { useUserStreak } from "@/hooks/useUserStreak";
 import { useEffect, useMemo } from "react";
@@ -15,7 +15,7 @@ export default function Dashboard() {
   const { banners } = useDashboardBanners();
 
   // Preload banner images for instant display
-  const bannerImages = useMemo(() => 
+  const bannerImages = useMemo(() =>
     banners.map(b => b.image_url).filter(Boolean),
     [banners]
   );
@@ -31,24 +31,28 @@ export default function Dashboard() {
 
   return (
     <AppLayout>
-      <div className="space-y-6 md:space-y-8">
-        {/* Boas-vindas + CTA principal */}
+      <div className="space-y-6">
+        {/* Boas-vindas */}
         <WelcomeHero />
 
-        {/* Continuar de Onde Parou */}
-        <ContinueLearning />
+        {/* Jornada: nível, streak, XP, aulas concluídas, conquistas */}
+        <JourneyStrip />
 
-        {/* Gamification Row - Evolution + Challenge */}
-        <div className="grid gap-4 md:grid-cols-2">
-          <EvolutionCard />
-          <WeeklyChallengeCard />
-        </div>
+        {/* Seu próximo passo — um único CTA concreto, sem duplicar a listagem de Aulas */}
+        <NextStepCard />
 
         {/* Anúncios (só aparecem quando há banner com conteúdo) */}
         {hasBanners && <AnnouncementCarousel />}
 
-        {/* Rankings */}
-        <RankingLists />
+        {/* Desafio da semana + ranking da comunidade */}
+        <div className="grid items-start gap-5 md:grid-cols-3">
+          <div className="md:col-span-1">
+            <WeeklyChallengeCard />
+          </div>
+          <div className="md:col-span-2">
+            <RankingLists />
+          </div>
+        </div>
       </div>
     </AppLayout>
   );
