@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import {
   BookOpen,
   Layout,
-  Calendar,
+  Radio,
   MessageSquare,
   MessageCircle,
   Sparkles,
@@ -41,7 +41,7 @@ const NAV_ITEM_BASE =
 
 const tools = [
   { label: "Meus GPTs", href: "/meus-gpts", icon: MessageSquare },
-  { label: "Eventos", href: "/eventos", icon: Calendar },
+  { label: "Lives", href: "/eventos", icon: Radio },
   { label: "Desafios", href: "/desafios", icon: Trophy },
 ];
 
@@ -83,7 +83,6 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           RealFrame{" "}
           <span className="text-primary [font-size:inherit] [font-style:italic]">IA</span>
         </span>
-        <span className="eyebrow mt-2.5 block text-muted-foreground">Área de membros</span>
       </div>
 
       {/* Navigation */}

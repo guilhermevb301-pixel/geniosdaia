@@ -3,6 +3,8 @@ import { AnnouncementCarousel } from "@/components/dashboard/AnnouncementCarouse
 import { WelcomeHero } from "@/components/dashboard/WelcomeHero";
 import { JourneyStrip } from "@/components/dashboard/JourneyStrip";
 import { NextStepCard } from "@/components/dashboard/NextStepCard";
+import { NextLiveCard } from "@/components/dashboard/NextLiveCard";
+import { AchievementsStrip } from "@/components/dashboard/AchievementsStrip";
 import { useUserStreak } from "@/hooks/useUserStreak";
 import { useEffect, useMemo } from "react";
 import { useDashboardBanners } from "@/hooks/useDashboardBanners";
@@ -39,8 +41,14 @@ export default function Dashboard() {
         {/* Seu próximo passo — um único CTA concreto, sem duplicar a listagem de Aulas */}
         <NextStepCard />
 
+        {/* Próxima live agendada */}
+        <NextLiveCard />
+
         {/* Anúncios (só aparecem quando há banner com conteúdo) */}
         {hasBanners && <AnnouncementCarousel />}
+
+        {/* Conquistas desbloqueadas */}
+        <AchievementsStrip />
       </div>
     </AppLayout>
   );

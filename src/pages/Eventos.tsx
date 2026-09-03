@@ -3,59 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AppLayout } from "@/components/layout/AppLayout";
-
-const events = [
-  {
-    id: 1,
-    title: "Workshop: n8n do Zero ao Avançado",
-    description: "Aprenda a criar workflows complexos em 2 horas.",
-    date: "23 Jan",
-    time: "18:00",
-    attendees: 45,
-    status: "upcoming",
-    type: "live",
-  },
-  {
-    id: 2,
-    title: "Q&A: Dúvidas sobre Automação com IA",
-    description: "Sessão de perguntas e respostas ao vivo.",
-    date: "25 Jan",
-    time: "19:00",
-    attendees: 32,
-    status: "upcoming",
-    type: "live",
-  },
-  {
-    id: 3,
-    title: "Masterclass: Integrações Avançadas",
-    description: "Técnicas avançadas de integração entre sistemas.",
-    date: "28 Jan",
-    time: "14:00",
-    attendees: 28,
-    status: "upcoming",
-    type: "live",
-  },
-  {
-    id: 4,
-    title: "Meetup: Comunidade Gênios",
-    description: "Encontro mensal da comunidade para networking.",
-    date: "15 Jan",
-    time: "19:00",
-    attendees: 67,
-    status: "recorded",
-    type: "recording",
-  },
-  {
-    id: 5,
-    title: "Workshop: APIs e Webhooks",
-    description: "Como trabalhar com APIs externas no n8n.",
-    date: "10 Jan",
-    time: "18:00",
-    attendees: 89,
-    status: "recorded",
-    type: "recording",
-  },
-];
+import { liveEvents as events } from "@/data/liveEvents";
 
 const statusStyles: Record<string, string> = {
   upcoming: "bg-success/10 text-success border-success/20",
@@ -75,10 +23,10 @@ export default function Eventos() {
       <div className="space-y-6">
         {/* Header */}
         <div className="space-y-3">
-          <p className="eyebrow text-primary">Comunidade</p>
-          <h1>Eventos</h1>
+          <p className="eyebrow text-primary">Agenda</p>
+          <h1>Lives</h1>
           <p className="max-w-[52ch] text-sm leading-relaxed text-muted-foreground">
-            Workshops, lives e encontros da comunidade
+            Marque presença nas próximas transmissões ou assista às gravações.
           </p>
         </div>
 
