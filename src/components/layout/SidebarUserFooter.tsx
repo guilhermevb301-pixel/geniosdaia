@@ -26,13 +26,30 @@ export function SidebarUserFooter({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <div className="border-t border-sidebar-border px-4 py-4">
-      <div className="mb-2.5 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[11px] font-semibold text-primary">
-            {initialsOf(name)}
-          </div>
-          <span className="text-[13px] font-medium leading-tight text-foreground">{name}</span>
+      {!isLoading && (
+        <div className="mb-2 flex items-center justify-between">
+          <span className="eyebrow text-muted-foreground">{levelInfo.name}</span>
+          <span className="text-[11px] tabular-nums text-muted-foreground">
+            {levelInfo.xpInLevel}/{levelInfo.xpForNextLevel} XP
+          </span>
         </div>
+      )}
+
+      <div className="mb-2 flex items-center gap-2.5">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[11px] font-semibold text-primary">
+          {initialsOf(name)}
+        </div>
+        <span className="truncate text-[13px] font-medium text-foreground">{name}</span>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <Link
+          to="/perfil"
+          onClick={onNavigate}
+          className="text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+        >
+          {isLoading ? "Ver perfil" : `Nível ${levelInfo.level} · ver perfil`}
+        </Link>
         <button
           onClick={handleSignOut}
           className="flex shrink-0 items-center gap-1 text-[12px] text-muted-foreground transition-colors hover:text-foreground"
@@ -42,21 +59,6 @@ export function SidebarUserFooter({ onNavigate }: { onNavigate?: () => void }) {
           Sair
         </button>
       </div>
-
-      {!isLoading && (
-        <Link
-          to="/perfil"
-          onClick={onNavigate}
-          className="flex items-center justify-between text-[11px] text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <span>
-            Nível {levelInfo.level} · {levelInfo.name}
-          </span>
-          <span className="tabular-nums">
-            {levelInfo.xpInLevel}/{levelInfo.xpForNextLevel} XP
-          </span>
-        </Link>
-      )}
     </div>
   );
 }
