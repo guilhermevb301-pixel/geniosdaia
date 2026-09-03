@@ -27,15 +27,6 @@ export function AnnouncementCarousel() {
     return null;
   }
 
-  // Width type only applies on desktop (lg+)
-  const getWidthClass = (widthType: string) => {
-    switch (widthType) {
-      case 'full': return 'lg:basis-full';
-      case 'third': return 'lg:basis-1/3';
-      default: return 'lg:basis-1/2'; // half
-    }
-  };
-
   // Calculate responsive heights with sensible limits
   const getResponsiveHeights = (desktopHeight: number) => {
     // Clamp desktop height between 120-400px
@@ -64,7 +55,7 @@ export function AnnouncementCarousel() {
       }}
       className="w-full"
     >
-      <CarouselContent className="-ml-2 lg:-ml-4">
+      <CarouselContent className="ml-0">
         {banners.map((banner) => {
           const isExternal = banner.button_url.startsWith("http");
           const heights = getResponsiveHeights(banner.height || 176);
@@ -125,10 +116,7 @@ export function AnnouncementCarousel() {
           );
 
           return (
-            <CarouselItem 
-              key={banner.id} 
-              className={`pl-2 lg:pl-4 basis-full ${getWidthClass(banner.width_type || 'half')}`}
-            >
+            <CarouselItem key={banner.id} className="basis-full pl-0">
               {isExternal ? (
                 <a href={banner.button_url} target="_blank" rel="noopener noreferrer">
                   {CardContent}
@@ -142,9 +130,13 @@ export function AnnouncementCarousel() {
           );
         })}
       </CarouselContent>
-      {/* Show arrows only on desktop */}
-      <CarouselPrevious className="hidden lg:flex -left-4 bg-card border-border hover:bg-muted" />
-      <CarouselNext className="hidden lg:flex -right-4 bg-card border-border hover:bg-muted" />
+      {/* Setas sobrepostas ao banner (agora que ele ocupa a largura toda) */}
+      {banners.length > 1 && (
+        <>
+          <CarouselPrevious className="left-3 border-white/20 bg-black/40 text-white hover:bg-black/60" />
+          <CarouselNext className="right-3 border-white/20 bg-black/40 text-white hover:bg-black/60" />
+        </>
+      )}
     </Carousel>
   );
 }

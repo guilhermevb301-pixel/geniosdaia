@@ -3,13 +3,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { displayNameOf } from "@/lib/displayName";
 
-function greeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Bom dia";
-  if (hour < 18) return "Boa tarde";
-  return "Boa noite";
-}
-
 export function WelcomeHero() {
   const { user } = useAuth();
 
@@ -35,8 +28,7 @@ export function WelcomeHero() {
 
   return (
     <section className="space-y-3">
-      <p className="eyebrow text-primary">{greeting()}</p>
-      <h1>{name ? `Olá, ${name}` : "Olá"}</h1>
+      <h1 className="!text-white text-[2.75rem]">{name ? `Olá, ${name}` : "Olá"}</h1>
       <p className="text-sm leading-relaxed text-muted-foreground">
         Pronto para continuar sua evolução?
       </p>
