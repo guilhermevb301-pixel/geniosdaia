@@ -27,20 +27,6 @@ export function AnnouncementCarousel() {
     return null;
   }
 
-  // Calculate responsive heights with sensible limits
-  const getResponsiveHeights = (desktopHeight: number) => {
-    // Clamp desktop height between 120-400px
-    const clampedDesktop = Math.max(120, Math.min(400, desktopHeight));
-    // Mobile (< 640px): 55% of desktop, min 100px, max 180px
-    const mobile = Math.max(100, Math.min(180, Math.round(clampedDesktop * 0.55)));
-    // Tablet (640px - 767px): 70% of desktop, min 120px, max 280px
-    const tablet = Math.max(120, Math.min(280, Math.round(clampedDesktop * 0.70)));
-    // Laptop (768px - 1023px): 85% of desktop, min 160px, max 350px
-    const laptop = Math.max(160, Math.min(350, Math.round(clampedDesktop * 0.85)));
-    
-    return { mobile, tablet, laptop, desktop: clampedDesktop };
-  };
-
   return (
     <Carousel
       plugins={[
@@ -58,20 +44,11 @@ export function AnnouncementCarousel() {
       <CarouselContent className="ml-0">
         {banners.map((banner) => {
           const isExternal = banner.button_url.startsWith("http");
-          const heights = getResponsiveHeights(banner.height || 176);
-          
+
           const CardContent = (
-            <div
-              className="relative rounded-xl overflow-hidden cursor-pointer lg:hover:scale-[1.02] transition-transform duration-300"
-              style={{
-                "--h-mobile": `${heights.mobile}px`,
-                "--h-tablet": `${heights.tablet}px`,
-                "--h-laptop": `${heights.laptop}px`,
-                "--h-desktop": `${heights.desktop}px`,
-              } as React.CSSProperties}
-            >
-              {/* Container with responsive height via CSS variables */}
-              <div className="w-full h-[var(--h-mobile)] sm:h-[var(--h-tablet)] md:h-[var(--h-laptop)] lg:h-[var(--h-desktop)]">
+            <div className="relative rounded-xl overflow-hidden cursor-pointer lg:hover:scale-[1.02] transition-transform duration-300">
+              {/* Proporção fixa (bate com a proporção das imagens geradas: 21:9) — sem isso, o cover corta as laterais em telas largas */}
+              <div className="w-full aspect-[21/9]">
                 {/* Gradient fallback always visible behind image */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${banner.gradient || 'from-primary to-emerald-900'}`} />
 
