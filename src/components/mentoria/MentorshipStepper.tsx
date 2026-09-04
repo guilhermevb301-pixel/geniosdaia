@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type FormEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -50,6 +50,7 @@ export function buildMentorshipWhatsAppUrl(answers: MentorshipAnswers): string {
 export function MentorshipStepper({ onComplete }: MentorshipStepperProps) {
   const [stepIndex, setStepIndex] = useState(0);
   const [completedUrl, setCompletedUrl] = useState<string | null>(null);
+  const completedHeadingRef = useRef<HTMLHeadingElement>(null);
   const [answers, setAnswers] = useState<MentorshipAnswers>({
     name: "",
     interest: "",
@@ -63,6 +64,10 @@ export function MentorshipStepper({ onComplete }: MentorshipStepperProps) {
   const updateAnswer = (key: StepKey, value: string) => {
     setAnswers((current) => ({ ...current, [key]: value }));
   };
+
+  useEffect(() => {
+    if (completedUrl) completedHeadingRef.current?.focus();
+  }, [completedUrl]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -87,13 +92,18 @@ export function MentorshipStepper({ onComplete }: MentorshipStepperProps) {
       >
         <div aria-hidden="true" className="absolute inset-x-0 top-0 h-px bg-[#34d399]/70" />
 
-        <div aria-live="polite" className="flex min-h-[330px] flex-col justify-between">
-          <div>
+        <div className="flex min-h-[330px] flex-col justify-between">
+          <div role="status" aria-live="polite" aria-atomic="true">
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#34d399]/10 text-[#34d399]">
               <CheckCircle2 aria-hidden="true" className="h-6 w-6" />
             </span>
             <p className="micro-label mt-6 text-primary">Qualificação concluída</p>
-            <h2 id="mentorship-complete-title" className="mt-3 text-2xl text-foreground sm:text-3xl">
+            <h2
+              ref={completedHeadingRef}
+              id="mentorship-complete-title"
+              tabIndex={-1}
+              className="mt-3 text-2xl text-foreground outline-none sm:text-3xl"
+            >
               Tudo pronto para conversar.
             </h2>
             <p className="mt-3 max-w-[48ch] text-sm leading-relaxed text-muted-foreground">

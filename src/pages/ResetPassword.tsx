@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { getPasswordValidationError } from "@/lib/passwordPolicy";
 
 export default function ResetPassword() {
   const [password, setPassword] = useState("");
@@ -14,15 +16,17 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const [updated, setUpdated] = useState(false);
   const { toast } = useToast();
+  const { isPasswordRecovery, loading: authLoading, signOut } = useAuth();
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (password.length < 6) {
+    const passwordError = getPasswordValidationError(password);
+    if (passwordError) {
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "A senha deve ter no mínimo 6 caracteres.",
+        description: passwordError,
       });
       return;
     }
@@ -31,16 +35,15 @@ export default function ResetPassword() {
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "As senhas não coincidem.",
+        description: "As senhas não coincidem",
       });
       return;
     }
 
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password });
-    setLoading(false);
-
     if (error) {
+      setLoading(false);
       toast({
         variant: "destructive",
         title: "Erro ao atualizar senha",
@@ -49,6 +52,8 @@ export default function ResetPassword() {
       return;
     }
 
+    await signOut();
+    setLoading(false);
     setUpdated(true);
     toast({
       title: "Senha atualizada",
@@ -113,12 +118,33 @@ export default function ResetPassword() {
               )}
             </div>
 
-            {!updated && (
+            {!authLoading && !isPasswordRecovery && !updated && (
+              <div className="mt-10">
+                <h2 className="text-2xl text-foreground">Link inválido ou expirado</h2>
+                <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                  Solicite um novo link de recuperação para proteger sua conta.
+                </p>
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                  <Button asChild variant="accent" className="h-11 flex-1 bg-[#34d399] text-[#07130f] hover:bg-[#34d399]/90">
+                    <Link to="/forgot-password">Solicitar novo link</Link>
+                  </Button>
+                  <Button asChild variant="outline" className="h-11 flex-1">
+                    <Link to="/login">Voltar para o login</Link>
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {authLoading && (
+              <div className="mt-10 h-44 animate-pulse rounded-lg bg-muted" aria-label="Validando link" />
+            )}
+
+            {!authLoading && isPasswordRecovery && !updated && (
               <>
                 <div className="mt-10">
                   <h2 className="text-2xl text-foreground">Definir nova senha</h2>
                   <p className="mt-3 text-sm text-muted-foreground">
-                    Use pelo menos 6 caracteres e confirme a senha abaixo.
+                    Use pelo menos 8 caracteres, uma letra maiúscula e um número.
                   </p>
                 </div>
 
@@ -129,7 +155,7 @@ export default function ResetPassword() {
                       id="password"
                       type="password"
                       autoComplete="new-password"
-                      minLength={6}
+                      minLength={8}
                       value={password}
                       onChange={(event) => setPassword(event.target.value)}
                       className="h-11 rounded-lg border-white/10 bg-[#0b0d10] focus-visible:ring-[#34d399] focus-visible:ring-offset-card"
@@ -143,7 +169,7 @@ export default function ResetPassword() {
                       id="password-confirmation"
                       type="password"
                       autoComplete="new-password"
-                      minLength={6}
+                      minLength={8}
                       value={confirmation}
                       onChange={(event) => setConfirmation(event.target.value)}
                       className="h-11 rounded-lg border-white/10 bg-[#0b0d10] focus-visible:ring-[#34d399] focus-visible:ring-offset-card"

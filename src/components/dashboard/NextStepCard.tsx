@@ -48,6 +48,7 @@ export function NextStepCard() {
   if (isError) {
     return (
       <section
+        role="alert"
         aria-labelledby="next-step-error-title"
         className="surface flex min-h-[180px] flex-col justify-between border-destructive/30 p-6"
       >

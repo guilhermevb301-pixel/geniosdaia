@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
@@ -145,7 +145,7 @@ describe("MentorshipStepper", () => {
     expect(decodeURIComponent(completedUrl)).toContain("Vender agentes");
   });
 
-  it("keeps a completed state with the same safe WhatsApp URL available", () => {
+  it("announces completion, moves focus, and keeps the same safe WhatsApp URL available", async () => {
     let completedUrl = "";
 
     render(
@@ -169,7 +169,11 @@ describe("MentorshipStepper", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /conversar no whatsapp/i }));
 
-    expect(screen.getByRole("heading", { name: /tudo pronto/i })).toBeInTheDocument();
+    const completionStatus = screen.getByRole("status");
+    const completionHeading = within(completionStatus).getByRole("heading", {
+      name: /tudo pronto/i,
+    });
+    await waitFor(() => expect(completionHeading).toHaveFocus());
     const reopenLink = screen.getByRole("link", { name: /abrir whatsapp novamente/i });
     expect(reopenLink).toHaveAttribute("href", completedUrl);
     expect(reopenLink).toHaveAttribute("target", "_blank");

@@ -7,6 +7,7 @@ import { AgentMark } from "@/components/brand/AgentMark";
 import { ArrowRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { getPasswordValidationError } from "@/lib/passwordPolicy";
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -50,20 +51,12 @@ export default function Register() {
       return;
     }
 
-    if (password.length < 8) {
+    const passwordError = getPasswordValidationError(password);
+    if (passwordError) {
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "A senha deve ter no mínimo 8 caracteres",
-      });
-      return;
-    }
-
-    if (!/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "A senha deve conter pelo menos uma letra maiúscula e um número",
+        description: passwordError,
       });
       return;
     }

@@ -52,6 +52,7 @@ export default function Aulas() {
   const {
     data: sectionsData,
     isError: isSectionsError,
+    isLoading: isLoadingSections,
     refetch: refetchSections,
   } = useQuery({
     queryKey: ["module_sections"],
@@ -111,6 +112,7 @@ export default function Aulas() {
   const {
     data: progressData,
     isError: isProgressError,
+    isLoading: isLoadingProgress,
     refetch: refetchProgress,
   } = useQuery({
     queryKey: ["lesson_progress", user?.id],
@@ -128,7 +130,12 @@ export default function Aulas() {
     placeholderData: keepPreviousData,
   });
 
-  const isLoading = isLoadingModules || isLoadingLessons || isLoadingProducts;
+  const isLoading =
+    isLoadingModules ||
+    isLoadingLessons ||
+    isLoadingSections ||
+    isLoadingProgress ||
+    isLoadingProducts;
   const isError = isSectionsError || isModulesError || isLessonsError || isProgressError;
 
   const handleRetry = () => {
@@ -213,6 +220,7 @@ export default function Aulas() {
 
         {isError ? (
           <section
+            role="alert"
             aria-labelledby="aulas-error-title"
             className="surface relative overflow-hidden border-destructive/30 px-6 py-10 sm:px-10"
           >
@@ -237,10 +245,12 @@ export default function Aulas() {
         ) : (
           <>
             {/* Progress Bar */}
-            <CourseProgress
-              completedLessons={completedLessons}
-              totalLessons={totalLessons}
-            />
+            {!isLoading && (
+              <CourseProgress
+                completedLessons={completedLessons}
+                totalLessons={totalLessons}
+              />
+            )}
 
             {/* Modules organized by sections */}
             <div className="mt-12 space-y-14">

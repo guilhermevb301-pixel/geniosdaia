@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextStepCard } from "@/components/dashboard/NextStepCard";
@@ -63,8 +63,9 @@ describe("NextStepCard error state", () => {
       </MemoryRouter>,
     );
 
+    const alert = screen.getByRole("alert");
     expect(
-      screen.getByRole("heading", { name: /não foi possível carregar seu próximo passo/i }),
+      within(alert).getByRole("heading", { name: /não foi possível carregar seu próximo passo/i }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /ver todas as aulas/i })).not.toBeInTheDocument();
 

@@ -14,7 +14,12 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/contexts/AuthContext", () => ({
   AuthProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
-  useAuth: () => ({ loading: false, user: mocks.user }),
+  useAuth: () => ({
+    isPasswordRecovery: true,
+    loading: false,
+    signOut: vi.fn(),
+    user: mocks.user,
+  }),
 }));
 vi.mock("@/hooks/useIsAuthorizedBuyer", () => ({
   useIsAuthorizedBuyer: () => ({ isAuthorized: mocks.isAuthorized, loading: false }),
