@@ -1,6 +1,8 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import type { ReactNode } from "react";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { AgentMark } from "@/components/brand/AgentMark";
 import ForgotPassword from "@/pages/ForgotPassword";
 import Login from "@/pages/Login";
 
@@ -26,12 +28,31 @@ vi.mock("@/integrations/supabase/client", () => ({
   },
 }));
 
-function renderRoute(component: React.ReactNode) {
+function renderRoute(component: ReactNode) {
   return render(
     <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       {component}
     </MemoryRouter>,
   );
+}
+
+function submitLogin(email = "gui@example.com", password = "senha válida") {
+  fireEvent.change(screen.getByLabelText("Email"), { target: { value: email } });
+  fireEvent.change(screen.getByLabelText("Senha"), { target: { value: password } });
+  fireEvent.click(screen.getByRole("button", { name: "Entrar" }));
+}
+
+function submitRecovery(email = "gui@example.com") {
+  fireEvent.change(screen.getByLabelText("Email"), { target: { value: email } });
+  fireEvent.click(screen.getByRole("button", { name: /enviar link de recuperação/i }));
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((promiseResolve) => {
+    resolve = promiseResolve;
+  });
+  return { promise, resolve };
 }
 
 describe("Terminal Premium authentication", () => {
@@ -41,28 +62,52 @@ describe("Terminal Premium authentication", () => {
     mocks.resetPasswordForEmail.mockResolvedValue({ error: null });
   });
 
-  it("presents RealFrame IA as the single accessible brand heading", () => {
+  it("presents the RealFrame brand without exposing the internal design codename", () => {
     renderRoute(<Login />);
 
     expect(screen.getByRole("heading", { name: "RealFrame IA", level: 1 })).toBeInTheDocument();
     expect(screen.getAllByText("RealFrame IA")).toHaveLength(1);
-    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(screen.queryByText(/terminal premium/i)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /esqueceu a senha/i })).toHaveAttribute(
       "href",
       "/forgot-password",
     );
   });
 
+  it("keeps AgentMark completely decorative", () => {
+    const { container } = render(<AgentMark size="lg" />);
+
+    expect(container.firstElementChild).toHaveAttribute("aria-hidden", "true");
+    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["login", <Login />, /sistemas práticos/i],
+    ["password recovery", <ForgotPassword />, /recupere sua conta/i],
+  ])("uses a compact mobile brand rail on %s while preserving desktop", (_, component, copy) => {
+    renderRoute(component);
+
+    const rail = screen.getByRole("complementary");
+    expect(rail).toHaveClass(
+      "min-h-24",
+      "p-4",
+      "sm:min-h-36",
+      "sm:p-6",
+      "lg:min-h-[620px]",
+      "lg:p-8",
+    );
+    expect(rail.firstElementChild).toHaveClass(
+      "h-14",
+      "w-14",
+      "sm:h-20",
+      "sm:w-20",
+    );
+    expect(within(rail).getByText(copy)).toHaveClass("hidden", "sm:block");
+  });
+
   it("normalizes the email without changing password whitespace", async () => {
     renderRoute(<Login />);
-
-    fireEvent.change(screen.getByLabelText("Email"), {
-      target: { value: "  GUI@Example.COM  " },
-    });
-    fireEvent.change(screen.getByLabelText("Senha"), {
-      target: { value: "  senha com espaços  " },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    submitLogin("  GUI@Example.COM  ", "  senha com espaços  ");
 
     await waitFor(() => {
       expect(mocks.signIn).toHaveBeenCalledWith(
@@ -72,20 +117,103 @@ describe("Terminal Premium authentication", () => {
     });
   });
 
-  it("keeps recovery on the same brand shell and normalizes its Supabase request", async () => {
+  it("navigates to the member area after a successful login", async () => {
+    render(
+      <MemoryRouter
+        initialEntries={["/login"]}
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/" element={<h1>Área logada</h1>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    submitLogin();
+
+    expect(await screen.findByRole("heading", { name: "Área logada" })).toBeInTheDocument();
+  });
+
+  it("shows the existing destructive toast when login fails", async () => {
+    mocks.signIn.mockResolvedValueOnce({ error: new Error("invalid credentials") });
+    renderRoute(<Login />);
+
+    submitLogin();
+
+    await waitFor(() => {
+      expect(mocks.toast).toHaveBeenCalledWith({
+        variant: "destructive",
+        title: "Erro ao fazer login",
+        description: "Email ou senha incorretos. Verifique suas credenciais.",
+      });
+    });
+    expect(screen.getByRole("button", { name: "Entrar" })).toBeEnabled();
+  });
+
+  it("disables login submission while authentication is pending", async () => {
+    const request = deferred<{ error: Error | null }>();
+    mocks.signIn.mockReturnValueOnce(request.promise);
+    renderRoute(<Login />);
+
+    submitLogin();
+
+    expect(screen.getByRole("button", { name: "Entrando..." })).toBeDisabled();
+
+    await act(async () => {
+      request.resolve({ error: new Error("invalid credentials") });
+      await request.promise;
+    });
+
+    expect(screen.getByRole("button", { name: "Entrar" })).toBeEnabled();
+  });
+
+  it("keeps recovery on the RealFrame shell without exposing the codename", () => {
     renderRoute(<ForgotPassword />);
 
     expect(screen.getByRole("heading", { name: "RealFrame IA", level: 1 })).toBeInTheDocument();
+    expect(screen.queryByText(/terminal premium/i)).not.toBeInTheDocument();
+  });
 
-    fireEvent.change(screen.getByLabelText("Email"), {
-      target: { value: "  GUI@Example.COM  " },
+  it("announces successful recovery after sending the normalized email", async () => {
+    const request = deferred<{ error: Error | null }>();
+    mocks.resetPasswordForEmail.mockReturnValueOnce(request.promise);
+    renderRoute(<ForgotPassword />);
+
+    submitRecovery("  GUI@Example.COM  ");
+
+    expect(screen.getByRole("button", { name: "Enviando..." })).toBeDisabled();
+
+    await act(async () => {
+      request.resolve({ error: null });
+      await request.promise;
     });
-    fireEvent.click(screen.getByRole("button", { name: /enviar link de recuperação/i }));
+
+    expect(mocks.resetPasswordForEmail).toHaveBeenCalledWith("gui@example.com", {
+      redirectTo: `${window.location.origin}/login`,
+    });
+    const status = screen.getByRole("status");
+    expect(within(status).getByRole("heading", { name: "Email enviado" })).toBeInTheDocument();
+    expect(within(status).getByRole("link", { name: /voltar para o login/i })).toHaveAttribute(
+      "href",
+      "/login",
+    );
+  });
+
+  it("keeps recovery available and shows the existing toast when Supabase fails", async () => {
+    mocks.resetPasswordForEmail.mockResolvedValueOnce({ error: new Error("service unavailable") });
+    renderRoute(<ForgotPassword />);
+
+    submitRecovery();
 
     await waitFor(() => {
-      expect(mocks.resetPasswordForEmail).toHaveBeenCalledWith("gui@example.com", {
-        redirectTo: `${window.location.origin}/login`,
+      expect(mocks.toast).toHaveBeenCalledWith({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível enviar o email. Tente novamente.",
       });
     });
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /enviar link de recuperação/i })).toBeEnabled();
   });
 });

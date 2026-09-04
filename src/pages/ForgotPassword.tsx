@@ -42,12 +42,15 @@ export default function ForgotPassword() {
       <div aria-hidden="true" className="absolute bottom-1/4 right-0 h-24 w-px bg-claude/35" />
 
       <section className="grid min-h-[calc(100svh-2rem)] w-full max-w-5xl overflow-hidden rounded-lg border border-white/10 bg-card sm:min-h-0 lg:grid-cols-[0.72fr_1.28fr]">
-        <aside className="relative flex min-h-36 items-center justify-between overflow-hidden border-b border-border bg-[#101318] p-6 lg:min-h-[620px] lg:flex-col lg:items-start lg:border-b-0 lg:border-r lg:p-8">
-          <AgentMark size="lg" />
+        <aside className="relative flex min-h-24 items-center justify-between overflow-hidden border-b border-border bg-[#101318] p-4 sm:min-h-36 sm:p-6 lg:min-h-[620px] lg:flex-col lg:items-start lg:border-b-0 lg:border-r lg:p-8">
+          <AgentMark
+            size="lg"
+            className="h-14 w-14 p-2 sm:h-20 sm:w-20 sm:p-2.5"
+          />
 
           <div className="max-w-[15rem] text-right lg:text-left">
             <p className="micro-label text-primary">Acesso seguro</p>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 hidden text-sm text-muted-foreground sm:block">
               Recupere sua conta e retome sua jornada na área de membros.
             </p>
             <div className="mt-5 hidden items-center gap-2 border-t border-white/10 pt-4 lg:flex">
@@ -65,12 +68,11 @@ export default function ForgotPassword() {
         <div className="flex items-center justify-center px-6 py-10 sm:px-10 lg:px-16 lg:py-14">
           <div className="w-full max-w-md">
             <div>
-              <p className="micro-label text-primary">Terminal Premium</p>
-              <h1 className="mt-3 text-[2rem] text-foreground sm:text-4xl">RealFrame IA</h1>
+              <h1 className="text-[2rem] text-foreground sm:text-4xl">RealFrame IA</h1>
             </div>
 
             {sent ? (
-              <div className="mt-10">
+              <div className="mt-10" role="status" aria-live="polite" aria-atomic="true">
                 <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-primary/25 bg-primary/10">
                   <Mail aria-hidden="true" className="h-5 w-5 text-primary" />
                 </div>
