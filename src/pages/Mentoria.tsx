@@ -1,180 +1,57 @@
-import { useState } from "react";
-import { MessageSquare, CheckCircle, ExternalLink } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Check, MessageCircle } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { MentorshipStepper } from "@/components/mentoria/MentorshipStepper";
 
-const WHATSAPP_NUMBER = "5571981939047";
-
-const INTEREST_OPTIONS = [
-  { value: "Automatizações com IA", label: "Automatizações com IA" },
-  { value: "Marketing Digital com IA", label: "Marketing Digital com IA" },
-  { value: "Produto Digital / SaaS com IA", label: "Produto Digital / SaaS com IA" },
-  { value: "Criação de Conteúdo com IA", label: "Criação de Conteúdo com IA" },
-  { value: "Renda Extra com IA", label: "Renda Extra com IA" },
-  { value: "Outro", label: "Outro" },
+const EXPECTATIONS = [
+  "Direção prática para o seu momento",
+  "Prioridades claras para sair do excesso de informação",
+  "Próximos passos que você consegue executar",
 ];
 
 export default function Mentoria() {
-  const [name, setName] = useState("");
-  const [interest, setInterest] = useState("");
-  const [objective, setObjective] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const message = `Olá, Gui! Sou o ${name}, preenchi o formulário e tenho interesse na mentoria. Meu foco principal é ${interest}. Objetivo: ${objective}`;
-    const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
-
-    window.open(whatsappUrl, "_blank");
-    setSubmitted(true);
+  const handleComplete = (url: string) => {
+    window.open(url, "_blank", "noopener,noreferrer");
   };
-
-  if (submitted) {
-    return (
-      <AppLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <Card className="max-w-md w-full bg-card border-border text-center">
-            <CardContent className="pt-8 pb-8 space-y-4">
-              <div className="flex justify-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-500/10">
-                  <CheckCircle className="h-8 w-8 text-green-500" />
-                </div>
-              </div>
-              <h2 className="text-xl font-semibold">Formulário enviado!</h2>
-              <p className="text-sm text-muted-foreground">
-                Uma nova aba foi aberta com o WhatsApp do Gui. Se não abriu automaticamente, clique abaixo.
-              </p>
-              <div className="flex flex-col gap-2 pt-2">
-                <Button
-                  onClick={() => {
-                    const message = `Olá, Gui! Sou o ${name}, preenchi o formulário e tenho interesse na mentoria. Meu foco principal é ${interest}. Objetivo: ${objective}`;
-                    window.open(
-                      `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`,
-                      "_blank"
-                    );
-                  }}
-                  className="gap-2"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  Abrir WhatsApp
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setSubmitted(false);
-                    setName("");
-                    setInterest("");
-                    setObjective("");
-                  }}
-                >
-                  Voltar ao formulário
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </AppLayout>
-    );
-  }
 
   return (
     <AppLayout>
-      <div className="max-w-2xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-            <MessageSquare className="h-5 w-5 text-primary" />
+      <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(440px,1.2fr)] lg:gap-14">
+        <section
+          data-testid="mentoria-value-column"
+          className="order-2 relative max-w-xl border-l border-claude/60 pl-5 lg:order-1 lg:sticky lg:top-28 lg:pl-8"
+          aria-labelledby="mentorship-page-title"
+        >
+          <p className="micro-label text-claude">Mentoria individual</p>
+          <h1 id="mentorship-page-title" className="mt-4 max-w-[13ch] text-3xl text-foreground sm:text-4xl">
+            Clareza para transformar intenção em execução.
+          </h1>
+          <p className="mt-5 max-w-[50ch] text-base leading-relaxed text-muted-foreground">
+            Uma conversa direta para organizar seu cenário, escolher o que merece foco e definir um caminho possível.
+          </p>
+
+          <div className="mt-9 border-t border-border pt-6">
+            <p className="text-sm font-medium text-foreground">O que esperar</p>
+            <ul className="mt-4 space-y-4">
+              {EXPECTATIONS.map((expectation) => (
+                <li key={expectation} className="flex items-start gap-3 text-muted-foreground">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <Check aria-hidden="true" className="h-3.5 w-3.5" />
+                  </span>
+                  <span>{expectation}</span>
+                </li>
+              ))}
+            </ul>
           </div>
-          <div className="space-y-3">
-            <p className="eyebrow text-primary">Comunidade</p>
-            <h1>Mentoria Individual</h1>
-            <p className="max-w-[52ch] text-sm leading-relaxed text-muted-foreground">
-              Responda 3 perguntas rápidas e fale direto com o Gui
-            </p>
+
+          <div className="mt-8 flex items-center gap-3 border-t border-border pt-5 text-muted-foreground">
+            <MessageCircle aria-hidden="true" className="h-4 w-4 text-primary" />
+            <p>Três respostas rápidas. A conversa continua no WhatsApp.</p>
           </div>
+        </section>
+
+        <div data-testid="mentoria-stepper-column" className="order-1 min-w-0 lg:order-2">
+          <MentorshipStepper onComplete={handleComplete} />
         </div>
-
-        <div className="rule my-10" />
-
-        {/* Form */}
-        <Card className="bg-card border-border">
-          <CardHeader>
-            <CardTitle className="text-base">Qualificação rápida</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Nome */}
-              <div className="space-y-2">
-                <Label htmlFor="name">Qual é o seu nome?</Label>
-                <Input
-                  id="name"
-                  placeholder="Seu nome"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="bg-background"
-                  required
-                />
-              </div>
-
-              {/* Área de interesse */}
-              <div className="space-y-2">
-                <Label htmlFor="interest">Qual é a sua principal área de interesse?</Label>
-                <Select value={interest} onValueChange={setInterest} required>
-                  <SelectTrigger className="bg-background">
-                    <SelectValue placeholder="Selecione uma área" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {INTEREST_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Objetivo */}
-              <div className="space-y-2">
-                <Label htmlFor="objective">
-                  Qual é o seu objetivo com a mentoria? Onde quer chegar?
-                </Label>
-                <Textarea
-                  id="objective"
-                  placeholder="Ex: quero criar meu primeiro agente de IA e vender para empresas locais..."
-                  value={objective}
-                  onChange={(e) => setObjective(e.target.value)}
-                  className="bg-background min-h-[100px]"
-                  required
-                />
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full gap-2"
-                disabled={!name || !interest || !objective}
-              >
-                <MessageSquare className="h-4 w-4" />
-                Falar com o Gui no WhatsApp
-              </Button>
-
-              <p className="text-xs text-center text-muted-foreground">
-                Ao clicar, você será redirecionado para o WhatsApp com sua mensagem já preenchida.
-              </p>
-            </form>
-          </CardContent>
-        </Card>
       </div>
     </AppLayout>
   );
