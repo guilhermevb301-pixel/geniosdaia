@@ -88,6 +88,12 @@ describe("Terminal Premium authentication", () => {
     renderRoute(component);
 
     const rail = screen.getByRole("complementary");
+    const shell = rail.closest("section");
+    expect(shell).toHaveClass(
+      "grid-rows-[auto_1fr]",
+      "lg:grid-rows-1",
+      "lg:grid-cols-[0.72fr_1.28fr]",
+    );
     expect(rail).toHaveClass(
       "min-h-24",
       "p-4",
@@ -180,6 +186,9 @@ describe("Terminal Premium authentication", () => {
     mocks.resetPasswordForEmail.mockReturnValueOnce(request.promise);
     renderRoute(<ForgotPassword />);
 
+    const status = screen.getByRole("status");
+    expect(status).toBeEmptyDOMElement();
+
     submitRecovery("  GUI@Example.COM  ");
 
     expect(screen.getByRole("button", { name: "Enviando..." })).toBeDisabled();
@@ -192,7 +201,6 @@ describe("Terminal Premium authentication", () => {
     expect(mocks.resetPasswordForEmail).toHaveBeenCalledWith("gui@example.com", {
       redirectTo: `${window.location.origin}/login`,
     });
-    const status = screen.getByRole("status");
     expect(within(status).getByRole("heading", { name: "Email enviado" })).toBeInTheDocument();
     expect(within(status).getByRole("link", { name: /voltar para o login/i })).toHaveAttribute(
       "href",
@@ -213,7 +221,7 @@ describe("Terminal Premium authentication", () => {
         description: "Não foi possível enviar o email. Tente novamente.",
       });
     });
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
     expect(screen.getByRole("button", { name: /enviar link de recuperação/i })).toBeEnabled();
   });
 });

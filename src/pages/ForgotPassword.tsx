@@ -41,7 +41,7 @@ export default function ForgotPassword() {
       <div aria-hidden="true" className="absolute left-0 top-1/4 h-32 w-px bg-codex/35" />
       <div aria-hidden="true" className="absolute bottom-1/4 right-0 h-24 w-px bg-claude/35" />
 
-      <section className="grid min-h-[calc(100svh-2rem)] w-full max-w-5xl overflow-hidden rounded-lg border border-white/10 bg-card sm:min-h-0 lg:grid-cols-[0.72fr_1.28fr]">
+      <section className="grid min-h-[calc(100svh-2rem)] w-full max-w-5xl grid-rows-[auto_1fr] overflow-hidden rounded-lg border border-white/10 bg-card sm:min-h-0 lg:grid-cols-[0.72fr_1.28fr] lg:grid-rows-1">
         <aside className="relative flex min-h-24 items-center justify-between overflow-hidden border-b border-border bg-[#101318] p-4 sm:min-h-36 sm:p-6 lg:min-h-[620px] lg:flex-col lg:items-start lg:border-b-0 lg:border-r lg:p-8">
           <AgentMark
             size="lg"
@@ -71,28 +71,32 @@ export default function ForgotPassword() {
               <h1 className="text-[2rem] text-foreground sm:text-4xl">RealFrame IA</h1>
             </div>
 
-            {sent ? (
-              <div className="mt-10" role="status" aria-live="polite" aria-atomic="true">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-primary/25 bg-primary/10">
-                  <Mail aria-hidden="true" className="h-5 w-5 text-primary" />
+            <div role="status" aria-live="polite" aria-atomic="true">
+              {sent && (
+                <div className="mt-10">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-primary/25 bg-primary/10">
+                    <Mail aria-hidden="true" className="h-5 w-5 text-primary" />
+                  </div>
+                  <h2 className="mt-6 text-2xl text-foreground">Email enviado</h2>
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    Enviamos um link de recuperação para <strong className="text-foreground">{email}</strong>.
+                    Verifique sua caixa de entrada e spam.
+                  </p>
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="mt-8 h-11 w-full rounded-lg transition-[transform,opacity] hover:shadow-none"
+                  >
+                    <Link to="/login">
+                      <ArrowLeft aria-hidden="true" />
+                      Voltar para o login
+                    </Link>
+                  </Button>
                 </div>
-                <h2 className="mt-6 text-2xl text-foreground">Email enviado</h2>
-                <p className="mt-3 text-sm text-muted-foreground">
-                  Enviamos um link de recuperação para <strong className="text-foreground">{email}</strong>.
-                  Verifique sua caixa de entrada e spam.
-                </p>
-                <Button
-                  asChild
-                  variant="outline"
-                  className="mt-8 h-11 w-full rounded-lg transition-[transform,opacity] hover:shadow-none"
-                >
-                  <Link to="/login">
-                    <ArrowLeft aria-hidden="true" />
-                    Voltar para o login
-                  </Link>
-                </Button>
-              </div>
-            ) : (
+              )}
+            </div>
+
+            {!sent && (
               <>
                 <div className="mt-10">
                   <h2 className="text-2xl text-foreground">Recuperar senha</h2>
