@@ -117,4 +117,49 @@ describe("premium module library", () => {
       "group-hover/card:scale-[1.025]",
     );
   });
+
+  it("gives the unlock action a 44px touch target", () => {
+    render(
+      <MemoryRouter>
+        <ModuleCarousel
+          modules={[moduleFixture]}
+          title="Agente de Atendimento"
+          locked
+          buyUrl="https://example.com/comprar"
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("link", { name: "Desbloquear" })).toHaveClass("h-11");
+  });
+
+  it("prioritizes cover images only when the carousel is the first visible trail", () => {
+    const imageModule = {
+      ...moduleFixture,
+      id: "custom-module-with-image",
+      cover_image_url: "https://example.com/cover.jpg",
+      order_index: 99,
+    };
+    const { rerender } = render(
+      <MemoryRouter>
+        <ModuleCarousel modules={[imageModule]} title="Primeira trilha" prioritizeImages />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("img", { name: imageModule.title })).toHaveAttribute(
+      "loading",
+      "eager",
+    );
+
+    rerender(
+      <MemoryRouter>
+        <ModuleCarousel modules={[imageModule]} title="Segunda trilha" />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("img", { name: imageModule.title })).toHaveAttribute(
+      "loading",
+      "lazy",
+    );
+  });
 });

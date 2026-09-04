@@ -115,19 +115,6 @@ export default function Aulas() {
     return !hasProduct(section.product_slug as ProductSlug);
   };
 
-  // Preload module cover images
-  const coverUrls = (modulesData || [])
-    .filter(
-      (module) =>
-        !getModuleCover({
-          moduleId: module.id,
-          productSlug: null,
-          orderIndex: module.order_index,
-        }),
-    )
-    .map((module) => module.cover_image_url);
-  useImagePreload(coverUrls, { width: 200, quality: 50 });
-
   // Build modules with progress
   const modules: ModuleWithProgress[] = (modulesData || []).map((module) => {
     const moduleLessons = (lessonsData || []).filter(
@@ -159,6 +146,22 @@ export default function Aulas() {
         .sort((a, b) => a.order_index - b.order_index),
     }))
     .filter((group) => group.modules.length > 0);
+
+  const firstVisibleGroup = modulesWithoutSection.length === 0 ? sectionGroups[0] : undefined;
+  const firstVisibleModules = modulesWithoutSection.length > 0
+    ? modulesWithoutSection
+    : firstVisibleGroup?.modules ?? [];
+  const coverUrls = firstVisibleModules
+    .filter(
+      (module) =>
+        !getModuleCover({
+          moduleId: module.id,
+          productSlug: firstVisibleGroup?.section.product_slug ?? null,
+          orderIndex: module.order_index,
+        }),
+    )
+    .map((module) => module.cover_image_url);
+  useImagePreload(coverUrls, { width: 200, quality: 50, maxPreload: 5 });
 
   // Calculate total progress
   const totalLessons = modules.reduce((acc, m) => acc + m.totalLessons, 0);
@@ -192,11 +195,15 @@ export default function Aulas() {
             <>
               {/* Modules without section first */}
               {modulesWithoutSection.length > 0 && (
-                <ModuleCarousel modules={modulesWithoutSection} title="Mais aulas" />
+                <ModuleCarousel
+                  modules={modulesWithoutSection}
+                  title="Mais aulas"
+                  prioritizeImages
+                />
               )}
 
               {/* Section groups with their modules */}
-              {sectionGroups.map(({ section, modules: sectionModules }) => {
+              {sectionGroups.map(({ section, modules: sectionModules }, groupIndex) => {
                 const locked = isSectionLocked(section);
                 const buyUrl = section.product_slug ? BUY_URLS[section.product_slug] : undefined;
                 return (
@@ -208,6 +215,7 @@ export default function Aulas() {
                       locked={locked}
                       buyUrl={buyUrl}
                       sectionIconUrl={getSectionIcon(section.product_slug)}
+                      prioritizeImages={modulesWithoutSection.length === 0 && groupIndex === 0}
                     />
                   </div>
                 );

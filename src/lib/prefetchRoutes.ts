@@ -20,12 +20,12 @@ export async function prefetchPrompts(queryClient: QueryClient) {
 
 export async function prefetchModules(queryClient: QueryClient) {
   await queryClient.prefetchQuery({
-    queryKey: ["modules-with-sections"],
+    queryKey: ["modules"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("modules")
-        .select(`*, section:module_sections(id, title, order_index)`)
-        .order("order_index", { ascending: true });
+        .select("*")
+        .order("order_index");
       if (error) throw error;
       return data;
     },

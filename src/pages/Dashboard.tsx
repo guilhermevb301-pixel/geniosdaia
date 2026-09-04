@@ -14,11 +14,11 @@ export default function Dashboard() {
   const { banners } = useDashboardBanners();
 
   // Preload banner images for instant display
-  const bannerImages = useMemo(() =>
-    banners.map(b => b.image_url).filter(Boolean),
-    [banners]
-  );
-  useImagePreload(bannerImages, { width: 1200 });
+  const bannerImages = useMemo(() => {
+    const firstBannerImage = banners.find((banner) => Boolean(banner.image_url))?.image_url;
+    return firstBannerImage ? [firstBannerImage] : [];
+  }, [banners]);
+  useImagePreload(bannerImages, { width: 1200, maxPreload: 1 });
 
   // Só mostra o carrossel de anúncios quando há banner com conteúdo de verdade
   const hasBanners = banners.some((b) => b.image_url || b.title?.trim() || b.subtitle?.trim());
@@ -26,7 +26,7 @@ export default function Dashboard() {
   // Log daily activity on dashboard load
   useEffect(() => {
     logActivity();
-  }, []);
+  }, [logActivity]);
 
   return (
     <AppLayout>

@@ -30,6 +30,7 @@ interface ModuleCarouselProps {
   locked?: boolean;
   buyUrl?: string;
   sectionIconUrl?: string | null;
+  prioritizeImages?: boolean;
 }
 
 const ITEM_BASIS =
@@ -43,6 +44,7 @@ export function ModuleCarousel({
   locked = false,
   buyUrl,
   sectionIconUrl,
+  prioritizeImages = false,
 }: ModuleCarouselProps) {
   const titleId = useId();
 
@@ -103,7 +105,7 @@ export function ModuleCarousel({
                 href={buyUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="focus-ring mr-1 rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground"
+                className="focus-ring mr-1 inline-flex h-11 items-center rounded-md bg-primary px-2.5 text-xs font-medium text-primary-foreground"
               >
                 Desbloquear
               </a>
@@ -141,7 +143,7 @@ export function ModuleCarousel({
               completedLessons={module.completedLessons}
               totalLessons={module.totalLessons}
               orderIndex={Number.isFinite(module.order_index) ? module.order_index : index}
-              priority={index < 5}
+              priority={prioritizeImages && index < 5}
               locked={locked}
               buyUrl={buyUrl}
             />

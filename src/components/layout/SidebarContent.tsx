@@ -360,7 +360,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
         </a>
       </nav>
 
-      <SidebarUserFooter onNavigate={handleClick} />
+      <SidebarUserFooter />
     </div>
   );
 }

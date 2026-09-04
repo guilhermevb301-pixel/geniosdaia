@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,37 +9,53 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/admin/AdminRoute";
 import { MentorRoute } from "@/components/admin/MentorRoute";
 import { MenteeRoute } from "@/components/mentoria/MenteeRoute";
-import Dashboard from "./pages/Dashboard";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Aulas from "./pages/Aulas";
-import ModuleLessons from "./pages/ModuleLessons";
-import Templates from "./pages/Templates";
-import Mentoria from "./pages/Mentoria";
-import MinhaMentoria from "./pages/MinhaMentoria";
-import Eventos from "./pages/Eventos";
-import Prompts from "./pages/Prompts";
-import Desafios from "./pages/Desafios";
-import Certificados from "./pages/Certificados";
-import VerifyCertificate from "./pages/VerifyCertificate";
-import MeuCaderno from "./pages/MeuCaderno";
-import MeusGpts from "./pages/MeusGpts";
-import MeusProdutos from "./pages/MeusProdutos";
-import AdminModules from "./pages/admin/AdminModules";
-import AdminLessons from "./pages/admin/AdminLessons";
-import AdminTemplates from "./pages/admin/AdminTemplates";
-import AdminPrompts from "./pages/admin/AdminPrompts";
-import AdminMentees from "./pages/admin/AdminMentees";
-import AdminUsers from "./pages/admin/AdminUsers";
-import AdminChallenges from "./pages/admin/AdminChallenges";
-import AdminGpts from "./pages/admin/AdminGpts";
-import AdminBanners from "./pages/admin/AdminBanners";
-import AdminAppearance from "./pages/admin/AdminAppearance";
-import MenteeEditor from "./pages/admin/MenteeEditor";
-import ForgotPassword from "./pages/ForgotPassword";
-import NotFound from "./pages/NotFound";
-import AcessoNegado from "./pages/AcessoNegado";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
+const Aulas = lazy(() => import("./pages/Aulas"));
+const ModuleLessons = lazy(() => import("./pages/ModuleLessons"));
+const Templates = lazy(() => import("./pages/Templates"));
+const Mentoria = lazy(() => import("./pages/Mentoria"));
+const MinhaMentoria = lazy(() => import("./pages/MinhaMentoria"));
+const Eventos = lazy(() => import("./pages/Eventos"));
+const Prompts = lazy(() => import("./pages/Prompts"));
+const Desafios = lazy(() => import("./pages/Desafios"));
+const Certificados = lazy(() => import("./pages/Certificados"));
+const VerifyCertificate = lazy(() => import("./pages/VerifyCertificate"));
+const MeuCaderno = lazy(() => import("./pages/MeuCaderno"));
+const MeusGpts = lazy(() => import("./pages/MeusGpts"));
+const MeusProdutos = lazy(() => import("./pages/MeusProdutos"));
+const AdminModules = lazy(() => import("./pages/admin/AdminModules"));
+const AdminLessons = lazy(() => import("./pages/admin/AdminLessons"));
+const AdminTemplates = lazy(() => import("./pages/admin/AdminTemplates"));
+const AdminPrompts = lazy(() => import("./pages/admin/AdminPrompts"));
+const AdminMentees = lazy(() => import("./pages/admin/AdminMentees"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminChallenges = lazy(() => import("./pages/admin/AdminChallenges"));
+const AdminGpts = lazy(() => import("./pages/admin/AdminGpts"));
+const AdminBanners = lazy(() => import("./pages/admin/AdminBanners"));
+const AdminAppearance = lazy(() => import("./pages/admin/AdminAppearance"));
+const MenteeEditor = lazy(() => import("./pages/admin/MenteeEditor"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const AcessoNegado = lazy(() => import("./pages/AcessoNegado"));
+
+function RouteLoadingFallback() {
+  return (
+    <main
+      role="status"
+      aria-label="Carregando página"
+      className="flex min-h-screen items-center justify-center bg-background"
+    >
+      <span
+        aria-hidden="true"
+        className="h-5 w-5 animate-spin rounded-full border-2 border-muted-foreground/25 border-t-muted-foreground"
+      />
+    </main>
+  );
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -59,7 +76,8 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <ErrorBoundary>
-          <Routes>
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <Routes>
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -270,7 +288,8 @@ const App = () => (
             />
             
             <Route path="*" element={<NotFound />} />
-          </Routes>
+            </Routes>
+          </Suspense>
           </ErrorBoundary>
         </BrowserRouter>
       </TooltipProvider>

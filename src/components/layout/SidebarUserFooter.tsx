@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserXP } from "@/hooks/useUserXP";
@@ -12,7 +12,7 @@ function initialsOf(name: string): string {
   return (first + last).toUpperCase();
 }
 
-export function SidebarUserFooter({ onNavigate }: { onNavigate?: () => void }) {
+export function SidebarUserFooter() {
   const { user, signOut } = useAuth();
   const { levelInfo, isLoading } = useUserXP();
   const navigate = useNavigate();
@@ -45,13 +45,9 @@ export function SidebarUserFooter({ onNavigate }: { onNavigate?: () => void }) {
         </div>
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-foreground">{name}</p>
-          <Link
-            to="/perfil"
-            onClick={onNavigate}
-            className="text-[11px] text-muted-foreground hover:text-foreground"
-          >
-            {isLoading ? "Ver perfil" : `Nível ${levelInfo.level} · ver perfil`}
-          </Link>
+          <p className="text-[11px] text-muted-foreground">
+            {isLoading ? "Membro" : `Nível ${levelInfo.level}`}
+          </p>
         </div>
       </div>
 

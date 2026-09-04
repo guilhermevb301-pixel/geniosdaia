@@ -14,10 +14,10 @@ export function AchievementsStrip() {
       <div className="mb-4 flex items-center justify-between">
         <h3 className="micro-label text-muted-foreground">Suas conquistas</h3>
         <Link
-          to="/perfil"
+          to="/certificados"
           className="focus-ring flex items-center gap-1 rounded-sm text-xs text-muted-foreground transition-colors hover:text-foreground"
         >
-          Ver perfil
+          Ver certificados
           <ArrowRight className="h-3 w-3" />
         </Link>
       </div>

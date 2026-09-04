@@ -69,7 +69,7 @@ export function AnnouncementCarousel() {
       onKeyDownCapture={handleKeyDown}
     >
       <CarouselContent className="ml-0">
-        {banners.map((banner) => {
+        {banners.map((banner, index) => {
           const isExternal = banner.button_url.startsWith("http");
           const accessibleName = banner.title || banner.button_text || "Ver promoção";
 
@@ -87,7 +87,7 @@ export function AnnouncementCarousel() {
                   className="h-full w-full object-cover"
                   objectFit="cover"
                   optimizedWidth={1200}
-                  priority
+                  priority={index === 0}
                 />
               ) : null}
 
@@ -149,7 +149,7 @@ export function AnnouncementCarousel() {
               onClick={scrollPrevious}
               disabled={!api}
               aria-label="Promoção anterior"
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-black/55 text-[#34d399] shadow-sm hover:scale-105 hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34d399] disabled:pointer-events-none disabled:opacity-40"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/55 text-[#34d399] shadow-sm hover:scale-105 hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34d399] disabled:pointer-events-none disabled:opacity-40"
             >
               <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             </button>
@@ -158,7 +158,7 @@ export function AnnouncementCarousel() {
               onClick={scrollNext}
               disabled={!api}
               aria-label="Próxima promoção"
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-black/55 text-[#34d399] shadow-sm hover:scale-105 hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34d399] disabled:pointer-events-none disabled:opacity-40"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-white/25 bg-black/55 text-[#34d399] shadow-sm hover:scale-105 hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34d399] disabled:pointer-events-none disabled:opacity-40"
             >
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </button>
@@ -177,7 +177,7 @@ export function AnnouncementCarousel() {
                 disabled={!api}
                 aria-label={`Ir para promoção ${index + 1} de ${count || banners.length}`}
                 aria-current={index === current ? "true" : undefined}
-                className="flex h-6 w-6 items-center justify-center rounded-full hover:scale-110 hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34d399] disabled:pointer-events-none disabled:opacity-40"
+                className="flex h-11 w-11 items-center justify-center rounded-full hover:scale-110 hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34d399] disabled:pointer-events-none disabled:opacity-40"
               >
                 <span
                   className={`h-2 w-2 rounded-full ${

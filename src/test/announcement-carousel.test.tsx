@@ -133,10 +133,27 @@ describe("AnnouncementCarousel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setReducedMotion(false);
+    vi.stubGlobal(
+      "IntersectionObserver",
+      class {
+        constructor(private callback: IntersectionObserverCallback) {}
+
+        observe(target: Element) {
+          this.callback(
+            [{ isIntersecting: true, target } as IntersectionObserverEntry],
+            this as unknown as IntersectionObserver,
+          );
+        }
+
+        unobserve() {}
+        disconnect() {}
+      },
+    );
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("renders nothing when there are no banners", () => {
@@ -155,7 +172,7 @@ describe("AnnouncementCarousel", () => {
     });
     const { container } = renderCarousel([banner]);
     const destination = screen.getByRole("link", { name: banner.title });
-    const images = Array.from(container.querySelectorAll("img"));
+    const images = Array.from(container.querySelectorAll('img:not([aria-hidden="true"])'));
 
     expect(destination).toHaveAttribute("href", "/eventos");
     expect(destination).toHaveAttribute("aria-label", banner.title);
@@ -219,6 +236,36 @@ describe("AnnouncementCarousel", () => {
     expect(container.querySelector('[class*="transition"]')).not.toBeInTheDocument();
     expect(screen.getAllByText("Ver agenda")[0]).toHaveClass("bg-[#34d399]");
     expect(screen.getAllByText("Ver agenda")[0].className).not.toContain("#6ee7b7");
+  });
+
+  it("provides 44px touch targets while keeping indicator dots visually small", async () => {
+    const banners = [createBanner({ id: "one" }), createBanner({ id: "two" })];
+    renderCarousel(banners);
+
+    const previous = await screen.findByRole("button", { name: "Promoção anterior" });
+    const next = screen.getByRole("button", { name: "Próxima promoção" });
+    const dots = screen.getAllByRole("button", { name: /ir para promoção/i });
+
+    expect(previous).toHaveClass("h-11", "w-11");
+    expect(next).toHaveClass("h-11", "w-11");
+    dots.forEach((dot) => {
+      expect(dot).toHaveClass("h-11", "w-11");
+      expect(dot.firstElementChild).toHaveClass("h-2", "w-2");
+    });
+  });
+
+  it("prioritizes only the initially visible banner image", () => {
+    const banners = [
+      createBanner({ id: "one", image_url: "https://example.com/one.jpg" }),
+      createBanner({ id: "two", image_url: "https://example.com/two.jpg" }),
+      createBanner({ id: "three", image_url: "https://example.com/three.jpg" }),
+    ];
+    const { container } = renderCarousel(banners);
+    const images = Array.from(container.querySelectorAll('img:not([aria-hidden="true"])'));
+
+    expect(images).toHaveLength(3);
+    expect(images[0]).toHaveAttribute("loading", "eager");
+    expect(images.slice(1).every((image) => image.getAttribute("loading") === "lazy")).toBe(true);
   });
 
   it("uses instant Embla navigation when reduced motion is requested", async () => {
