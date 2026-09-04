@@ -48,7 +48,7 @@ export function SidebarUserFooter({ onNavigate }: { onNavigate?: () => void }) {
           <Link
             to="/perfil"
             onClick={onNavigate}
-            className="text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+            className="text-[11px] text-muted-foreground hover:text-foreground"
           >
             {isLoading ? "Ver perfil" : `Nível ${levelInfo.level} · ver perfil`}
           </Link>
@@ -57,7 +57,7 @@ export function SidebarUserFooter({ onNavigate }: { onNavigate?: () => void }) {
 
       <button
         onClick={handleSignOut}
-        className="focus-ring flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[13px] text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+        className="focus-ring flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[13px] text-muted-foreground hover:bg-secondary hover:text-foreground"
         aria-label="Sair da conta"
       >
         <LogOut className="h-4 w-4" />

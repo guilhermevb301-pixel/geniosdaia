@@ -230,7 +230,7 @@
     border: 1px solid hsl(var(--border));
     border-radius: var(--radius);
     background: hsl(var(--card));
-    transition: transform 200ms ease, border-color 200ms ease, background-color 200ms ease;
+    transition: transform 200ms ease;
   }
 
   .interactive-surface:hover {

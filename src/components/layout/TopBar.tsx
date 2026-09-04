@@ -2,7 +2,6 @@ import { Bell, Search, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LevelBadge } from "@/components/gamification/LevelBadge";
-import { XPBar } from "@/components/gamification/XPBar";
 import { StreakCounter } from "@/components/gamification/StreakCounter";
 import { useUserXP } from "@/hooks/useUserXP";
 import { useUserStreak } from "@/hooks/useUserStreak";
@@ -39,20 +38,9 @@ export function TopBar({ onMenuClick, showMenu }: TopBarProps) {
       <div className="flex items-center gap-1 sm:gap-2">
         {/* Gamification Stats - Hidden on small screens */}
         <div className="hidden lg:flex items-center gap-4">
-          {/* Level Badge with XP Progress */}
+          {/* Compact level context; XP progress lives in the sidebar footer. */}
           {!isLoadingXP && (
-            <div className="flex items-center gap-2">
-              <LevelBadge level={levelInfo.level} name={levelInfo.name} size="sm" />
-              <div className="w-20">
-                <XPBar 
-                  currentXP={levelInfo.xpInLevel} 
-                  xpForNextLevel={levelInfo.xpForNextLevel} 
-                  progress={levelInfo.progress}
-                  size="sm"
-                  showLabel={false}
-                />
-              </div>
-            </div>
+            <LevelBadge level={levelInfo.level} name={levelInfo.name} size="sm" />
           )}
           
           {/* Streak Counter */}

@@ -36,16 +36,16 @@ import { getPrefetchHandler } from "@/lib/prefetchRoutes";
 import { SidebarUserFooter } from "./SidebarUserFooter";
 
 const NAV_ITEM_BASE =
-  "focus-ring group relative flex items-center gap-3 rounded-md px-2 py-2.5 text-[14px] transition-colors duration-200 before:absolute before:-left-3 before:top-1/2 before:h-0 before:w-[2px] before:-translate-y-1/2 before:rounded-full before:bg-primary before:transition-all before:duration-300 [&>svg]:text-muted-foreground [&>svg]:transition-colors";
+  "focus-ring group relative flex items-center gap-3 rounded-md px-2 py-2.5 text-[14px] before:absolute before:-left-3 before:top-1/2 before:h-5 before:w-[2px] before:-translate-y-1/2 before:scale-y-0 before:rounded-full before:bg-primary before:opacity-0 before:transition-[transform,opacity] before:duration-200 [&>svg]:text-muted-foreground";
 
 const ADMIN_NAV_ITEM_BASE =
-  "focus-ring group flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors [&>svg]:shrink-0 [&>svg]:text-muted-foreground [&>svg]:transition-colors";
+  "focus-ring group flex items-center gap-2 rounded-md px-3 py-2 text-sm [&>svg]:shrink-0 [&>svg]:text-muted-foreground";
 
 function navItemClass(active: boolean) {
   return cn(
     NAV_ITEM_BASE,
     active
-      ? "bg-secondary text-foreground before:h-5 [&>svg]:text-primary"
+      ? "bg-secondary text-foreground before:scale-y-100 before:opacity-100 [&>svg]:text-primary"
       : "text-muted-foreground hover:bg-card hover:text-foreground hover:[&>svg]:text-primary",
   );
 }
@@ -233,7 +233,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
               <CollapsibleTrigger className="w-full">
                 <div
                   className={cn(
-                    "group flex items-center justify-between rounded-md px-2 py-2.5 text-sm font-medium transition-colors [&_svg]:text-muted-foreground [&_svg]:transition-colors",
+                    "group flex items-center justify-between rounded-md px-2 py-2.5 text-sm font-medium [&_svg]:text-muted-foreground",
                     isAdminSection
                       ? "bg-secondary text-foreground [&_svg]:text-primary"
                       : "text-muted-foreground hover:bg-card hover:text-foreground hover:[&_svg]:text-primary"
