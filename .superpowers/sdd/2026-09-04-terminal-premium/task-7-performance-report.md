@@ -73,12 +73,42 @@ Tests       20 passed (20)
 
 ## Bundle
 
-Medição feita com `npm run build` antes e depois das mudanças, no mesmo checkout e com as mesmas dependências:
+Medição reproduzida diretamente em worktrees isoladas dos commits indicados, usando o mesmo `node_modules`. `package.json` e `package-lock.json` são idênticos entre os dois hashes.
 
-| Medida | Antes | Depois | Redução |
+| Medida | Antes (`1453e0c`) | Depois (`6a650f6`) | Redução |
 |---|---:|---:|---:|
 | Chunk JavaScript inicial | 1.209,40 kB | 515,04 kB | 694,36 kB (57,41%) |
 | Chunk inicial gzip | 336,72 kB | 154,47 kB | 182,25 kB (54,13%) |
+
+### Reprodução do bundle
+
+Comandos executados a partir do repositório `/Users/guilhermefvb/Documents/CLAUDE/geniosdaia-app`:
+
+```bash
+git diff --quiet 1453e0c 6a650f6 -- package.json package-lock.json
+
+git worktree add --detach /tmp/geniosdaia-task7-1453e0c 1453e0c
+cd /tmp/geniosdaia-task7-1453e0c
+ln -s /Users/guilhermefvb/Documents/CLAUDE/geniosdaia-app/node_modules node_modules
+npm run build
+
+cd /Users/guilhermefvb/Documents/CLAUDE/geniosdaia-app
+git worktree add --detach /tmp/geniosdaia-task7-6a650f6 6a650f6
+cd /tmp/geniosdaia-task7-6a650f6
+ln -s /Users/guilhermefvb/Documents/CLAUDE/geniosdaia-app/node_modules node_modules
+npm run build
+
+cd /Users/guilhermefvb/Documents/CLAUDE/geniosdaia-app
+git worktree remove --force /tmp/geniosdaia-task7-1453e0c
+git worktree remove --force /tmp/geniosdaia-task7-6a650f6
+```
+
+Saídas verificadas:
+
+```text
+1453e0c  dist/assets/index-C_VvaHVu.js  1,209.40 kB | gzip: 336.72 kB
+6a650f6  dist/assets/index-DB-yPlCd.js    515.04 kB | gzip: 154.47 kB
+```
 
 Chunks de rota relevantes no build final:
 
@@ -99,7 +129,17 @@ O build da correção round 1, após centralizar o manifesto de 30 rotas, gerou 
 - Build: 2.770 módulos transformados e build concluído.
 - Higiene: `git diff --check` sem erros e nenhuma referência restante a `/perfil` em `src`.
 
-Avisos não bloqueantes permanecem na saída geral: flags futuras do React Router em testes preexistentes, `fetchPriority` no ambiente React 18/jsdom, base Browserslist desatualizada e o entrypoint final acima de 500 kB.
+Avisos não bloqueantes permanecem na saída geral: flags futuras do React Router em testes preexistentes, base Browserslist desatualizada e o entrypoint final acima de 500 kB.
+
+### Fix round 2 final
+
+- `ImageWithSkeleton` passou a emitir o atributo DOM lowercase `fetchpriority`, preservando os valores `high` para imagens prioritárias e `auto` para as demais.
+- Os testes de prioridade (`aulas-image-priority`, `module-library` e `announcement-carousel`) passaram 16/16 sem o warning de propriedade desconhecida que o React 18 emitia para `fetchPriority`.
+- Nenhum teste precisou ser alterado para esta correção.
+- Bateria focada completa da Tarefa 7: 8 arquivos e 30/30 testes aprovados, sem warning de `fetchPriority`.
+- Suíte completa: 17 arquivos e 79/79 testes aprovados.
+- Lint de `src/components/ui/image-with-skeleton.tsx`: 0 erros e 0 warnings.
+- Build do HEAD: 2.770 módulos transformados; entrypoint de 516,13 kB / 154,94 kB gzip e chunk `Aulas` de 35,11 kB / 10,25 kB gzip.
 
 ## Limites preservados
 

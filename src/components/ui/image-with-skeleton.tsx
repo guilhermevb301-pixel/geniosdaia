@@ -126,7 +126,7 @@ export function ImageWithSkeleton({
           alt={alt}
           loading={priority ? "eager" : "lazy"}
           decoding={priority ? "sync" : "async"}
-          fetchPriority={priority ? "high" : "auto"}
+          {...({ fetchpriority: priority ? "high" : "auto" } as Record<string, string>)}
           onLoad={handleLoad}
           onError={handleError}
           className={cn(
