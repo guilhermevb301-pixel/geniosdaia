@@ -1,15 +1,6 @@
-import { Bell, Search, User, LogOut, Menu } from "lucide-react";
+import { Bell, Search, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
 import { LevelBadge } from "@/components/gamification/LevelBadge";
 import { XPBar } from "@/components/gamification/XPBar";
 import { StreakCounter } from "@/components/gamification/StreakCounter";
@@ -22,37 +13,30 @@ interface TopBarProps {
 }
 
 export function TopBar({ onMenuClick, showMenu }: TopBarProps) {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
   const { levelInfo, isLoading: isLoadingXP } = useUserXP();
   const { currentStreak, isLoading: isLoadingStreak } = useUserStreak();
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/login");
-  };
-
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/85 px-5 backdrop-blur-md sm:px-8 md:px-12 lg:px-14">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/90 px-5 backdrop-blur-md sm:px-8 md:px-12 lg:px-14">
       {/* Mobile Menu Button + Search */}
       <div className="flex items-center gap-2 flex-1 max-w-md">
         {showMenu && (
-          <Button variant="ghost" size="icon" onClick={onMenuClick}>
+          <Button variant="ghost" size="icon" onClick={onMenuClick} aria-label="Abrir menu">
             <Menu className="h-5 w-5" />
           </Button>
         )}
-        <div className="relative w-full">
+        <div className="relative w-full max-w-xl">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
             placeholder="Buscar aulas, templates..."
-            className="border-border bg-transparent pl-9 text-[13px] focus-visible:ring-1"
+            className="surface-raised h-10 border-border bg-secondary/70 pl-9 text-[13px] focus-visible:ring-1"
           />
         </div>
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1 sm:gap-2">
         {/* Gamification Stats - Hidden on small screens */}
         <div className="hidden lg:flex items-center gap-4">
           {/* Level Badge with XP Progress */}
@@ -77,41 +61,9 @@ export function TopBar({ onMenuClick, showMenu }: TopBarProps) {
           )}
         </div>
 
-        <Button variant="ghost" size="icon" className="relative" aria-label="Notificações">
-          <Bell className="h-5 w-5" />
+        <Button variant="ghost" size="icon" className="focus-ring relative" aria-label="Notificações">
+          <Bell className="h-4 w-4 text-muted-foreground" />
         </Button>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                <User className="h-4 w-4 text-muted-foreground" />
-              </div>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            {user && (
-              <div className="px-2 py-1.5 text-sm text-muted-foreground truncate">
-                {user.email}
-              </div>
-            )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link to="/perfil" className="cursor-pointer">
-                <User className="mr-2 h-4 w-4" />
-                Meu Perfil
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem 
-              onClick={handleSignOut}
-              className="text-destructive cursor-pointer"
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              Sair
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
     </header>
   );

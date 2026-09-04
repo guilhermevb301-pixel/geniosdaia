@@ -13,12 +13,14 @@ export default {
   		}
   	},
   	extend: {
-		colors: {
-			border: 'hsl(var(--border))',
-			input: 'hsl(var(--input))',
-			ring: 'hsl(var(--ring))',
-			background: 'hsl(var(--background))',
-			foreground: 'hsl(var(--foreground))',
+			colors: {
+				border: 'hsl(var(--border))',
+				input: 'hsl(var(--input))',
+				ring: 'hsl(var(--ring))',
+				background: 'hsl(var(--background))',
+				foreground: 'hsl(var(--foreground))',
+				codex: 'hsl(var(--codex))',
+				claude: 'hsl(var(--claude))',
 			primary: {
 				DEFAULT: 'hsl(var(--primary))',
 				foreground: 'hsl(var(--primary-foreground))',
@@ -79,11 +81,11 @@ export default {
 			md: 'calc(var(--radius) - 2px)',
 			sm: 'calc(var(--radius) - 4px)'
 		},
-		fontFamily: {
-			sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-			display: ['Playfair Display', 'Iowan Old Style', 'Georgia', 'serif'],
-			mono: ['Fira Code', 'ui-monospace', 'monospace']
-		},
+			fontFamily: {
+				sans: ['Geist Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+				display: ['Geist Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+				mono: ['Geist Mono', 'ui-monospace', 'SFMono-Regular', 'monospace']
+			},
 		keyframes: {
 			'accordion-down': {
 				from: { height: '0' },

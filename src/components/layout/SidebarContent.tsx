@@ -5,7 +5,6 @@ import {
   Radio,
   MessageSquare,
   MessageCircle,
-  Sparkles,
   ChevronDown,
   Zap,
   Settings,
@@ -37,7 +36,28 @@ import { getPrefetchHandler } from "@/lib/prefetchRoutes";
 import { SidebarUserFooter } from "./SidebarUserFooter";
 
 const NAV_ITEM_BASE =
-  "relative flex items-center gap-3 rounded-md px-2 py-2.5 text-[14px] transition-colors duration-200 before:absolute before:-left-3 before:top-1/2 before:h-0 before:w-[2px] before:-translate-y-1/2 before:rounded-full before:bg-primary before:transition-all before:duration-300";
+  "focus-ring group relative flex items-center gap-3 rounded-md px-2 py-2.5 text-[14px] transition-colors duration-200 before:absolute before:-left-3 before:top-1/2 before:h-0 before:w-[2px] before:-translate-y-1/2 before:rounded-full before:bg-primary before:transition-all before:duration-300 [&>svg]:text-muted-foreground [&>svg]:transition-colors";
+
+const ADMIN_NAV_ITEM_BASE =
+  "focus-ring group flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors [&>svg]:shrink-0 [&>svg]:text-muted-foreground [&>svg]:transition-colors";
+
+function navItemClass(active: boolean) {
+  return cn(
+    NAV_ITEM_BASE,
+    active
+      ? "bg-secondary text-foreground before:h-5 [&>svg]:text-primary"
+      : "text-muted-foreground hover:bg-card hover:text-foreground hover:[&>svg]:text-primary",
+  );
+}
+
+function adminNavItemClass(active: boolean) {
+  return cn(
+    ADMIN_NAV_ITEM_BASE,
+    active
+      ? "bg-secondary text-foreground [&>svg]:text-primary"
+      : "text-muted-foreground hover:bg-card hover:text-foreground hover:[&>svg]:text-primary",
+  );
+}
 
 const tools = [
   { label: "Meus GPTs", href: "/meus-gpts", icon: MessageSquare },
@@ -79,9 +99,9 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
     <div className="flex h-full flex-col bg-sidebar">
       {/* Logo */}
       <div className="px-6 pb-7 pt-8">
-        <span className="block font-display text-[2rem] leading-none text-sidebar-foreground">
+        <span className="block font-display text-[1.75rem] font-semibold leading-none text-sidebar-foreground">
           RealFrame{" "}
-          <span className="text-primary [font-size:inherit] [font-style:italic]">IA</span>
+          <span className="text-primary [font-size:inherit]">IA</span>
         </span>
       </div>
 
@@ -93,14 +113,9 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           to="/"
           onClick={handleClick}
           onMouseEnter={() => handlePrefetch("/")}
-          className={cn(
-            NAV_ITEM_BASE,
-            isActive("/")
-              ? "text-foreground before:h-5"
-              : "text-muted-foreground hover:text-foreground [&>svg]:opacity-70 hover:[&>svg]:opacity-100"
-          )}
+          className={navItemClass(isActive("/"))}
         >
-          <Layout className="h-5 w-5 shrink-0 text-primary" />
+          <Layout className="h-5 w-5 shrink-0" />
           Dashboard
         </Link>
 
@@ -109,14 +124,9 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           to="/aulas"
           onClick={handleClick}
           onMouseEnter={() => handlePrefetch("/aulas")}
-          className={cn(
-            NAV_ITEM_BASE,
-            isActive("/aulas")
-              ? "text-foreground before:h-5"
-              : "text-muted-foreground hover:text-foreground [&>svg]:opacity-70 hover:[&>svg]:opacity-100"
-          )}
+          className={navItemClass(isActive("/aulas"))}
         >
-          <BookOpen className="h-5 w-5 shrink-0 text-primary" />
+          <BookOpen className="h-5 w-5 shrink-0" />
           Aulas
         </Link>
 
@@ -125,14 +135,9 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           to="/templates"
           onClick={handleClick}
           onMouseEnter={() => handlePrefetch("/templates")}
-          className={cn(
-            NAV_ITEM_BASE,
-            isActive("/templates")
-              ? "text-foreground before:h-5"
-              : "text-muted-foreground hover:text-foreground [&>svg]:opacity-70 hover:[&>svg]:opacity-100"
-          )}
+          className={navItemClass(isActive("/templates"))}
         >
-          <Zap className="h-5 w-5 shrink-0 text-primary" />
+          <Zap className="h-5 w-5 shrink-0" />
           Templates
         </Link>
 
@@ -141,14 +146,9 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           to="/prompts"
           onClick={handleClick}
           onMouseEnter={() => handlePrefetch("/prompts")}
-          className={cn(
-            NAV_ITEM_BASE,
-            isPromptsSection
-              ? "text-foreground before:h-5"
-              : "text-muted-foreground hover:text-foreground [&>svg]:opacity-70 hover:[&>svg]:opacity-100"
-          )}
+          className={navItemClass(isPromptsSection)}
         >
-          <Lightbulb className="h-5 w-5 shrink-0 text-primary" />
+          <Lightbulb className="h-5 w-5 shrink-0" />
           Banco de Prompts
         </Link>
 
@@ -174,14 +174,9 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
               to={item.href}
               onClick={handleClick}
               onMouseEnter={() => handlePrefetch(item.href)}
-              className={cn(
-                NAV_ITEM_BASE,
-                isActive(item.href)
-                  ? "text-foreground before:h-5"
-                  : "text-muted-foreground hover:text-foreground [&>svg]:opacity-70 hover:[&>svg]:opacity-100"
-              )}
+              className={navItemClass(isActive(item.href))}
             >
-              <item.icon className="h-5 w-5 shrink-0 text-primary" />
+              <item.icon className="h-5 w-5 shrink-0" />
               {item.label}
             </Link>
           );
@@ -194,28 +189,18 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
         <Link
           to="/certificados"
           onClick={handleClick}
-          className={cn(
-            NAV_ITEM_BASE,
-            isActive("/certificados")
-              ? "text-foreground before:h-5"
-              : "text-muted-foreground hover:text-foreground [&>svg]:opacity-70 hover:[&>svg]:opacity-100"
-          )}
+          className={navItemClass(isActive("/certificados"))}
         >
-          <Award className="h-5 w-5 shrink-0 text-primary" />
+          <Award className="h-5 w-5 shrink-0" />
           Certificados
         </Link>
 
         <Link
           to="/meu-caderno"
           onClick={handleClick}
-          className={cn(
-            NAV_ITEM_BASE,
-            isActive("/meu-caderno")
-              ? "text-foreground before:h-5"
-              : "text-muted-foreground hover:text-foreground [&>svg]:opacity-70 hover:[&>svg]:opacity-100"
-          )}
+          className={navItemClass(isActive("/meu-caderno"))}
         >
-          <NotebookPen className="h-5 w-5 shrink-0 text-primary" />
+          <NotebookPen className="h-5 w-5 shrink-0" />
           Meu Caderno
         </Link>
 
@@ -223,14 +208,9 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
         <Link
           to="/mentoria"
           onClick={handleClick}
-          className={cn(
-            NAV_ITEM_BASE,
-            isActive("/mentoria")
-              ? "text-foreground before:h-5"
-              : "text-muted-foreground hover:text-foreground [&>svg]:opacity-70 hover:[&>svg]:opacity-100"
-          )}
+          className={navItemClass(isActive("/mentoria"))}
         >
-          <MessageSquare className="h-5 w-5 shrink-0 text-primary" />
+          <MessageSquare className="h-5 w-5 shrink-0" />
           Aplicar Mentoria
         </Link>
 
@@ -239,14 +219,9 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           <Link
             to="/minha-mentoria"
             onClick={handleClick}
-            className={cn(
-              NAV_ITEM_BASE,
-              isActive("/minha-mentoria")
-                ? "text-foreground before:h-5"
-                : "text-muted-foreground hover:text-foreground [&>svg]:opacity-70 hover:[&>svg]:opacity-100"
-            )}
+            className={navItemClass(isActive("/minha-mentoria"))}
           >
-            <GraduationCap className="h-5 w-5 shrink-0 text-primary" />
+            <GraduationCap className="h-5 w-5 shrink-0" />
             Minha Mentoria
           </Link>
         )}
@@ -258,10 +233,10 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
               <CollapsibleTrigger className="w-full">
                 <div
                   className={cn(
-                    "flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                    "group flex items-center justify-between rounded-md px-2 py-2.5 text-sm font-medium transition-colors [&_svg]:text-muted-foreground [&_svg]:transition-colors",
                     isAdminSection
-                      ? "text-foreground before:h-5"
-                      : "text-muted-foreground hover:text-foreground [&>svg]:opacity-70 hover:[&>svg]:opacity-100"
+                      ? "bg-secondary text-foreground [&_svg]:text-primary"
+                      : "text-muted-foreground hover:bg-card hover:text-foreground hover:[&_svg]:text-primary"
                   )}
                 >
                   <div className="flex items-center gap-3">
@@ -284,12 +259,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                       <Link
                         to="/admin/modules"
                         onClick={handleClick}
-                        className={cn(
-                          "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
-                          isActive("/admin/modules")
-                            ? "text-primary bg-primary/10 border border-primary/20"
-                            : "text-sidebar-foreground/90 hover:text-sidebar-foreground hover:bg-muted"
-                        )}
+                        className={adminNavItemClass(isActive("/admin/modules"))}
                       >
                         <Layers className="h-4 w-4" />
                         Módulos
@@ -297,12 +267,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                       <Link
                         to="/admin/lessons"
                         onClick={handleClick}
-                        className={cn(
-                          "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
-                          isActive("/admin/lessons")
-                            ? "text-primary bg-primary/10 border border-primary/20"
-                            : "text-sidebar-foreground/90 hover:text-sidebar-foreground hover:bg-muted"
-                        )}
+                        className={adminNavItemClass(isActive("/admin/lessons"))}
                       >
                         <BookOpen className="h-4 w-4" />
                         Aulas
@@ -310,12 +275,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                       <Link
                         to="/admin/prompts"
                         onClick={handleClick}
-                        className={cn(
-                          "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
-                          isActive("/admin/prompts")
-                            ? "text-primary bg-primary/10 border border-primary/20"
-                            : "text-sidebar-foreground/90 hover:text-sidebar-foreground hover:bg-muted"
-                        )}
+                        className={adminNavItemClass(isActive("/admin/prompts"))}
                       >
                         <Lightbulb className="h-4 w-4" />
                         Prompts
@@ -323,12 +283,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                       <Link
                         to="/admin/templates"
                         onClick={handleClick}
-                        className={cn(
-                          "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
-                          isActive("/admin/templates")
-                            ? "text-primary bg-primary/10 border border-primary/20"
-                            : "text-sidebar-foreground/90 hover:text-sidebar-foreground hover:bg-muted"
-                        )}
+                        className={adminNavItemClass(isActive("/admin/templates"))}
                       >
                         <FileText className="h-4 w-4" />
                         Templates
@@ -336,12 +291,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                       <Link
                         to="/admin/gpts"
                         onClick={handleClick}
-                        className={cn(
-                          "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
-                          isActive("/admin/gpts")
-                            ? "text-primary bg-primary/10 border border-primary/20"
-                            : "text-sidebar-foreground/90 hover:text-sidebar-foreground hover:bg-muted"
-                        )}
+                        className={adminNavItemClass(isActive("/admin/gpts"))}
                       >
                         <Bot className="h-4 w-4" />
                         GPTs
@@ -353,12 +303,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                   <Link
                     to="/admin/users"
                     onClick={handleClick}
-                    className={cn(
-                      "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
-                      isActive("/admin/users")
-                        ? "text-primary bg-primary/10 border border-primary/20"
-                        : "text-sidebar-foreground/90 hover:text-sidebar-foreground hover:bg-muted"
-                    )}
+                    className={adminNavItemClass(isActive("/admin/users"))}
                   >
                     <Users className="h-4 w-4" />
                     Usuários
@@ -366,12 +311,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                   <Link
                     to="/admin/mentees"
                     onClick={handleClick}
-                    className={cn(
-                      "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
-                      isActive("/admin/mentees")
-                        ? "text-primary bg-primary/10 border border-primary/20"
-                        : "text-sidebar-foreground/90 hover:text-sidebar-foreground hover:bg-muted"
-                    )}
+                    className={adminNavItemClass(isActive("/admin/mentees"))}
                   >
                     <GraduationCap className="h-4 w-4" />
                     Mentorados
@@ -379,12 +319,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                   <Link
                     to="/admin/challenges"
                     onClick={handleClick}
-                    className={cn(
-                      "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
-                      isActive("/admin/challenges")
-                        ? "text-primary bg-primary/10 border border-primary/20"
-                        : "text-sidebar-foreground/90 hover:text-sidebar-foreground hover:bg-muted"
-                    )}
+                    className={adminNavItemClass(isActive("/admin/challenges"))}
                   >
                     <Trophy className="h-4 w-4" />
                     Desafios
@@ -392,12 +327,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                   <Link
                     to="/admin/banners"
                     onClick={handleClick}
-                    className={cn(
-                      "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
-                      isActive("/admin/banners")
-                        ? "text-primary bg-primary/10 border border-primary/20"
-                        : "text-sidebar-foreground/90 hover:text-sidebar-foreground hover:bg-muted"
-                    )}
+                    className={adminNavItemClass(isActive("/admin/banners"))}
                   >
                     <Image className="h-4 w-4" />
                     Banners
@@ -405,12 +335,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                   <Link
                     to="/admin/appearance"
                     onClick={handleClick}
-                    className={cn(
-                      "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
-                      isActive("/admin/appearance")
-                        ? "text-primary bg-primary/10 border border-primary/20"
-                        : "text-sidebar-foreground/90 hover:text-sidebar-foreground hover:bg-muted"
-                    )}
+                    className={adminNavItemClass(isActive("/admin/appearance"))}
                   >
                     <Palette className="h-4 w-4" />
                     Aparência
@@ -428,12 +353,9 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           target="_blank"
           rel="noopener noreferrer"
           onClick={handleClick}
-          className={cn(
-            NAV_ITEM_BASE,
-            "text-muted-foreground hover:text-foreground [&>svg]:opacity-70 hover:[&>svg]:opacity-100",
-          )}
+          className={navItemClass(false)}
         >
-          <MessageCircle className="h-5 w-5 shrink-0 text-primary" />
+          <MessageCircle className="h-5 w-5 shrink-0" />
           Entrar no grupo
         </a>
       </nav>

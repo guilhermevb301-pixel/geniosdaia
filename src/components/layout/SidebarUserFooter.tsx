@@ -26,12 +26,12 @@ export function SidebarUserFooter({ onNavigate }: { onNavigate?: () => void }) {
   };
 
   return (
-    <div className="border-t border-sidebar-border p-5">
+    <div className="shrink-0 border-t border-sidebar-border bg-sidebar p-5">
       {!isLoading && (
         <div className="mb-3">
           <div className="mb-1.5 flex items-center justify-between">
-            <span className="eyebrow text-muted-foreground">{levelInfo.name}</span>
-            <span className="text-[11px] tabular-nums text-muted-foreground">
+            <span className="micro-label text-muted-foreground">{levelInfo.name}</span>
+            <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
               {levelInfo.xpInLevel}/{levelInfo.xpForNextLevel} XP
             </span>
           </div>
@@ -40,7 +40,7 @@ export function SidebarUserFooter({ onNavigate }: { onNavigate?: () => void }) {
       )}
 
       <div className="mb-3 flex items-center gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/15 text-sm font-semibold text-primary">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-sm font-semibold text-primary">
           {initialsOf(name)}
         </div>
         <div className="min-w-0">
@@ -57,7 +57,8 @@ export function SidebarUserFooter({ onNavigate }: { onNavigate?: () => void }) {
 
       <button
         onClick={handleSignOut}
-        className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[13px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className="focus-ring flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[13px] text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+        aria-label="Sair da conta"
       >
         <LogOut className="h-4 w-4" />
         Sair

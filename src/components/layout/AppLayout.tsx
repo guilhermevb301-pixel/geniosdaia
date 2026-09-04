@@ -15,20 +15,20 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen overflow-x-hidden bg-background text-foreground">
       {/* Desktop: fixed sidebar */}
       {!isMobile && <AppSidebar />}
       
       {/* Mobile: Sheet sidebar */}
       {isMobile && (
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-          <SheetContent side="left" className="w-[272px] p-0">
+          <SheetContent side="left" className="w-[272px] border-sidebar-border bg-sidebar p-0">
             <SidebarContent onNavigate={() => setSidebarOpen(false)} />
           </SheetContent>
         </Sheet>
       )}
 
-      <div className={cn(!isMobile && "pl-[272px]")}>
+      <div className={cn("min-h-screen min-w-0", !isMobile && "pl-[272px]")}>
         <TopBar
           onMenuClick={() => setSidebarOpen(true)}
           showMenu={isMobile}
