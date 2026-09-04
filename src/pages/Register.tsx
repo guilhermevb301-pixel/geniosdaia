@@ -3,7 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sparkles } from "lucide-react";
+import { AgentMark } from "@/components/brand/AgentMark";
+import { ArrowRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
@@ -100,110 +101,126 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left Side - Decorative */}
-      <div className="hidden lg:flex lg:w-1/2 gradient-login relative overflow-hidden">
-        <div className="absolute inset-0 flex flex-col justify-center items-center p-12 select-none">
-          <div className="space-y-4 text-center">
-            <p className="text-6xl font-bold text-white/10 tracking-widest">AUTOMAÇÃO</p>
-            <p className="text-7xl font-bold text-white/15 tracking-widest">IA</p>
-            <p className="text-5xl font-bold text-white/10 tracking-widest">N8N</p>
-            <p className="text-8xl font-bold text-white/20 tracking-widest">GÊNIOS</p>
-            <p className="text-6xl font-bold text-white/10 tracking-widest">WORKFLOWS</p>
-          </div>
-        </div>
-        
-        <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-white/5 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-white/5 rounded-full blur-3xl" />
-      </div>
+    <main className="relative flex min-h-screen items-center justify-center overflow-x-hidden bg-[#0b0d10] p-4 sm:p-6 lg:p-10">
+      <div aria-hidden="true" className="absolute left-0 top-1/4 h-32 w-px bg-codex/35" />
+      <div aria-hidden="true" className="absolute bottom-1/4 right-0 h-24 w-px bg-claude/35" />
 
-      {/* Right Side - Form */}
-      <div className="flex-1 flex items-center justify-center p-8 bg-card">
-        <div className="w-full max-w-sm space-y-8">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg gradient-primary">
-              <Sparkles className="h-6 w-6 text-primary-foreground" />
-            </div>
-            <span className="font-display text-2xl text-foreground">RealFrame IA</span>
-          </div>
+      <section className="grid min-h-[calc(100svh-2rem)] w-full max-w-5xl grid-rows-[auto_1fr] overflow-hidden rounded-lg border border-white/10 bg-card lg:min-h-[680px] lg:grid-cols-[0.72fr_1.28fr] lg:grid-rows-1">
+        <aside className="relative flex min-h-24 items-center justify-between overflow-hidden border-b border-border bg-[#101318] p-4 sm:min-h-36 sm:p-6 lg:min-h-[680px] lg:flex-col lg:items-start lg:border-b-0 lg:border-r lg:p-8">
+          <AgentMark
+            size="lg"
+            className="h-14 w-14 p-2 sm:h-20 sm:w-20 sm:p-2.5"
+          />
 
-          {/* Header */}
-          <div className="space-y-2">
-            <h1 className="text-foreground">Criar conta</h1>
-            <p className="text-sm text-muted-foreground">
-              Preencha os dados para se cadastrar
+          <div className="max-w-[15rem] text-right lg:text-left">
+            <p className="micro-label text-primary">Novo acesso</p>
+            <p className="mt-2 hidden text-sm text-muted-foreground sm:block">
+              Crie sua conta para acompanhar aulas, produtos e sua evolução.
             </p>
+            <div className="mt-5 hidden items-center gap-2 border-t border-white/10 pt-4 lg:flex">
+              <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-primary" />
+              <span className="font-mono text-[11px] uppercase text-muted-foreground">
+                cadastro seguro
+              </span>
+            </div>
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="bg-background"
-                required
-              />
+          <div aria-hidden="true" className="absolute right-0 top-16 h-20 w-px bg-codex/45" />
+          <div aria-hidden="true" className="absolute bottom-14 left-0 h-px w-20 bg-claude/45" />
+        </aside>
+
+        <div className="flex items-center justify-center px-6 py-10 sm:px-10 lg:px-16 lg:py-12">
+          <div className="w-full max-w-md">
+            <div>
+              <h1 className="text-[2rem] text-foreground sm:text-4xl">RealFrame IA</h1>
+              <h2 className="mt-6 text-2xl text-foreground">Criar conta</h2>
+              <p className="mt-3 text-sm text-muted-foreground">
+                Preencha os dados para se cadastrar.
+              </p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="phone">Telefone (WhatsApp)</Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="(11) 99999-9999"
-                value={formatPhoneDisplay(phone)}
-                onChange={handlePhoneChange}
-                className="bg-background"
-                required
-              />
+            <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  placeholder="seu@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="h-11 rounded-lg border-white/10 bg-[#0b0d10] focus-visible:ring-[#34d399] focus-visible:ring-offset-card"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone">Telefone (WhatsApp)</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  placeholder="(11) 99999-9999"
+                  value={formatPhoneDisplay(phone)}
+                  onChange={handlePhoneChange}
+                  className="h-11 rounded-lg border-white/10 bg-[#0b0d10] focus-visible:ring-[#34d399] focus-visible:ring-offset-card"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">Senha</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="Sua senha"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="h-11 rounded-lg border-white/10 bg-[#0b0d10] focus-visible:ring-[#34d399] focus-visible:ring-offset-card"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirmar Senha</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="Repita sua senha"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="h-11 rounded-lg border-white/10 bg-[#0b0d10] focus-visible:ring-[#34d399] focus-visible:ring-offset-card"
+                  required
+                />
+              </div>
+
+              <Button
+                type="submit"
+                variant="accent"
+                className="h-11 w-full rounded-lg bg-[#34d399] text-[#07130f] transition-[transform,opacity] hover:bg-[#34d399]/90 hover:shadow-none active:translate-y-px"
+                disabled={loading}
+              >
+                {loading ? "Criando conta..." : "Criar conta"}
+                {!loading && <ArrowRight aria-hidden="true" />}
+              </Button>
+            </form>
+
+            <div className="mt-6 flex flex-wrap items-center gap-x-1 text-sm text-muted-foreground">
+              <span>Já tem conta?</span>
+              <Link
+                to="/login"
+                className="focus-ring inline-flex min-h-11 items-center rounded-sm text-primary hover:underline"
+              >
+                Fazer login
+              </Link>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="bg-background"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmar Senha</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="bg-background"
-                required
-              />
-            </div>
-
-            <Button type="submit" variant="accent" className="w-full" disabled={loading}>
-              {loading ? "Criando conta..." : "Criar conta"}
-            </Button>
-          </form>
-
-          {/* Login link */}
-          <p className="text-center text-sm text-muted-foreground">
-            Já tem conta?{" "}
-            <Link to="/login" className="text-primary hover:underline">
-              Fazer login
-            </Link>
-          </p>
+          </div>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }
