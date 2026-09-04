@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { ModuleCard } from "./ModuleCard";
 import { ModuleCardSkeleton } from "./ModuleCardSkeleton";
 import { Progress } from "@/components/ui/progress";
@@ -43,6 +44,8 @@ export function ModuleCarousel({
   buyUrl,
   sectionIconUrl,
 }: ModuleCarouselProps) {
+  const titleId = useId();
+
   if (isLoading) {
     return (
       <div className="flex gap-6 overflow-hidden">
@@ -71,11 +74,15 @@ export function ModuleCarousel({
     <Carousel
       opts={{ align: "start", dragFree: true }}
       className="px-1"
+      aria-labelledby={title ? titleId : undefined}
     >
       {title && (
         <div className="mb-5 flex items-end justify-between gap-4">
           <div className="min-w-0">
-            <h2 className={`truncate text-base font-semibold ${locked ? "text-muted-foreground" : "text-foreground"}`}>
+            <h2
+              id={titleId}
+              className={`truncate text-base font-semibold ${locked ? "text-muted-foreground" : "text-foreground"}`}
+            >
               {title.trim()}
             </h2>
             <div className="mt-2 flex items-center gap-3">

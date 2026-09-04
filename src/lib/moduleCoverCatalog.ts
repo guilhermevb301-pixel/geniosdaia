@@ -1,4 +1,4 @@
-export type ModuleCoverAccent = "emerald" | "codex" | "claude";
+export type ModuleCoverReflection = "emerald" | "codex" | "claude";
 
 export type ModuleCoverLayout =
   | "portal"
@@ -61,7 +61,7 @@ export interface ModuleCoverMetadata {
   readonly topic: string;
   readonly icon: ModuleCoverIconName;
   readonly layout: ModuleCoverLayout;
-  readonly accent: ModuleCoverAccent;
+  readonly reflection: ModuleCoverReflection;
   readonly signature?: ModuleCoverSignature;
 }
 
@@ -73,7 +73,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "service-welcome",
     icon: "sparkles",
     layout: "portal",
-    accent: "codex",
+    reflection: "codex",
     signature: "pair",
   },
   {
@@ -83,7 +83,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "tool-installation",
     icon: "wrench",
     layout: "workbench",
-    accent: "emerald",
+    reflection: "emerald",
   },
   {
     moduleId: "f53202aa-94ec-4270-add0-da334f1bdd44",
@@ -92,7 +92,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "service-agent",
     icon: "bot-message",
     layout: "network",
-    accent: "codex",
+    reflection: "codex",
   },
   {
     moduleId: "3045b87f-d748-4bd8-8aef-7b41f5ee04a4",
@@ -101,7 +101,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "sell-your-agent",
     icon: "sale",
     layout: "funnel",
-    accent: "emerald",
+    reflection: "emerald",
   },
   {
     moduleId: "529970f8-4b1c-44cb-ad1e-efcc07fd2f72",
@@ -110,7 +110,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "claude-introduction",
     icon: "braces",
     layout: "portal",
-    accent: "claude",
+    reflection: "claude",
     signature: "claude",
   },
   {
@@ -120,7 +120,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "claude-copilot",
     icon: "orbit",
     layout: "orbit",
-    accent: "claude",
+    reflection: "claude",
   },
   {
     moduleId: "18666f86-e909-499a-a3dd-6977056c348e",
@@ -129,7 +129,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "claude-secret-weapon",
     icon: "shield",
     layout: "vault",
-    accent: "claude",
+    reflection: "claude",
   },
   {
     moduleId: "59e98bdf-cb49-4af9-b53b-fe93aa23c4d2",
@@ -138,7 +138,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "service-bonus",
     icon: "gift",
     layout: "burst",
-    accent: "emerald",
+    reflection: "emerald",
   },
   {
     moduleId: "cc7ed96a-6af2-41eb-b7d3-d1b09ce202ee",
@@ -147,7 +147,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "marketing",
     icon: "megaphone",
     layout: "broadcast",
-    accent: "claude",
+    reflection: "claude",
   },
   {
     moduleId: "65bbe2f1-91d0-4388-b021-aa6beea6cb9c",
@@ -156,7 +156,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "virality",
     icon: "zap",
     layout: "signal",
-    accent: "codex",
+    reflection: "codex",
   },
   {
     moduleId: "ae8f0be2-7635-4f89-86e5-859b39da791e",
@@ -165,7 +165,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "prospecting",
     icon: "radar",
     layout: "radar",
-    accent: "emerald",
+    reflection: "emerald",
   },
   {
     moduleId: "7c645e12-86bd-4b53-ac39-b3bd4af654d8",
@@ -174,7 +174,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "creative-course-intro",
     icon: "play",
     layout: "stage",
-    accent: "codex",
+    reflection: "codex",
     signature: "pair",
   },
   {
@@ -184,7 +184,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "persona-creation",
     icon: "persona",
     layout: "portrait",
-    accent: "claude",
+    reflection: "claude",
   },
   {
     moduleId: "84baf9e5-553b-48fc-bf7e-4d70357d50da",
@@ -193,7 +193,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "content-creation",
     icon: "panels",
     layout: "stack",
-    accent: "emerald",
+    reflection: "emerald",
   },
   {
     moduleId: "f8019993-bdcc-4ea8-8a99-521c8135c4a0",
@@ -202,7 +202,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "heygen",
     icon: "video",
     layout: "frame",
-    accent: "codex",
+    reflection: "codex",
   },
   {
     moduleId: "3df41aab-078d-44bc-b310-b4cab8acdbfe",
@@ -211,7 +211,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "influencer-welcome",
     icon: "door",
     layout: "portal",
-    accent: "claude",
+    reflection: "claude",
     signature: "pair",
   },
   {
@@ -221,7 +221,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "ai-influencer",
     icon: "bot",
     layout: "portrait",
-    accent: "codex",
+    reflection: "codex",
   },
   {
     moduleId: "8cf99541-bb94-43f5-b863-7ca07a7d3320",
@@ -230,7 +230,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "ai-influencer-alternative",
     icon: "layers",
     layout: "split",
-    accent: "claude",
+    reflection: "claude",
   },
   {
     moduleId: "5102702c-10f8-4b50-86d3-30cceaa2f3b9",
@@ -239,7 +239,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "influencer-monetization",
     icon: "chart",
     layout: "market",
-    accent: "emerald",
+    reflection: "emerald",
   },
   {
     moduleId: "58eb0981-8acd-490c-baa9-16bdb85e9930",
@@ -248,7 +248,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "influencer-bonus",
     icon: "gift",
     layout: "burst",
-    accent: "claude",
+    reflection: "claude",
   },
   {
     moduleId: "b2188455-ea07-4626-b8d0-a2f2bb5e1283",
@@ -257,7 +257,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "nanobanana-pro",
     icon: "banana",
     layout: "studio",
-    accent: "claude",
+    reflection: "claude",
   },
   {
     moduleId: "98e5f69f-ffe0-48ef-a43b-051b9ba0c584",
@@ -266,7 +266,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "professional-photo-session",
     icon: "camera",
     layout: "frame",
-    accent: "emerald",
+    reflection: "emerald",
   },
   {
     moduleId: "4d962da0-cc40-496a-a294-a56343295f61",
@@ -275,7 +275,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "veo-3",
     icon: "clapperboard",
     layout: "stage",
-    accent: "emerald",
+    reflection: "emerald",
   },
   {
     moduleId: "58e79b39-a3da-4fd6-81c6-78d8ce6d0e5f",
@@ -284,7 +284,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "kling",
     icon: "film",
     layout: "orbit",
-    accent: "codex",
+    reflection: "codex",
   },
   {
     moduleId: "87ebd1c4-70db-4430-b52e-df1cc56dd62b",
@@ -293,7 +293,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "seedance-2",
     icon: "switch-camera",
     layout: "signal",
-    accent: "claude",
+    reflection: "claude",
   },
   {
     moduleId: "0407ac13-d59b-455a-8d54-c6e351fd0960",
@@ -302,7 +302,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "ai-podcast",
     icon: "mic",
     layout: "waveform",
-    accent: "codex",
+    reflection: "codex",
   },
   {
     moduleId: "64f46787-8efc-43fb-8c14-1bd8db442ed4",
@@ -311,7 +311,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "video-monetization",
     icon: "trending",
     layout: "growth",
-    accent: "emerald",
+    reflection: "emerald",
   },
   {
     moduleId: "f2883111-c4b8-443e-b440-65b7737a22f9",
@@ -320,7 +320,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "viral-videos",
     icon: "flame",
     layout: "broadcast",
-    accent: "claude",
+    reflection: "claude",
   },
   {
     moduleId: "d7b56db0-52d2-41e8-8469-386cd5ad465d",
@@ -329,7 +329,7 @@ export const MODULE_COVER_CATALOG = [
     topic: "sales-page",
     icon: "browser",
     layout: "browser",
-    accent: "emerald",
+    reflection: "emerald",
   },
 ] as const satisfies readonly ModuleCoverMetadata[];
 
@@ -355,10 +355,7 @@ export function getModuleCover({
   productSlug,
   orderIndex,
 }: ModuleCoverLookup): ModuleCoverMetadata | null {
-  if (moduleId) {
-    const stableCover = coversByModuleId.get(moduleId);
-    if (stableCover) return stableCover;
-  }
+  if (moduleId) return coversByModuleId.get(moduleId) ?? null;
 
   if (!productSlug || !Number.isFinite(orderIndex)) return null;
   return coversByLegacyKey.get(`${productSlug}:${orderIndex}`) ?? null;

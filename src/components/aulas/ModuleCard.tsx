@@ -119,7 +119,11 @@ export function ModuleCard({
         {!locked && (
           <div className="mt-auto flex items-center gap-3 pt-1 text-[11.5px] text-muted-foreground/80">
             <span className="shrink-0">{totalLessons} aulas</span>
-            <Progress value={progressPercent} className="h-[2px] flex-1" />
+            <Progress
+              value={progressPercent}
+              aria-label={`Progresso do módulo ${title}`}
+              className="h-[2px] flex-1"
+            />
             <span className="shrink-0 tabular-nums">{Math.round(progressPercent)}%</span>
           </div>
         )}

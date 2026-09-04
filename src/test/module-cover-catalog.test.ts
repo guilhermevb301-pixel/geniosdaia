@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { getModuleCover } from "@/lib/moduleCoverCatalog";
+import {
+  getModuleCover,
+  MODULE_COVER_CATALOG,
+} from "@/lib/moduleCoverCatalog";
 
 const INVENTORY_MODULE_IDS = [
   "ef6a6949-ecbb-4eb2-a000-72fcdce58d30",
@@ -85,6 +88,30 @@ describe("module cover catalog", () => {
     });
 
     expect(cover?.moduleId).toBe("87ebd1c4-70db-4430-b52e-df1cc56dd62b");
+  });
+
+  it("does not let an unknown UUID collide with a known legacy key", () => {
+    expect(
+      getModuleCover({
+        moduleId: "future-module",
+        productSlug: "videos-cinematograficos",
+        orderIndex: 2,
+      }),
+    ).toBeNull();
+  });
+
+  it("keeps all 29 rendered visual signatures unique beyond identity fields", () => {
+    const visualSignatures = MODULE_COVER_CATALOG.map((cover) =>
+      [
+        cover.icon,
+        cover.layout,
+        "reflection" in cover ? cover.reflection : "missing-reflection",
+        cover.signature ?? "no-signature",
+      ].join("|"),
+    );
+
+    expect(visualSignatures).toHaveLength(29);
+    expect(new Set(visualSignatures)).toHaveLength(29);
   });
 
   it("returns null when neither stable nor legacy keys are known", () => {
