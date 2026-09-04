@@ -4,7 +4,32 @@ import { nextLiveEvent } from "@/data/liveEvents";
 
 export function NextLiveCard() {
   const event = nextLiveEvent();
-  if (!event) return null;
+  if (!event) {
+    return (
+      <Link
+        to="/eventos"
+        aria-label="Ver lives e replays"
+        className="interactive-surface focus-ring group/live flex min-h-[132px] flex-col justify-between p-5"
+      >
+        <div className="flex items-start gap-4">
+          <span className="surface-raised flex h-11 w-11 shrink-0 items-center justify-center text-primary">
+            <Radio className="h-4 w-4" />
+          </span>
+          <div>
+            <span className="micro-label text-muted-foreground">Lives e replays</span>
+            <h2 className="mt-2 text-base text-foreground">
+              Continue pelos encontros gravados
+            </h2>
+          </div>
+        </div>
+
+        <span className="mt-4 flex items-center justify-between text-xs font-medium text-primary">
+          Ver eventos
+          <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover/live:translate-x-1" />
+        </span>
+      </Link>
+    );
+  }
 
   return (
     <Link

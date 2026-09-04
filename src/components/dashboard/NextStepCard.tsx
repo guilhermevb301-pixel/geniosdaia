@@ -1,6 +1,6 @@
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { ArrowRight, Play } from "lucide-react";
+import { ArrowRight, BookOpen, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserProducts, type ProductSlug } from "@/hooks/useUserProducts";
@@ -57,7 +57,36 @@ export function NextStepCard() {
 
   const next = candidates.find((m) => m.completedLessons < m.totalLessons) ?? candidates[0];
 
-  if (!next) return null;
+  if (!next) {
+    return (
+      <Link
+        to="/aulas"
+        aria-label="Ver todas as aulas"
+        className="interactive-surface focus-ring group/next flex min-h-[292px] flex-col justify-between overflow-hidden border-primary/25 p-6 sm:p-8"
+      >
+        <div>
+          <div className="flex items-center justify-between gap-4">
+            <span className="micro-label text-primary">Biblioteca de aulas</span>
+            <span className="surface-raised flex h-10 w-10 shrink-0 items-center justify-center text-primary">
+              <BookOpen className="h-4 w-4" />
+            </span>
+          </div>
+
+          <h2 className="mt-8 max-w-[18ch] text-2xl text-foreground sm:text-3xl">
+            Escolha o que aprender agora
+          </h2>
+          <p className="mt-3 max-w-md text-sm text-muted-foreground">
+            Explore os módulos disponíveis e defina seu próximo passo.
+          </p>
+        </div>
+
+        <span className="mt-8 inline-flex h-11 w-fit items-center justify-center gap-2 rounded-lg bg-primary px-5 font-medium text-primary-foreground transition-transform duration-200 group-hover/next:-translate-y-0.5">
+          Ver todas as aulas
+          <ArrowRight className="h-4 w-4" />
+        </span>
+      </Link>
+    );
+  }
 
   const isStarted = next.completedLessons > 0;
   const progress = next.totalLessons > 0
