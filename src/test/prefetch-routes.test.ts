@@ -1,6 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
-import { prefetchModules } from "@/lib/prefetchRoutes";
+import { prefetchBanners, prefetchModules } from "@/lib/prefetchRoutes";
 
 const mocks = vi.hoisted(() => ({ from: vi.fn() }));
 
@@ -20,5 +20,19 @@ describe("route prefetch cache contracts", () => {
 
     expect(queryClient.getQueryData(["modules"])).toEqual(modules);
     expect(queryClient.getQueryData(["modules-with-sections"])).toBeUndefined();
+  });
+
+  it("stores dashboard banners under the exact query key consumed by the hook", async () => {
+    const banners = [{ id: "banner-1", title: "Novidade" }];
+    const order = vi.fn().mockResolvedValue({ data: banners, error: null });
+    const eq = vi.fn(() => ({ order }));
+    const select = vi.fn(() => ({ eq }));
+    mocks.from.mockReturnValue({ select });
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+    await prefetchBanners(queryClient);
+
+    expect(queryClient.getQueryData(["dashboardBanners"])).toEqual(banners);
+    expect(queryClient.getQueryData(["dashboard-banners"])).toBeUndefined();
   });
 });

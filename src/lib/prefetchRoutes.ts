@@ -50,7 +50,7 @@ export async function prefetchTemplates(queryClient: QueryClient) {
 
 export async function prefetchBanners(queryClient: QueryClient) {
   await queryClient.prefetchQuery({
-    queryKey: ["dashboard-banners"],
+    queryKey: ["dashboardBanners"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("dashboard_banners")

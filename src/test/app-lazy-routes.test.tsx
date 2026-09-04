@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "@/App";
 import * as appRoutes from "@/lib/appRoutes";
@@ -73,6 +73,7 @@ const expectedRoutes = {
   notFound: "*",
   prompts: "/prompts",
   register: "/register",
+  resetPassword: "/reset-password",
   templates: "/templates",
   userGpts: "/meus-gpts",
 } as const;
@@ -81,6 +82,7 @@ const expectedManifest: RouteManifest = [
   { id: "login", path: "/login", guard: "public" },
   { id: "register", path: "/register", guard: "public" },
   { id: "forgotPassword", path: "/forgot-password", guard: "public" },
+  { id: "resetPassword", path: "/reset-password", guard: "public" },
   { id: "certificate", path: "/certificado/:code", guard: "public" },
   { id: "accessDenied", path: "/acesso-negado", guard: "public" },
   { id: "myProducts", path: "/meus-produtos", guard: "protected" },
@@ -135,6 +137,7 @@ describe("route-level loading", () => {
 
     expect(appRoutes.APP_ROUTES).toEqual(expectedRoutes);
     expect(routeModule.APP_ROUTE_MANIFEST).toEqual(expectedManifest);
+    expect(routeModule.APP_ROUTE_MANIFEST).toHaveLength(31);
   });
 
   it("shows an accessible fallback before rendering the lazy Aulas page", async () => {
@@ -152,12 +155,31 @@ describe("route-level loading", () => {
     expect(await screen.findByRole("heading", { name: "Login carregado" })).toBeInTheDocument();
   });
 
+  it("keeps the reset-password route public and lazy", async () => {
+    mocks.user = null;
+    renderAppAt(appRoutes.APP_ROUTES.resetPassword);
+
+    expect(screen.getByRole("status", { name: "Carregando página" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Definir nova senha" })).toBeInTheDocument();
+  });
+
   it("keeps ProtectedRoute active for member routes", async () => {
     mocks.user = null;
     renderAppAt(appRoutes.APP_ROUTES.lessons);
 
     expect(await screen.findByRole("heading", { name: "Login carregado" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Aulas carregadas" })).not.toBeInTheDocument();
+  });
+
+  it("lets an unauthorized signed-in user leave the denied page through a public route", async () => {
+    mocks.isAuthorized = false;
+    renderAppAt(appRoutes.APP_ROUTES.lessons);
+
+    expect(await screen.findByRole("heading", { name: "Acesso não liberado" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("link", { name: /usar outra conta/i }));
+
+    expect(await screen.findByRole("heading", { name: "Login carregado" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Acesso não liberado" })).not.toBeInTheDocument();
   });
 
   it("keeps AdminRoute active for admin routes", async () => {

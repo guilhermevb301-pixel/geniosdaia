@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, ShieldX } from "lucide-react";
+import { ArrowRight, RefreshCw, ShieldX } from "lucide-react";
 import { AgentMark } from "@/components/brand/AgentMark";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -56,41 +56,27 @@ export default function AcessoNegado() {
               Se o acesso acabou de ser liberado, aguarde alguns instantes e tente novamente.
             </p>
 
-            {user ? (
-              <div className="mt-8 space-y-3">
-                <Button
-                  asChild
-                  variant="accent"
-                  className="h-11 w-full rounded-lg bg-[#34d399] text-[#07130f] transition-[transform,opacity] hover:bg-[#34d399]/90 hover:shadow-none active:translate-y-px"
-                >
-                  <Link to={APP_ROUTES.myProducts}>
-                    Ver meus produtos
-                    <ArrowRight aria-hidden="true" />
-                  </Link>
-                </Button>
-                <Button
-                  asChild
-                  variant="outline"
-                  className="h-11 w-full rounded-lg transition-[transform,opacity] hover:shadow-none"
-                >
-                  <Link to={APP_ROUTES.lessons}>
-                    <ArrowLeft aria-hidden="true" />
-                    Voltar para as aulas
-                  </Link>
-                </Button>
-              </div>
-            ) : (
+            <div className="mt-8 space-y-3">
+              <Button
+                type="button"
+                variant="accent"
+                className="h-11 w-full rounded-lg bg-[#34d399] text-[#07130f] transition-[transform,opacity] hover:bg-[#34d399]/90 hover:shadow-none active:translate-y-px"
+                onClick={() => window.location.reload()}
+              >
+                <RefreshCw aria-hidden="true" />
+                Reverificar acesso
+              </Button>
               <Button
                 asChild
-                variant="accent"
-                className="mt-8 h-11 w-full rounded-lg bg-[#34d399] text-[#07130f] transition-[transform,opacity] hover:bg-[#34d399]/90 hover:shadow-none active:translate-y-px"
+                variant="outline"
+                className="h-11 w-full rounded-lg transition-[transform,opacity] hover:shadow-none"
               >
                 <Link to={APP_ROUTES.login}>
-                  Ir para o login
+                  Usar outra conta
                   <ArrowRight aria-hidden="true" />
                 </Link>
               </Button>
-            )}
+            </div>
           </div>
         </div>
       </section>

@@ -44,6 +44,7 @@ const AdminBanners = lazy(() => import("./pages/admin/AdminBanners"));
 const AdminAppearance = lazy(() => import("./pages/admin/AdminAppearance"));
 const MenteeEditor = lazy(() => import("./pages/admin/MenteeEditor"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const AcessoNegado = lazy(() => import("./pages/AcessoNegado"));
 
@@ -76,6 +77,7 @@ const ROUTE_COMPONENTS = {
   adminAppearance: AdminAppearance,
   menteeEditor: MenteeEditor,
   forgotPassword: ForgotPassword,
+  resetPassword: ResetPassword,
   notFound: NotFound,
   accessDenied: AcessoNegado,
 } satisfies Record<AppRouteId, ComponentType>;

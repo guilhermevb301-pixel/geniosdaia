@@ -94,7 +94,7 @@ export default function Login() {
                   <Label htmlFor="password">Senha</Label>
                   <Link
                     to="/forgot-password"
-                    className="focus-ring rounded-sm text-xs text-muted-foreground hover:text-primary"
+                    className="focus-ring inline-flex min-h-11 items-center rounded-sm px-1 text-xs text-muted-foreground hover:text-primary"
                   >
                     Esqueceu a senha?
                   </Link>
@@ -122,9 +122,12 @@ export default function Login() {
               </Button>
             </form>
 
-            <p className="mt-8 text-sm text-muted-foreground">
-              Não tem conta?{" "}
-              <Link to="/register" className="focus-ring rounded-sm text-primary hover:underline">
+            <p className="mt-8 flex items-center gap-1 text-sm text-muted-foreground">
+              <span>Não tem conta?</span>
+              <Link
+                to="/register"
+                className="focus-ring inline-flex min-h-11 items-center rounded-sm px-1 text-primary hover:underline"
+              >
                 Criar conta
               </Link>
             </p>

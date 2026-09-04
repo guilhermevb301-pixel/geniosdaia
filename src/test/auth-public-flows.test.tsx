@@ -182,7 +182,7 @@ describe("AcessoNegado public flow", () => {
     mocks.user = { id: "user-1" };
   });
 
-  it("keeps the session active, avoids external checkout and offers valid member routes", () => {
+  it("keeps the session active and offers only public recovery actions", () => {
     const { container } = renderRoute(<AcessoNegado />);
 
     expect(mocks.signOut).not.toHaveBeenCalled();
@@ -190,14 +190,35 @@ describe("AcessoNegado public flow", () => {
     expect(container.querySelector('a[href^="http"]')).not.toBeInTheDocument();
     expect(screen.queryByText(/kiwify|seu-produto/i)).not.toBeInTheDocument();
 
-    expect(screen.getByRole("link", { name: /meus produtos/i })).toHaveAttribute(
+    expect(screen.queryByRole("link", { name: /meus produtos/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /voltar para as aulas/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /reverificar acesso/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /usar outra conta/i })).toHaveAttribute(
       "href",
-      APP_ROUTES.myProducts,
+      APP_ROUTES.login,
     );
-    expect(screen.getByRole("link", { name: /voltar para as aulas/i })).toHaveAttribute(
-      "href",
-      APP_ROUTES.lessons,
-    );
+  });
+
+  it("reloads the public access check without signing the user out", () => {
+    const originalLocation = window.location;
+    const reload = vi.fn();
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { ...originalLocation, reload },
+    });
+
+    try {
+      renderRoute(<AcessoNegado />);
+      fireEvent.click(screen.getByRole("button", { name: /reverificar acesso/i }));
+
+      expect(reload).toHaveBeenCalledOnce();
+      expect(mocks.signOut).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(window, "location", {
+        configurable: true,
+        value: originalLocation,
+      });
+    }
   });
 
   it("uses the RealFrame shell and sends signed-out visitors to login", () => {
@@ -209,7 +230,7 @@ describe("AcessoNegado public flow", () => {
     const rail = screen.getByRole("complementary");
     expect(within(rail).getByText(/acesso da conta/i)).toBeInTheDocument();
     expect(within(rail).queryByRole("img")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /ir para o login/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /usar outra conta/i })).toHaveAttribute(
       "href",
       APP_ROUTES.login,
     );

@@ -68,10 +68,13 @@ describe("Terminal Premium authentication", () => {
     expect(screen.getByRole("heading", { name: "RealFrame IA", level: 1 })).toBeInTheDocument();
     expect(screen.getAllByText("RealFrame IA")).toHaveLength(1);
     expect(screen.queryByText(/terminal premium/i)).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /esqueceu a senha/i })).toHaveAttribute(
+    const forgotPasswordLink = screen.getByRole("link", { name: /esqueceu a senha/i });
+    expect(forgotPasswordLink).toHaveAttribute(
       "href",
       "/forgot-password",
     );
+    expect(forgotPasswordLink).toHaveClass("min-h-11");
+    expect(screen.getByRole("link", { name: /criar conta/i })).toHaveClass("min-h-11");
   });
 
   it("keeps AgentMark completely decorative", () => {
@@ -179,6 +182,7 @@ describe("Terminal Premium authentication", () => {
 
     expect(screen.getByRole("heading", { name: "RealFrame IA", level: 1 })).toBeInTheDocument();
     expect(screen.queryByText(/terminal premium/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /fazer login/i })).toHaveClass("min-h-11");
   });
 
   it("announces successful recovery after sending the normalized email", async () => {
@@ -199,7 +203,7 @@ describe("Terminal Premium authentication", () => {
     });
 
     expect(mocks.resetPasswordForEmail).toHaveBeenCalledWith("gui@example.com", {
-      redirectTo: `${window.location.origin}/login`,
+      redirectTo: `${window.location.origin}/reset-password`,
     });
     expect(within(status).getByRole("heading", { name: "Email enviado" })).toBeInTheDocument();
     expect(within(status).getByRole("link", { name: /voltar para o login/i })).toHaveAttribute(

@@ -1,39 +1,59 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { AgentMark } from "@/components/brand/AgentMark";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AgentMark } from "@/components/brand/AgentMark";
-import { ArrowLeft, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
-export default function ForgotPassword() {
-  const [email, setEmail] = useState("");
+export default function ResetPassword() {
+  const [password, setPassword] = useState("");
+  const [confirmation, setConfirmation] = useState("");
   const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [updated, setUpdated] = useState(false);
   const { toast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    if (password.length < 6) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "A senha deve ter no mínimo 6 caracteres.",
+      });
+      return;
+    }
+
+    if (password !== confirmation) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "As senhas não coincidem.",
+      });
+      return;
+    }
+
     setLoading(true);
-
-    const normalizedEmail = email.trim().toLowerCase();
-    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-
+    const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
 
     if (error) {
       toast({
         variant: "destructive",
-        title: "Erro",
-        description: "Não foi possível enviar o email. Tente novamente.",
+        title: "Erro ao atualizar senha",
+        description: "Não foi possível atualizar sua senha. Solicite um novo link e tente novamente.",
       });
-    } else {
-      setSent(true);
+      return;
     }
+
+    setUpdated(true);
+    toast({
+      title: "Senha atualizada",
+      description: "Agora você pode entrar com sua nova senha.",
+    });
   };
 
   return (
@@ -51,7 +71,7 @@ export default function ForgotPassword() {
           <div className="max-w-[15rem] text-right lg:text-left">
             <p className="micro-label text-primary">Acesso seguro</p>
             <p className="mt-2 hidden text-sm text-muted-foreground sm:block">
-              Recupere sua conta e retome sua jornada na área de membros.
+              Defina uma nova senha para concluir a recuperação da sua conta.
             </p>
             <div className="mt-5 hidden items-center gap-2 border-t border-white/10 pt-4 lg:flex">
               <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-primary" />
@@ -67,55 +87,65 @@ export default function ForgotPassword() {
 
         <div className="flex items-center justify-center px-6 py-10 sm:px-10 lg:px-16 lg:py-14">
           <div className="w-full max-w-md">
-            <div>
-              <h1 className="text-[2rem] text-foreground sm:text-4xl">RealFrame IA</h1>
-            </div>
+            <h1 className="text-[2rem] text-foreground sm:text-4xl">RealFrame IA</h1>
 
             <div role="status" aria-live="polite" aria-atomic="true">
-              {sent && (
+              {updated && (
                 <div className="mt-10">
                   <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-primary/25 bg-primary/10">
-                    <Mail aria-hidden="true" className="h-5 w-5 text-primary" />
+                    <CheckCircle2 aria-hidden="true" className="h-5 w-5 text-primary" />
                   </div>
-                  <h2 className="mt-6 text-2xl text-foreground">Email enviado</h2>
+                  <h2 className="mt-6 text-2xl text-foreground">Senha atualizada</h2>
                   <p className="mt-3 text-sm text-muted-foreground">
-                    Enviamos um link de recuperação para <strong className="text-foreground">{email}</strong>.
-                    Verifique sua caixa de entrada e spam.
+                    Sua nova senha foi salva. Entre novamente para continuar.
                   </p>
                   <Button
                     asChild
-                    variant="outline"
-                    className="mt-8 h-11 w-full rounded-lg transition-[transform,opacity] hover:shadow-none"
+                    variant="accent"
+                    className="mt-8 h-11 w-full rounded-lg bg-[#34d399] text-[#07130f] transition-[transform,opacity] hover:bg-[#34d399]/90 hover:shadow-none active:translate-y-px"
                   >
                     <Link to="/login">
-                      <ArrowLeft aria-hidden="true" />
-                      Voltar para o login
+                      Fazer login
+                      <ArrowRight aria-hidden="true" />
                     </Link>
                   </Button>
                 </div>
               )}
             </div>
 
-            {!sent && (
+            {!updated && (
               <>
                 <div className="mt-10">
-                  <h2 className="text-2xl text-foreground">Recuperar senha</h2>
+                  <h2 className="text-2xl text-foreground">Definir nova senha</h2>
                   <p className="mt-3 text-sm text-muted-foreground">
-                    Digite seu email e enviaremos um link para redefinir sua senha.
+                    Use pelo menos 6 caracteres e confirme a senha abaixo.
                   </p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="mt-8 space-y-5">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="password">Nova senha</Label>
                     <Input
-                      id="email"
-                      type="email"
-                      inputMode="email"
-                      autoComplete="email"
-                      placeholder="seu@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      id="password"
+                      type="password"
+                      autoComplete="new-password"
+                      minLength={6}
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      className="h-11 rounded-lg border-white/10 bg-[#0b0d10] focus-visible:ring-[#34d399] focus-visible:ring-offset-card"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="password-confirmation">Confirmar nova senha</Label>
+                    <Input
+                      id="password-confirmation"
+                      type="password"
+                      autoComplete="new-password"
+                      minLength={6}
+                      value={confirmation}
+                      onChange={(event) => setConfirmation(event.target.value)}
                       className="h-11 rounded-lg border-white/10 bg-[#0b0d10] focus-visible:ring-[#34d399] focus-visible:ring-offset-card"
                       required
                     />
@@ -127,19 +157,9 @@ export default function ForgotPassword() {
                     className="h-11 w-full rounded-lg bg-[#34d399] text-[#07130f] transition-[transform,opacity] hover:bg-[#34d399]/90 hover:shadow-none active:translate-y-px"
                     disabled={loading}
                   >
-                    {loading ? "Enviando..." : "Enviar link de recuperação"}
+                    {loading ? "Atualizando..." : "Salvar nova senha"}
                   </Button>
                 </form>
-
-                <p className="mt-8 flex items-center gap-1 text-sm text-muted-foreground">
-                  <span>Lembrou a senha?</span>
-                  <Link
-                    to="/login"
-                    className="focus-ring inline-flex min-h-11 items-center rounded-sm px-1 text-primary hover:underline"
-                  >
-                    Fazer login
-                  </Link>
-                </p>
               </>
             )}
           </div>
