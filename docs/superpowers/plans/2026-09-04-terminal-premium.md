@@ -304,13 +304,13 @@ Run: `npm run test -- src/test/module-cover-catalog.test.ts`
 
 Expected: FAIL because `moduleCoverCatalog` does not exist.
 
-- [ ] **Step 3: Generate the complete 4:3 cover family**
+- [x] **Step 3: Build the complete code-native 4:3 cover family**
 
-Read the existing module titles from the app data. Generate one 1600×1200 composition per module with no embedded words: graphite studio background, emerald key light, selective Codex-blue and Claude-coral reflections, one subject object matching the module, mascots used only as occasional assistants. Convert to WebP at quality 82 and keep each file below 220KB.
+Read the existing module titles from the app data. Build one deterministic composition per module with no embedded words: graphite studio background, emerald key light, selective Codex-blue and Claude-coral reflections, one subject object matching the module, mascots used only as occasional signatures. This supersedes the original WebP generation step because repeated AI-generated imagery was explicitly rejected during visual review; the code-native system is lighter, stable and consistent while database images remain a fallback.
 
-- [ ] **Step 4: Implement the static catalog**
+- [x] **Step 4: Implement the static catalog**
 
-Import every generated WebP and map by product slug and zero-based order. Return `null` for unknown slug/order. Keep the database cover as a final fallback only when no local cover exists.
+Map every real module by stable UUID, using product slug and zero-based order only when UUID is unavailable. Return `null` for an unknown UUID so future modules retain their database cover as the final fallback.
 
 - [ ] **Step 5: Tighten the library composition**
 
@@ -325,7 +325,7 @@ Expected: PASS and successful build.
 - [ ] **Step 7: Commit the library**
 
 ```bash
-git add src/assets/module-covers src/lib/moduleCoverCatalog.ts src/pages/Aulas.tsx src/components/aulas src/test/module-cover-catalog.test.ts
+git add src/lib/moduleCoverCatalog.ts src/pages/Aulas.tsx src/components/aulas src/test/module-cover-catalog.test.ts
 git commit -m "feat(aulas): add unique covers and premium learning trails"
 ```
 

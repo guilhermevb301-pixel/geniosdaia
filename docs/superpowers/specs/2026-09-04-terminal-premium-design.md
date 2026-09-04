@@ -120,7 +120,7 @@ As capas deixam de repetir a mesma dupla de robôs em todos os módulos.
 
 ## Desempenho
 
-- Capas WebP/AVIF com tamanhos responsivos.
+- Capas 4:3 code-native, leves e responsivas, compostas por tema e identificador estável do módulo. WebP/AVIF permanece disponível como fallback editorial pelo banco, mas não é requisito para a família principal: o usuário rejeitou as imagens sintéticas repetitivas e aprovou uma biblioteca mais coerente e determinística.
 - Preload apenas para o conteúdo visível no primeiro viewport.
 - Lazy loading para trilhas seguintes.
 - Banners com art direction para desktop e mobile quando o mesmo crop não funcionar.
@@ -132,6 +132,6 @@ As capas deixam de repetir a mesma dupla de robôs em todos os módulos.
 - Dashboard apresenta continuidade, live e mentoria no primeiro viewport desktop.
 - Banners não dominam a tela e permanecem legíveis em desktop e mobile.
 - Aulas exibem mais cards por linha, com swipe funcional no mobile.
-- Capas não repetem a mesma cena entre módulos.
+- Capas não repetem a mesma composição entre módulos e continuam reconhecíveis após reordenação administrativa.
 - Mentoria funciona como um fluxo de três etapas e termina no WhatsApp.
 - Login, dashboard, aulas, sidebar e mentoria parecem partes do mesmo produto.
