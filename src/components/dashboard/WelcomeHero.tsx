@@ -27,11 +27,10 @@ export function WelcomeHero() {
   );
 
   return (
-    <section className="space-y-3">
-      <h1 className="!text-white text-[2.75rem]">{name ? `Olá, ${name}` : "Olá"}</h1>
-      <p className="text-sm leading-relaxed text-muted-foreground">
-        Pronto para continuar sua evolução?
-      </p>
+    <section>
+      <h1 className="!text-white text-[2rem] sm:text-[2.25rem]">
+        {name ? `Olá, ${name}` : "Olá"}
+      </h1>
     </section>
   );
 }

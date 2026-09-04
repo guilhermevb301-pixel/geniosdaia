@@ -9,24 +9,28 @@ export function NextLiveCard() {
   return (
     <Link
       to="/eventos"
-      className="flex items-center justify-between gap-4 rounded-lg border border-border bg-card px-6 py-4 transition-colors hover:border-primary/40"
+      className="interactive-surface focus-ring group/live flex min-h-[132px] flex-col justify-between p-5"
     >
-      <div className="flex min-w-0 items-center gap-4">
-        <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-lg bg-muted text-center">
+      <div className="flex min-w-0 items-start gap-4">
+        <div className="surface-raised flex h-11 w-11 shrink-0 flex-col items-center justify-center text-center">
           <span className="text-sm font-semibold leading-none">{event.date.split(" ")[0]}</span>
           <span className="text-[10px] leading-none text-muted-foreground">
             {event.date.split(" ")[1]}
           </span>
         </div>
         <div className="min-w-0">
-          <p className="eyebrow mb-1 flex items-center gap-1.5 text-primary">
+          <span className="micro-label flex items-center gap-1.5 text-muted-foreground">
             <Radio className="h-3 w-3" />
-            Próxima live · {event.time}
-          </p>
-          <p className="truncate text-[15px] font-medium">{event.title}</p>
+            Próxima live
+          </span>
+          <h2 className="mt-2 line-clamp-2 text-base text-foreground">{event.title}</h2>
         </div>
       </div>
-      <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+
+      <span className="mt-4 flex items-center justify-between text-xs text-muted-foreground">
+        {event.time}
+        <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover/live:translate-x-1" />
+      </span>
     </Link>
   );
 }

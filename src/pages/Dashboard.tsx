@@ -2,8 +2,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { AnnouncementCarousel } from "@/components/dashboard/AnnouncementCarousel";
 import { WelcomeHero } from "@/components/dashboard/WelcomeHero";
 import { JourneyStrip } from "@/components/dashboard/JourneyStrip";
-import { NextStepCard } from "@/components/dashboard/NextStepCard";
-import { NextLiveCard } from "@/components/dashboard/NextLiveCard";
+import { DashboardGrid } from "@/components/dashboard/DashboardGrid";
 import { AchievementsStrip } from "@/components/dashboard/AchievementsStrip";
 import { useUserStreak } from "@/hooks/useUserStreak";
 import { useEffect, useMemo } from "react";
@@ -31,18 +30,13 @@ export default function Dashboard() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
-        {/* Boas-vindas */}
-        <WelcomeHero />
+      <div className="space-y-8">
+        <div className="space-y-4">
+          <WelcomeHero />
+          <JourneyStrip />
+        </div>
 
-        {/* Jornada: nível, streak, XP, aulas concluídas, conquistas */}
-        <JourneyStrip />
-
-        {/* Seu próximo passo — um único CTA concreto, sem duplicar a listagem de Aulas */}
-        <NextStepCard />
-
-        {/* Próxima live agendada */}
-        <NextLiveCard />
+        <DashboardGrid />
 
         {/* Anúncios (só aparecem quando há banner com conteúdo) */}
         {hasBanners && <AnnouncementCarousel />}

@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { Flame } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
 import { useUserXP } from "@/hooks/useUserXP";
 import { useUserStreak } from "@/hooks/useUserStreak";
 import { useUserBadges } from "@/hooks/useUserBadges";
@@ -29,43 +28,34 @@ export function JourneyStrip() {
   });
 
   if (isLoadingXP || isLoadingStreak || isLoadingBadges) {
-    return <div className="h-[76px] animate-pulse rounded-lg bg-muted" />;
+    return <div className="h-11 animate-pulse rounded-md bg-muted" />;
   }
 
   const earnedBadges = badgesWithStatus.filter((b) => b.earned).length;
 
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-border bg-card px-6 py-5 sm:flex-row sm:items-center sm:gap-8">
-      <div className="flex shrink-0 items-center gap-3">
-        <span className="text-sm font-medium">
+    <section
+      aria-label="Resumo da sua jornada"
+      className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-border/70 pb-4 text-xs text-muted-foreground"
+    >
+      <span className="whitespace-nowrap">
+        <strong className="font-medium text-foreground">
           Nível {levelInfo.level} · {levelInfo.name}
-        </span>
-        {currentStreak > 0 && (
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Flame className="h-3.5 w-3.5 text-orange-500" />
-            {currentStreak} {currentStreak === 1 ? "dia" : "dias"}
-          </span>
-        )}
-      </div>
+        </strong>{" "}
+        · {levelInfo.xpInLevel}/{levelInfo.xpForNextLevel} XP
+      </span>
 
-      <div className="flex flex-1 items-center gap-3">
-        <span className="shrink-0 text-xs text-muted-foreground">
-          {levelInfo.xpInLevel} XP
-        </span>
-        <Progress value={levelInfo.progress} className="h-[3px] flex-1" />
-        <span className="shrink-0 text-xs text-muted-foreground">
-          {levelInfo.xpForNextLevel} XP
-        </span>
-      </div>
+      <span className="flex items-center gap-1 whitespace-nowrap">
+        <Flame className="h-3.5 w-3.5 text-orange-500" />
+        {currentStreak} {currentStreak === 1 ? "dia" : "dias"}
+      </span>
 
-      <div className="flex shrink-0 items-center gap-5 text-xs text-muted-foreground">
-        <span>
-          <strong className="font-semibold text-foreground">{lessonsCompleted ?? 0}</strong> aulas
-        </span>
-        <span>
-          <strong className="font-semibold text-foreground">{earnedBadges}</strong> conquistas
-        </span>
-      </div>
+      <span className="whitespace-nowrap">
+        <strong className="font-medium text-foreground">{lessonsCompleted ?? 0}</strong> aulas
+      </span>
+      <span className="whitespace-nowrap">
+        <strong className="font-medium text-foreground">{earnedBadges}</strong> conquistas
+      </span>
     </section>
   );
 }

@@ -4,7 +4,7 @@ import { ArrowRight, Play } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserProducts, type ProductSlug } from "@/hooks/useUserProducts";
-import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 
 /** Aponta para o próximo módulo liberado que o aluno ainda não concluiu. */
 export function NextStepCard() {
@@ -31,7 +31,7 @@ export function NextStepCard() {
   });
 
   if (isLoading || isLoadingProducts || !data) {
-    return <div className="h-14 animate-pulse rounded-lg bg-muted" />;
+    return <div className="h-[292px] animate-pulse rounded-lg bg-muted" />;
   }
 
   const sectionById = new Map(data.sections.map((s) => [s.id, s]));
@@ -60,23 +60,44 @@ export function NextStepCard() {
   if (!next) return null;
 
   const isStarted = next.completedLessons > 0;
+  const progress = next.totalLessons > 0
+    ? Math.round((next.completedLessons / next.totalLessons) * 100)
+    : 0;
 
   return (
     <Link
       to={`/aulas/${next.id}`}
-      className="group/next flex items-center justify-between gap-4 rounded-lg border border-primary/25 bg-card px-6 py-4 transition-colors hover:border-primary/45"
+      className="interactive-surface focus-ring group/next flex min-h-[292px] flex-col justify-between overflow-hidden border-primary/25 p-6 sm:p-8"
     >
-      <div className="min-w-0">
-        <p className="eyebrow mb-1 text-primary">
-          {isStarted ? "Continue de onde parou" : "Seu próximo passo"}
-        </p>
-        <p className="truncate text-[15px] font-medium">{next.title}</p>
+      <div>
+        <div className="flex items-center justify-between gap-4">
+          <span className="micro-label text-primary">
+            {isStarted ? "Continue de onde parou" : "Seu próximo passo"}
+          </span>
+          <span className="surface-raised flex h-10 w-10 shrink-0 items-center justify-center text-primary">
+            <Play className="h-4 w-4 fill-current" />
+          </span>
+        </div>
+
+        <h2 className="mt-8 max-w-[18ch] text-2xl text-foreground sm:text-3xl">
+          {next.title}
+        </h2>
       </div>
-      <Button size="sm" className="shrink-0" tabIndex={-1}>
-        <Play className="h-3.5 w-3.5" />
-        {isStarted ? "Continuar" : "Começar"}
-        <ArrowRight className="h-3.5 w-3.5" />
-      </Button>
+
+      <div className="mt-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className="w-full max-w-sm space-y-2">
+          <div className="flex items-center justify-between gap-4 text-xs text-muted-foreground">
+            <span>{next.completedLessons} de {next.totalLessons} aulas</span>
+            <span>{progress}%</span>
+          </div>
+          <Progress value={progress} className="h-1" />
+        </div>
+
+        <span className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-5 font-medium text-primary-foreground transition-transform duration-200 group-hover/next:-translate-y-0.5">
+          {isStarted ? "Continuar" : "Começar"}
+          <ArrowRight className="h-4 w-4" />
+        </span>
+      </div>
     </Link>
   );
 }
