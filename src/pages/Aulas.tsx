@@ -7,6 +7,7 @@ import { ModuleCarousel } from "@/components/aulas/ModuleCarousel";
 import { useImagePreload } from "@/hooks/useImagePreload";
 import { useUserProducts, type ProductSlug } from "@/hooks/useUserProducts";
 import { getSectionIcon } from "@/lib/sectionIcons";
+import { getModuleCover } from "@/lib/moduleCoverCatalog";
 
 const BUY_URLS: Record<string, string> = {
   "genios-ia": "https://pay.kiwify.com.br/dZG6AiO",
@@ -115,7 +116,16 @@ export default function Aulas() {
   };
 
   // Preload module cover images
-  const coverUrls = (modulesData || []).map((m) => m.cover_image_url);
+  const coverUrls = (modulesData || [])
+    .filter(
+      (module) =>
+        !getModuleCover({
+          moduleId: module.id,
+          productSlug: null,
+          orderIndex: module.order_index,
+        }),
+    )
+    .map((module) => module.cover_image_url);
   useImagePreload(coverUrls, { width: 200, quality: 50 });
 
   // Build modules with progress
@@ -182,7 +192,7 @@ export default function Aulas() {
             <>
               {/* Modules without section first */}
               {modulesWithoutSection.length > 0 && (
-                <ModuleCarousel modules={modulesWithoutSection} />
+                <ModuleCarousel modules={modulesWithoutSection} title="Mais aulas" />
               )}
 
               {/* Section groups with their modules */}
@@ -190,29 +200,11 @@ export default function Aulas() {
                 const locked = isSectionLocked(section);
                 const buyUrl = section.product_slug ? BUY_URLS[section.product_slug] : undefined;
                 return (
-                  <div key={section.id} className="space-y-5">
-                    <div className="flex items-center gap-3">
-                      <h2
-                        className={`eyebrow ${
-                          locked ? "text-muted-foreground/60" : "text-muted-foreground"
-                        }`}
-                      >
-                        {section.title.trim()}
-                      </h2>
-                      <span className="h-px flex-1 bg-border" />
-                      {locked && buyUrl && (
-                        <a
-                          href={buyUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs font-medium px-2 py-1 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                        >
-                          Desbloquear →
-                        </a>
-                      )}
-                    </div>
+                  <div key={section.id}>
                     <ModuleCarousel
                       modules={sectionModules}
+                      title={section.title}
+                      productSlug={section.product_slug}
                       locked={locked}
                       buyUrl={buyUrl}
                       sectionIconUrl={getSectionIcon(section.product_slug)}

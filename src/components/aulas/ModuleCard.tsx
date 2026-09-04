@@ -3,12 +3,15 @@ import { Progress } from "@/components/ui/progress";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { BookOpen, CheckCircle2, Lock } from "lucide-react";
 import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton";
+import { ModuleCoverArtwork } from "@/components/aulas/ModuleCoverArtwork";
+import type { ModuleCoverMetadata } from "@/lib/moduleCoverCatalog";
 
 interface ModuleCardProps {
   id: string;
   title: string;
   description?: string | null;
   coverImageUrl?: string | null;
+  coverMetadata?: ModuleCoverMetadata | null;
   sectionIconUrl?: string | null;
   completedLessons: number;
   totalLessons: number;
@@ -23,6 +26,7 @@ export function ModuleCard({
   title,
   description,
   coverImageUrl,
+  coverMetadata,
   sectionIconUrl,
   completedLessons,
   totalLessons,
@@ -34,24 +38,21 @@ export function ModuleCard({
   const progressPercent = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
   const isCompleted = totalLessons > 0 && completedLessons === totalLessons;
 
-  const handleLockedClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (buyUrl) window.open(buyUrl, "_blank", "noopener,noreferrer");
-  };
-
   const cardContent = (
-    <article className="group/card flex h-full flex-col">
+    <article className="group/card flex h-full flex-col motion-safe:transition-transform motion-safe:duration-200 motion-safe:hover:-translate-y-0.5">
       {/* Capa */}
-      <div className="relative overflow-hidden rounded-lg border border-border transition-colors duration-300 group-hover/card:border-primary/40">
+      <div className="relative overflow-hidden rounded-[8px] border border-border group-hover/card:border-primary/40">
         <AspectRatio ratio={4 / 3}>
-          {coverImageUrl ? (
+          {coverMetadata ? (
+            <ModuleCoverArtwork metadata={coverMetadata} locked={locked} />
+          ) : coverImageUrl ? (
             <ImageWithSkeleton
               src={coverImageUrl}
               alt={title}
-              className={`transition-all duration-500 ${
+              className={`motion-safe:transition-transform motion-safe:duration-300 ${
                 locked
                   ? "grayscale"
-                  : "[filter:brightness(0.88)_saturate(0.95)] group-hover/card:scale-[1.03] group-hover/card:[filter:brightness(1)_saturate(1.05)]"
+                  : "[filter:brightness(0.9)_saturate(0.95)] group-hover/card:scale-[1.025]"
               }`}
               containerClassName="h-full w-full"
               fallbackIcon={
@@ -69,8 +70,8 @@ export function ModuleCard({
             <img
               src={sectionIconUrl}
               alt={title}
-              className={`h-full w-full object-cover transition-transform duration-500 ${
-                locked ? "grayscale" : "group-hover/card:scale-[1.03]"
+              className={`h-full w-full object-cover motion-safe:transition-transform motion-safe:duration-300 ${
+                locked ? "grayscale" : "group-hover/card:scale-[1.025]"
               }`}
             />
           ) : (
@@ -103,7 +104,7 @@ export function ModuleCard({
       {/* Texto */}
       <div className="flex flex-1 flex-col pt-3.5">
         <h3
-          className={`mb-1 line-clamp-2 transition-colors ${
+          className={`mb-1 line-clamp-2 ${
             locked ? "text-muted-foreground" : "text-foreground group-hover/card:text-primary"
           }`}
         >
@@ -126,16 +127,23 @@ export function ModuleCard({
     </article>
   );
 
-  if (locked) {
+  if (locked && buyUrl) {
     return (
-      <div onClick={handleLockedClick} className="h-full cursor-pointer">
+      <a
+        href={buyUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="focus-ring block h-full rounded-[8px]"
+      >
         {cardContent}
-      </div>
+      </a>
     );
   }
 
+  if (locked) return <div className="h-full">{cardContent}</div>;
+
   return (
-    <Link to={`/aulas/${id}`} className="block h-full">
+    <Link to={`/aulas/${id}`} className="focus-ring block h-full rounded-[8px]">
       {cardContent}
     </Link>
   );
