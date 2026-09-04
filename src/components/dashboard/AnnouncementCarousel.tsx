@@ -1,16 +1,19 @@
-import { useEffect, useState } from "react";
+import { type KeyboardEvent, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import {
   type CarouselApi,
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselPrevious,
-  CarouselNext,
 } from "@/components/ui/carousel";
 import { useDashboardBanners } from "@/hooks/useDashboardBanners";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton";
+
+function prefersReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
 
 export function AnnouncementCarousel() {
   const { banners, isLoading } = useDashboardBanners();
@@ -44,8 +47,27 @@ export function AnnouncementCarousel() {
     return null;
   }
 
+  const scrollPrevious = () => api?.scrollPrev(prefersReducedMotion());
+  const scrollNext = () => api?.scrollNext(prefersReducedMotion());
+  const scrollTo = (index: number) => api?.scrollTo(index, prefersReducedMotion());
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      scrollPrevious();
+    } else if (event.key === "ArrowRight") {
+      event.preventDefault();
+      scrollNext();
+    }
+  };
+
   return (
-    <Carousel setApi={setApi} opts={{ loop: true, align: "start" }} className="w-full">
+    <Carousel
+      setApi={setApi}
+      opts={{ loop: true, align: "start" }}
+      className="w-full"
+      onKeyDownCapture={handleKeyDown}
+    >
       <CarouselContent className="ml-0">
         {banners.map((banner) => {
           const isExternal = banner.button_url.startsWith("http");
@@ -69,11 +91,9 @@ export function AnnouncementCarousel() {
                 />
               ) : null}
 
-              <div className="absolute inset-y-0 left-0 w-[92%] bg-gradient-to-r from-black/85 via-black/55 to-transparent sm:w-4/5 lg:w-2/3" />
-
               {(banner.title || banner.subtitle || banner.button_text) && (
-                <div className="absolute inset-0 flex items-center px-12 py-5 sm:px-14 sm:py-6">
-                  <div className="max-w-xl">
+                <div className="absolute inset-0 flex items-center p-4 sm:p-6">
+                  <div className="max-w-[76%] rounded-md bg-black/70 px-4 py-3 shadow-lg backdrop-blur-sm sm:max-w-lg sm:px-5 sm:py-4 lg:max-w-xl">
                     {banner.title && (
                       <p className="line-clamp-2 text-lg font-semibold leading-tight text-white drop-shadow-sm sm:text-xl">
                         {banner.title}
@@ -85,7 +105,7 @@ export function AnnouncementCarousel() {
                       </p>
                     )}
                     {banner.button_text && (
-                      <span className="mt-4 inline-flex h-8 items-center rounded-md bg-[#34d399] px-3 text-xs font-semibold text-[#052e27] shadow-sm transition-colors group-hover:bg-[#6ee7b7]">
+                      <span className="mt-4 inline-flex h-8 origin-left items-center rounded-md bg-[#34d399] px-3 text-xs font-semibold text-[#052e27] shadow-sm group-hover:scale-[1.02] group-hover:opacity-90">
                         {banner.button_text}
                       </span>
                     )}
@@ -123,14 +143,26 @@ export function AnnouncementCarousel() {
 
       {banners.length > 1 && (
         <>
-          <CarouselPrevious
-            aria-label="Promoção anterior"
-            className="left-3 border-white/25 bg-black/45 text-white hover:border-[#34d399]/60 hover:bg-black/65 hover:text-[#34d399]"
-          />
-          <CarouselNext
-            aria-label="Próxima promoção"
-            className="right-3 border-white/25 bg-black/45 text-white hover:border-[#34d399]/60 hover:bg-black/65 hover:text-[#34d399]"
-          />
+          <div className="absolute right-3 top-3 z-10 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={scrollPrevious}
+              disabled={!api}
+              aria-label="Promoção anterior"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-black/55 text-[#34d399] shadow-sm hover:scale-105 hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34d399] disabled:pointer-events-none disabled:opacity-40"
+            >
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={scrollNext}
+              disabled={!api}
+              aria-label="Próxima promoção"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/25 bg-black/55 text-[#34d399] shadow-sm hover:scale-105 hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34d399] disabled:pointer-events-none disabled:opacity-40"
+            >
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
 
           <div
             className="absolute bottom-3 right-3 z-10 flex items-center rounded-full bg-black/45 px-1.5 backdrop-blur-sm"
@@ -141,14 +173,15 @@ export function AnnouncementCarousel() {
               <button
                 key={banner.id}
                 type="button"
-                onClick={() => api?.scrollTo(index)}
+                onClick={() => scrollTo(index)}
+                disabled={!api}
                 aria-label={`Ir para promoção ${index + 1} de ${count || banners.length}`}
                 aria-current={index === current ? "true" : undefined}
-                className="flex h-6 w-6 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34d399]"
+                className="flex h-6 w-6 items-center justify-center rounded-full hover:scale-110 hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34d399] disabled:pointer-events-none disabled:opacity-40"
               >
                 <span
-                  className={`h-2 w-2 rounded-full transition-colors ${
-                    index === current ? "bg-[#34d399]" : "bg-white/55 hover:bg-white/80"
+                  className={`h-2 w-2 rounded-full ${
+                    index === current ? "bg-[#34d399]" : "bg-white/60"
                   }`}
                 />
               </button>
