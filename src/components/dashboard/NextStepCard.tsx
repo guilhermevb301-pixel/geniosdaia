@@ -1,9 +1,10 @@
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { ArrowRight, BookOpen, Play } from "lucide-react";
+import { ArrowRight, BookOpen, Play, RefreshCw, TriangleAlert } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserProducts, type ProductSlug } from "@/hooks/useUserProducts";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
 /** Aponta para o próximo módulo liberado que o aluno ainda não concluiu. */
@@ -11,24 +12,73 @@ export function NextStepCard() {
   const { user } = useAuth();
   const { hasProduct, isLoading: isLoadingProducts } = useUserProducts();
 
-  const { data, isLoading } = useQuery({
+  const { data, isError, isLoading, refetch } = useQuery({
     queryKey: ["next_step", user?.id],
     queryFn: async () => {
-      const [{ data: sections }, { data: modules }, { data: lessons }, { data: progress }] =
-        await Promise.all([
-          supabase.from("module_sections").select("*").order("order_index"),
-          supabase.from("modules").select("*").order("order_index"),
-          supabase.from("lessons").select("id, module_id"),
-          user
-            ? supabase.from("lesson_progress").select("lesson_id, completed").eq("user_id", user.id)
-            : Promise.resolve({ data: [] as { lesson_id: string; completed: boolean }[] }),
-        ]);
+      const [sectionsResult, modulesResult, lessonsResult, progressResult] = await Promise.all([
+        supabase.from("module_sections").select("*").order("order_index"),
+        supabase.from("modules").select("*").order("order_index"),
+        supabase.from("lessons").select("id, module_id"),
+        user
+          ? supabase.from("lesson_progress").select("lesson_id, completed").eq("user_id", user.id)
+          : Promise.resolve({
+              data: [] as { lesson_id: string; completed: boolean }[],
+              error: null,
+            }),
+      ]);
+      const error =
+        sectionsResult.error ||
+        modulesResult.error ||
+        lessonsResult.error ||
+        progressResult.error;
+
+      if (error) throw error;
+
+      const { data: sections } = sectionsResult;
+      const { data: modules } = modulesResult;
+      const { data: lessons } = lessonsResult;
+      const { data: progress } = progressResult;
       return { sections: sections ?? [], modules: modules ?? [], lessons: lessons ?? [], progress: progress ?? [] };
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
     placeholderData: keepPreviousData,
   });
+
+  if (isError) {
+    return (
+      <section
+        aria-labelledby="next-step-error-title"
+        className="surface flex min-h-[180px] flex-col justify-between border-destructive/30 p-6"
+      >
+        <div className="flex items-start gap-4">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+            <TriangleAlert aria-hidden="true" className="h-4 w-4" />
+          </span>
+          <div>
+            <p className="micro-label text-destructive">Próximo passo indisponível</p>
+            <h2 id="next-step-error-title" className="mt-2 text-lg text-foreground">
+              Não foi possível carregar seu próximo passo.
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Tente atualizar este card em alguns instantes.
+            </p>
+          </div>
+        </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => void refetch()}
+          className="mt-5 w-fit"
+        >
+          <RefreshCw aria-hidden="true" />
+          Tentar novamente
+        </Button>
+      </section>
+    );
+  }
 
   if (isLoading || isLoadingProducts || !data) {
     return <div className="h-[292px] animate-pulse rounded-lg bg-muted" />;

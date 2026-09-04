@@ -1,7 +1,9 @@
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
+import { RefreshCw, TriangleAlert } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { Button } from "@/components/ui/button";
 import { CourseProgress } from "@/components/aulas/CourseProgress";
 import { ModuleCarousel } from "@/components/aulas/ModuleCarousel";
 import { useImagePreload } from "@/hooks/useImagePreload";
@@ -47,7 +49,11 @@ export default function Aulas() {
   const { hasProduct, isLoading: isLoadingProducts } = useUserProducts();
 
   // Fetch sections
-  const { data: sectionsData } = useQuery({
+  const {
+    data: sectionsData,
+    isError: isSectionsError,
+    refetch: refetchSections,
+  } = useQuery({
     queryKey: ["module_sections"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -62,7 +68,12 @@ export default function Aulas() {
   });
 
   // Fetch modules
-  const { data: modulesData, isLoading: isLoadingModules } = useQuery({
+  const {
+    data: modulesData,
+    isError: isModulesError,
+    isLoading: isLoadingModules,
+    refetch: refetchModules,
+  } = useQuery({
     queryKey: ["modules"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -77,7 +88,12 @@ export default function Aulas() {
   });
 
   // Fetch lessons
-  const { data: lessonsData, isLoading: isLoadingLessons } = useQuery({
+  const {
+    data: lessonsData,
+    isError: isLessonsError,
+    isLoading: isLoadingLessons,
+    refetch: refetchLessons,
+  } = useQuery({
     queryKey: ["lessons"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -92,7 +108,11 @@ export default function Aulas() {
   });
 
   // Fetch user progress
-  const { data: progressData } = useQuery({
+  const {
+    data: progressData,
+    isError: isProgressError,
+    refetch: refetchProgress,
+  } = useQuery({
     queryKey: ["lesson_progress", user?.id],
     queryFn: async () => {
       if (!user) return [];
@@ -109,6 +129,16 @@ export default function Aulas() {
   });
 
   const isLoading = isLoadingModules || isLoadingLessons || isLoadingProducts;
+  const isError = isSectionsError || isModulesError || isLessonsError || isProgressError;
+
+  const handleRetry = () => {
+    void Promise.all([
+      refetchSections(),
+      refetchModules(),
+      refetchLessons(),
+      refetchProgress(),
+    ]);
+  };
 
   const isSectionLocked = (section: ModuleSection): boolean => {
     if (!section.product_slug) return false;
@@ -181,61 +211,88 @@ export default function Aulas() {
 
         <div className="rule my-10" />
 
-        {/* Progress Bar */}
-        <CourseProgress
-          completedLessons={completedLessons}
-          totalLessons={totalLessons}
-        />
+        {isError ? (
+          <section
+            aria-labelledby="aulas-error-title"
+            className="surface relative overflow-hidden border-destructive/30 px-6 py-10 sm:px-10"
+          >
+            <div aria-hidden="true" className="absolute inset-y-0 left-0 w-1 bg-destructive/70" />
+            <div className="max-w-xl">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+                <TriangleAlert aria-hidden="true" className="h-5 w-5" />
+              </span>
+              <p className="micro-label mt-6 text-destructive">Biblioteca indisponível</p>
+              <h2 id="aulas-error-title" className="mt-3 text-2xl text-foreground">
+                Não foi possível carregar suas aulas.
+              </h2>
+              <p className="mt-3 max-w-[52ch] text-sm leading-relaxed text-muted-foreground">
+                Houve uma falha temporária ao buscar o conteúdo. Tente novamente para atualizar a biblioteca.
+              </p>
+              <Button type="button" variant="outline" onClick={handleRetry} className="mt-6 h-11">
+                <RefreshCw aria-hidden="true" />
+                Tentar novamente
+              </Button>
+            </div>
+          </section>
+        ) : (
+          <>
+            {/* Progress Bar */}
+            <CourseProgress
+              completedLessons={completedLessons}
+              totalLessons={totalLessons}
+            />
 
-        {/* Modules organized by sections */}
-        <div className="mt-12 space-y-14">
-          {isLoading ? (
-            <ModuleCarousel modules={[]} isLoading />
-          ) : (
-            <>
-              {/* Modules without section first */}
-              {modulesWithoutSection.length > 0 && (
-                <ModuleCarousel
-                  modules={modulesWithoutSection}
-                  title="Mais aulas"
-                  prioritizeImages
-                />
-              )}
-
-              {/* Section groups with their modules */}
-              {sectionGroups.map(({ section, modules: sectionModules }, groupIndex) => {
-                const locked = isSectionLocked(section);
-                const buyUrl = section.product_slug ? BUY_URLS[section.product_slug] : undefined;
-                return (
-                  <div key={section.id}>
+            {/* Modules organized by sections */}
+            <div className="mt-12 space-y-14">
+              {isLoading ? (
+                <ModuleCarousel modules={[]} isLoading />
+              ) : (
+                <>
+                  {/* Modules without section first */}
+                  {modulesWithoutSection.length > 0 && (
                     <ModuleCarousel
-                      modules={sectionModules}
-                      title={section.title}
-                      productSlug={section.product_slug}
-                      locked={locked}
-                      buyUrl={buyUrl}
-                      sectionIconUrl={getSectionIcon(section.product_slug)}
-                      prioritizeImages={modulesWithoutSection.length === 0 && groupIndex === 0}
+                      modules={modulesWithoutSection}
+                      title="Mais aulas"
+                      prioritizeImages
                     />
-                  </div>
-                );
-              })}
+                  )}
 
-              {/* Empty state when no modules at all */}
-              {modules.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted mb-6">
-                    <span className="text-4xl">📚</span>
-                  </div>
-                  <h2 className="text-2xl font-semibold mb-2">Sem módulos disponíveis</h2>
-                  <p className="text-muted-foreground max-w-md">
-                    Os módulos ainda não foram adicionados. Aguarde o administrador adicionar o conteúdo.
-                  </p>
-                </div>
+                  {/* Section groups with their modules */}
+                  {sectionGroups.map(({ section, modules: sectionModules }, groupIndex) => {
+                    const locked = isSectionLocked(section);
+                    const buyUrl = section.product_slug ? BUY_URLS[section.product_slug] : undefined;
+                    return (
+                      <div key={section.id}>
+                        <ModuleCarousel
+                          modules={sectionModules}
+                          title={section.title}
+                          productSlug={section.product_slug}
+                          locked={locked}
+                          buyUrl={buyUrl}
+                          sectionIconUrl={getSectionIcon(section.product_slug)}
+                          prioritizeImages={modulesWithoutSection.length === 0 && groupIndex === 0}
+                        />
+                      </div>
+                    );
+                  })}
+
+                  {/* Empty state when no modules at all */}
+                  {modules.length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-muted">
+                        <span className="text-4xl">📚</span>
+                      </div>
+                      <h2 className="mb-2 text-2xl font-semibold">Sem módulos disponíveis</h2>
+                      <p className="max-w-md text-muted-foreground">
+                        Os módulos ainda não foram adicionados. Aguarde o administrador adicionar o conteúdo.
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
-            </>
-          )}
-        </div>
+            </div>
+          </>
+        )}
       </div>
     </AppLayout>
   );

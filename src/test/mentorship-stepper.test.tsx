@@ -144,6 +144,65 @@ describe("MentorshipStepper", () => {
     expect(decodeURIComponent(completedUrl)).toContain("Automatizações com IA");
     expect(decodeURIComponent(completedUrl)).toContain("Vender agentes");
   });
+
+  it("keeps a completed state with the same safe WhatsApp URL available", () => {
+    let completedUrl = "";
+
+    render(
+      <MentorshipStepper
+        onComplete={(url) => {
+          completedUrl = url;
+        }}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(/seu nome/i), {
+      target: { value: "Gui & Téo" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /continuar/i }));
+    fireEvent.change(screen.getByLabelText(/principal área/i), {
+      target: { value: "Automatizações com IA" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /continuar/i }));
+    fireEvent.change(screen.getByLabelText(/seu objetivo/i), {
+      target: { value: "Vender 10% #meta" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /conversar no whatsapp/i }));
+
+    expect(screen.getByRole("heading", { name: /tudo pronto/i })).toBeInTheDocument();
+    const reopenLink = screen.getByRole("link", { name: /abrir whatsapp novamente/i });
+    expect(reopenLink).toHaveAttribute("href", completedUrl);
+    expect(reopenLink).toHaveAttribute("target", "_blank");
+    expect(reopenLink).toHaveAttribute("rel", expect.stringContaining("noopener"));
+    expect(reopenLink).toHaveAttribute("rel", expect.stringContaining("noreferrer"));
+  });
+
+  it("returns to the first step for review without losing any answer", () => {
+    render(<MentorshipStepper onComplete={vi.fn()} />);
+
+    fireEvent.change(screen.getByLabelText(/seu nome/i), {
+      target: { value: "Guilherme" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /continuar/i }));
+    fireEvent.change(screen.getByLabelText(/principal área/i), {
+      target: { value: "Criação de Conteúdo com IA" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /continuar/i }));
+    fireEvent.change(screen.getByLabelText(/seu objetivo/i), {
+      target: { value: "Publicar toda semana" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /conversar no whatsapp/i }));
+
+    fireEvent.click(screen.getByRole("button", { name: /revisar respostas/i }));
+
+    expect(screen.getByLabelText(/seu nome/i)).toHaveValue("Guilherme");
+    fireEvent.click(screen.getByRole("button", { name: /continuar/i }));
+    expect(screen.getByLabelText(/principal área/i)).toHaveValue(
+      "Criação de Conteúdo com IA",
+    );
+    fireEvent.click(screen.getByRole("button", { name: /continuar/i }));
+    expect(screen.getByLabelText(/seu objetivo/i)).toHaveValue("Publicar toda semana");
+  });
 });
 
 describe("Mentoria page", () => {

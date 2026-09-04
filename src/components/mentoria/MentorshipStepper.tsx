@@ -1,5 +1,12 @@
 import { useState, type CSSProperties, type FormEvent } from "react";
-import { ArrowLeft, ArrowRight, ChevronDown, MessageCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  ChevronDown,
+  MessageCircle,
+  PencilLine,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,6 +49,7 @@ export function buildMentorshipWhatsAppUrl(answers: MentorshipAnswers): string {
 
 export function MentorshipStepper({ onComplete }: MentorshipStepperProps) {
   const [stepIndex, setStepIndex] = useState(0);
+  const [completedUrl, setCompletedUrl] = useState<string | null>(null);
   const [answers, setAnswers] = useState<MentorshipAnswers>({
     name: "",
     interest: "",
@@ -66,8 +74,61 @@ export function MentorshipStepper({ onComplete }: MentorshipStepperProps) {
       return;
     }
 
-    onComplete(buildMentorshipWhatsAppUrl(answers));
+    const url = buildMentorshipWhatsAppUrl(answers);
+    setCompletedUrl(url);
+    onComplete(url);
   };
+
+  if (completedUrl) {
+    return (
+      <section
+        aria-labelledby="mentorship-complete-title"
+        className="surface relative overflow-hidden p-5 shadow-glow-sm sm:p-7"
+      >
+        <div aria-hidden="true" className="absolute inset-x-0 top-0 h-px bg-[#34d399]/70" />
+
+        <div aria-live="polite" className="flex min-h-[330px] flex-col justify-between">
+          <div>
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#34d399]/10 text-[#34d399]">
+              <CheckCircle2 aria-hidden="true" className="h-6 w-6" />
+            </span>
+            <p className="micro-label mt-6 text-primary">Qualificação concluída</p>
+            <h2 id="mentorship-complete-title" className="mt-3 text-2xl text-foreground sm:text-3xl">
+              Tudo pronto para conversar.
+            </h2>
+            <p className="mt-3 max-w-[48ch] text-sm leading-relaxed text-muted-foreground">
+              Suas respostas estão prontas. Se o WhatsApp não abriu ou foi fechado, continue pelo botão abaixo.
+            </p>
+          </div>
+
+          <div className="mt-8 flex flex-col items-stretch gap-3 border-t border-border pt-5 sm:flex-row sm:items-center">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setCompletedUrl(null);
+                setStepIndex(0);
+              }}
+              className="h-11 w-full px-3 transition-[transform,opacity] motion-reduce:transition-none sm:w-auto"
+            >
+              <PencilLine aria-hidden="true" />
+              Revisar respostas
+            </Button>
+
+            <Button
+              asChild
+              className="h-11 w-full bg-[#34d399] px-5 text-[#052e27] transition-[transform,opacity] hover:bg-[#34d399] hover:opacity-90 motion-reduce:transition-none sm:ml-auto sm:w-auto"
+            >
+              <a href={completedUrl} target="_blank" rel="noopener noreferrer">
+                <MessageCircle aria-hidden="true" />
+                Abrir WhatsApp novamente
+              </a>
+            </Button>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section
