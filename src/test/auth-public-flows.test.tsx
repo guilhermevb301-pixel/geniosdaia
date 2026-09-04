@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import type { ReactNode } from "react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { APP_ROUTES } from "@/lib/appRoutes";
 import AcessoNegado from "@/pages/AcessoNegado";
 import Register from "@/pages/Register";
 
@@ -32,6 +33,20 @@ function renderRoute(component: ReactNode) {
   );
 }
 
+function renderRegisterRoute() {
+  return render(
+    <MemoryRouter
+      initialEntries={[APP_ROUTES.register]}
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+    >
+      <Routes>
+        <Route path={APP_ROUTES.register} element={<Register />} />
+        <Route path={APP_ROUTES.login} element={<h1>Login de destino</h1>} />
+      </Routes>
+    </MemoryRouter>,
+  );
+}
+
 function fillRegistration({
   email = "gui@example.com",
   phone = "11999999999",
@@ -53,45 +68,34 @@ describe("Register public flow", () => {
     mocks.signUp.mockResolvedValue({ error: null });
   });
 
-  it("uses the compact RealFrame authentication shell and 44px controls", () => {
+  it("presents the semantic RealFrame registration flow without deprecated decoration", () => {
     const { container } = renderRoute(<Register />);
 
+    expect(screen.getByRole("main")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "RealFrame IA", level: 1 })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Criar conta", level: 2 })).toBeInTheDocument();
-    expect(screen.queryByText(/automação|workflows|terminal premium/i)).not.toBeInTheDocument();
-
     const rail = screen.getByRole("complementary");
-    const shell = rail.closest("section");
-    expect(shell).toHaveClass(
-      "grid-rows-[auto_1fr]",
-      "lg:grid-rows-1",
-      "lg:grid-cols-[0.72fr_1.28fr]",
-    );
-    expect(rail.firstElementChild).toHaveClass("h-14", "w-14", "sm:h-20", "sm:w-20");
-    expect(container.firstElementChild).toHaveClass("overflow-x-hidden", "bg-[#0b0d10]");
+    expect(within(rail).getByText("Novo acesso")).toBeInTheDocument();
+    expect(within(rail).getByText(/crie sua conta para acompanhar aulas/i)).toBeInTheDocument();
+    expect(within(rail).queryByRole("img")).not.toBeInTheDocument();
 
     for (const field of ["Email", /telefone/i, "Senha", "Confirmar Senha"]) {
-      expect(screen.getByLabelText(field)).toHaveClass("h-11");
+      expect(screen.getByLabelText(field)).toBeRequired();
     }
-    expect(screen.getByRole("button", { name: /criar conta/i })).toHaveClass(
-      "h-11",
-      "bg-[#34d399]",
+    expect(screen.getByRole("button", { name: /criar conta/i })).toBeEnabled();
+    expect(screen.getByRole("link", { name: /fazer login/i })).toHaveAttribute(
+      "href",
+      APP_ROUTES.login,
     );
-    expect(screen.getByRole("link", { name: /fazer login/i })).toHaveClass("min-h-11");
+
+    expect(screen.queryByText(/automação|workflows|n8n|gênios|terminal premium/i)).not.toBeInTheDocument();
+    expect(container.querySelector('[class*="gradient"]')).not.toBeInTheDocument();
+    expect(container.querySelector('[class*="blur-3xl"]')).not.toBeInTheDocument();
+    expect(container.querySelector('[class*="font-serif"]')).not.toBeInTheDocument();
   });
 
   it("keeps sign-up, success toast and login navigation behavior", async () => {
-    render(
-      <MemoryRouter
-        initialEntries={["/register"]}
-        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-      >
-        <Routes>
-          <Route path="/register" element={<Register />} />
-          <Route path="/login" element={<h1>Login de destino</h1>} />
-        </Routes>
-      </MemoryRouter>,
-    );
+    renderRegisterRoute();
 
     fillRegistration();
     fireEvent.click(screen.getByRole("button", { name: /criar conta/i }));
@@ -106,6 +110,35 @@ describe("Register public flow", () => {
       description: "Verifique seu email para confirmar o cadastro.",
     });
     expect(await screen.findByRole("heading", { name: "Login de destino" })).toBeInTheDocument();
+  });
+
+  it.each([
+    {
+      name: "an email that is already registered",
+      error: "User already registered",
+      description: "Este email já está cadastrado. Tente fazer login.",
+    },
+    {
+      name: "a generic sign-up failure",
+      error: "service unavailable",
+      description: "Não foi possível criar sua conta. Tente novamente.",
+    },
+  ])("shows the exact error toast and stays on registration for $name", async ({ error, description }) => {
+    mocks.signUp.mockResolvedValueOnce({ error: new Error(error) });
+    renderRegisterRoute();
+
+    fillRegistration();
+    fireEvent.click(screen.getByRole("button", { name: /criar conta/i }));
+
+    await waitFor(() => {
+      expect(mocks.toast).toHaveBeenCalledWith({
+        variant: "destructive",
+        title: "Erro ao criar conta",
+        description,
+      });
+    });
+    expect(screen.getByRole("heading", { name: "Criar conta" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Login de destino" })).not.toBeInTheDocument();
   });
 
   it.each([
@@ -159,11 +192,11 @@ describe("AcessoNegado public flow", () => {
 
     expect(screen.getByRole("link", { name: /meus produtos/i })).toHaveAttribute(
       "href",
-      "/meus-produtos",
+      APP_ROUTES.myProducts,
     );
     expect(screen.getByRole("link", { name: /voltar para as aulas/i })).toHaveAttribute(
       "href",
-      "/aulas",
+      APP_ROUTES.lessons,
     );
   });
 
@@ -174,9 +207,11 @@ describe("AcessoNegado public flow", () => {
     expect(screen.getByRole("heading", { name: "RealFrame IA", level: 1 })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Acesso não liberado", level: 2 })).toBeInTheDocument();
     const rail = screen.getByRole("complementary");
-    expect(rail.firstElementChild).toHaveClass("h-14", "w-14", "sm:h-20", "sm:w-20");
-    expect(screen.getByRole("link", { name: /ir para o login/i })).toHaveAttribute("href", "/login");
-    expect(screen.getByRole("link", { name: /ir para o login/i })).toHaveClass("h-11");
     expect(within(rail).getByText(/acesso da conta/i)).toBeInTheDocument();
+    expect(within(rail).queryByRole("img")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /ir para o login/i })).toHaveAttribute(
+      "href",
+      APP_ROUTES.login,
+    );
   });
 });

@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, ShieldX } from "lucide-react";
 import { AgentMark } from "@/components/brand/AgentMark";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { APP_ROUTES } from "@/lib/appRoutes";
 
 export default function AcessoNegado() {
   const { user } = useAuth();
@@ -62,7 +63,7 @@ export default function AcessoNegado() {
                   variant="accent"
                   className="h-11 w-full rounded-lg bg-[#34d399] text-[#07130f] transition-[transform,opacity] hover:bg-[#34d399]/90 hover:shadow-none active:translate-y-px"
                 >
-                  <Link to="/meus-produtos">
+                  <Link to={APP_ROUTES.myProducts}>
                     Ver meus produtos
                     <ArrowRight aria-hidden="true" />
                   </Link>
@@ -72,7 +73,7 @@ export default function AcessoNegado() {
                   variant="outline"
                   className="h-11 w-full rounded-lg transition-[transform,opacity] hover:shadow-none"
                 >
-                  <Link to="/aulas">
+                  <Link to={APP_ROUTES.lessons}>
                     <ArrowLeft aria-hidden="true" />
                     Voltar para as aulas
                   </Link>
@@ -84,7 +85,7 @@ export default function AcessoNegado() {
                 variant="accent"
                 className="mt-8 h-11 w-full rounded-lg bg-[#34d399] text-[#07130f] transition-[transform,opacity] hover:bg-[#34d399]/90 hover:shadow-none active:translate-y-px"
               >
-                <Link to="/login">
+                <Link to={APP_ROUTES.login}>
                   Ir para o login
                   <ArrowRight aria-hidden="true" />
                 </Link>

@@ -9,6 +9,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/admin/AdminRoute";
 import { MentorRoute } from "@/components/admin/MentorRoute";
 import { MenteeRoute } from "@/components/mentoria/MenteeRoute";
+import { APP_ROUTES } from "@/lib/appRoutes";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -79,15 +80,15 @@ const App = () => (
           <Suspense fallback={<RouteLoadingFallback />}>
             <Routes>
             {/* Public routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path={APP_ROUTES.login} element={<Login />} />
+            <Route path={APP_ROUTES.register} element={<Register />} />
+            <Route path={APP_ROUTES.forgotPassword} element={<ForgotPassword />} />
             <Route path="/certificado/:code" element={<VerifyCertificate />} />
-            <Route path="/acesso-negado" element={<AcessoNegado />} />
+            <Route path={APP_ROUTES.accessDenied} element={<AcessoNegado />} />
             
             {/* Protected routes */}
             <Route
-              path="/meus-produtos"
+              path={APP_ROUTES.myProducts}
               element={
                 <ProtectedRoute>
                   <MeusProdutos />
@@ -103,7 +104,7 @@ const App = () => (
               }
             />
             <Route
-              path="/aulas"
+              path={APP_ROUTES.lessons}
               element={
                 <ProtectedRoute>
                   <Aulas />
