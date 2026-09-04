@@ -289,8 +289,12 @@ export default function AdminModules() {
 
       setCoverImageUrl(publicUrl);
       toast({ title: "Imagem enviada com sucesso!" });
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Erro ao enviar imagem", description: error.message });
+    } catch (error: unknown) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao enviar imagem",
+        description: error instanceof Error ? error.message : undefined,
+      });
     } finally {
       setIsUploading(false);
     }

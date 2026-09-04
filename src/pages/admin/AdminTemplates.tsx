@@ -277,8 +277,12 @@ export default function AdminTemplates() {
       } else {
         createMutation.mutate(templateData);
       }
-    } catch (error: any) {
-      toast({ variant: "destructive", title: "Erro no upload", description: error.message });
+    } catch (error: unknown) {
+      toast({
+        variant: "destructive",
+        title: "Erro no upload",
+        description: error instanceof Error ? error.message : undefined,
+      });
     } finally {
       setUploading(false);
     }
@@ -432,8 +436,12 @@ export default function AdminTemplates() {
                             await validateJsonContent(file);
                             setJsonFile(file);
                             setJsonUrl(file.name);
-                          } catch (err: any) {
-                            toast({ variant: "destructive", title: "JSON inválido", description: err.message });
+                          } catch (err: unknown) {
+                            toast({
+                              variant: "destructive",
+                              title: "JSON inválido",
+                              description: err instanceof Error ? err.message : undefined,
+                            });
                             e.target.value = '';
                           }
                         }

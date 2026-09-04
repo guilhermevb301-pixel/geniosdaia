@@ -84,7 +84,9 @@ function TodoTab() {
     if (stored) {
       try {
         setTodos(JSON.parse(stored));
-      } catch {}
+      } catch {
+        // Ignore malformed persisted todos and start with an empty list.
+      }
     }
   }, []);
 

@@ -76,7 +76,7 @@ export function useImagePreload(
     };
 
     if ('requestIdleCallback' in window) {
-      (window as any).requestIdleCallback(schedulePreloads, { timeout: 2000 });
+      window.requestIdleCallback(schedulePreloads, { timeout: 2000 });
     } else {
       setTimeout(schedulePreloads, 100);
     }

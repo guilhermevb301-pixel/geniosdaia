@@ -362,8 +362,12 @@ export default function AdminLessons() {
           .from("lesson-videos")
           .getPublicUrl(fileName);
         finalYoutubeUrl = urlData.publicUrl;
-      } catch (err: any) {
-        toast({ variant: "destructive", title: "Erro no upload do vídeo", description: err.message });
+      } catch (err: unknown) {
+        toast({
+          variant: "destructive",
+          title: "Erro no upload do vídeo",
+          description: err instanceof Error ? err.message : undefined,
+        });
         setIsUploading(false);
         setUploadProgress(0);
         return;
@@ -385,8 +389,12 @@ export default function AdminLessons() {
         if (uploadError) throw uploadError;
         const { data: urlData } = storageClient.storage.from("lesson-files").getPublicUrl(fileName);
         finalDownloadUrl = urlData.publicUrl;
-      } catch (err: any) {
-        toast({ variant: "destructive", title: "Erro no upload do arquivo", description: err.message });
+      } catch (err: unknown) {
+        toast({
+          variant: "destructive",
+          title: "Erro no upload do arquivo",
+          description: err instanceof Error ? err.message : undefined,
+        });
         setIsUploadingDownload(false);
         return;
       }
