@@ -40,7 +40,7 @@ afterAll(() => {
 });
 
 describe("premium module library", () => {
-  it("names each trail region and its module progress bars", () => {
+  it("names each trail and keeps progress only at module level", () => {
     render(
       <MemoryRouter>
         <ModuleCarousel
@@ -54,11 +54,12 @@ describe("premium module library", () => {
     expect(
       screen.getByRole("region", { name: "Agente de Atendimento" }),
     ).toBeInTheDocument();
+    expect(screen.getByText("2 de 5 aulas concluídas")).toBeInTheDocument();
     expect(
-      screen.getByRole("progressbar", {
+      screen.queryByRole("progressbar", {
         name: "Progresso em Agente de Atendimento",
       }),
-    ).toBeInTheDocument();
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole("progressbar", {
         name: "Progresso do módulo Instalando as Ferramentas",
@@ -90,7 +91,7 @@ describe("premium module library", () => {
     });
   });
 
-  it("does not zoom code-native artwork while its module is locked", () => {
+  it("keeps a locked 3D module visibly unavailable", () => {
     const metadata = getModuleCover({
       moduleId: "f53202aa-94ec-4270-add0-da334f1bdd44",
       productSlug: null,
@@ -98,7 +99,7 @@ describe("premium module library", () => {
     });
     expect(metadata).not.toBeNull();
 
-    const { container } = render(
+    render(
       <MemoryRouter>
         <ModuleCard
           id={moduleFixture.id}
@@ -113,9 +114,8 @@ describe("premium module library", () => {
       </MemoryRouter>,
     );
 
-    expect(container.querySelector("[data-cover-topic]")).not.toHaveClass(
-      "group-hover/card:scale-[1.025]",
-    );
+    expect(screen.getByText("Bloqueado")).toBeInTheDocument();
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
 
   it("gives the unlock action a 44px touch target", () => {

@@ -33,7 +33,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           onMenuClick={() => setSidebarOpen(true)}
           showMenu={isMobile}
         />
-        <main className="px-5 pb-20 pt-8 sm:px-8 md:px-12 md:pt-12 lg:px-14">{children}</main>
+        <main className="px-5 pb-20 pt-5 sm:px-8 sm:pt-6 md:px-12 md:pt-8 lg:px-14">{children}</main>
       </div>
     </div>
   );

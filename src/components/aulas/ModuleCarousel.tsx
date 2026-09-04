@@ -1,7 +1,6 @@
 import { useId } from "react";
 import { ModuleCard } from "./ModuleCard";
 import { ModuleCardSkeleton } from "./ModuleCardSkeleton";
-import { Progress } from "@/components/ui/progress";
 import { getModuleCover } from "@/lib/moduleCoverCatalog";
 import {
   Carousel,
@@ -69,9 +68,6 @@ export function ModuleCarousel({
     (total, module) => total + module.completedLessons,
     0,
   );
-  const progressPercent =
-    totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
-
   return (
     <Carousel
       opts={{ align: "start", dragFree: true }}
@@ -87,16 +83,9 @@ export function ModuleCarousel({
             >
               {title.trim()}
             </h2>
-            <div className="mt-2 flex items-center gap-3">
-              <Progress
-                value={progressPercent}
-                aria-label={`Progresso em ${title.trim()}`}
-                className="h-[3px] w-28 sm:w-36"
-              />
-              <span className="whitespace-nowrap text-[11px] tabular-nums text-muted-foreground">
-                {completedLessons}/{totalLessons} aulas
-              </span>
-            </div>
+            <p className="mt-1.5 whitespace-nowrap text-[11px] tabular-nums text-muted-foreground">
+              {completedLessons} de {totalLessons} aulas concluídas
+            </p>
           </div>
 
           <div className="flex shrink-0 items-center gap-2">

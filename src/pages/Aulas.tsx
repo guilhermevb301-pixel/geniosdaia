@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
-import { CourseProgress } from "@/components/aulas/CourseProgress";
 import { ModuleCarousel } from "@/components/aulas/ModuleCarousel";
 import { useImagePreload } from "@/hooks/useImagePreload";
 import { useUserProducts, type ProductSlug } from "@/hooks/useUserProducts";
@@ -200,10 +199,6 @@ export default function Aulas() {
     .map((module) => module.cover_image_url);
   useImagePreload(coverUrls, { width: 200, quality: 50, maxPreload: 5 });
 
-  // Calculate total progress
-  const totalLessons = modules.reduce((acc, m) => acc + m.totalLessons, 0);
-  const completedLessons = modules.reduce((acc, m) => acc + m.completedLessons, 0);
-
   return (
     <AppLayout>
       <div>
@@ -216,7 +211,7 @@ export default function Aulas() {
           </p>
         </div>
 
-        <div className="rule my-10" />
+        <div className="rule my-6 md:my-8" />
 
         {isError ? (
           <section
@@ -244,16 +239,8 @@ export default function Aulas() {
           </section>
         ) : (
           <>
-            {/* Progress Bar */}
-            {!isLoading && (
-              <CourseProgress
-                completedLessons={completedLessons}
-                totalLessons={totalLessons}
-              />
-            )}
-
             {/* Modules organized by sections */}
-            <div className="mt-12 space-y-14">
+            <div className="space-y-12">
               {isLoading ? (
                 <ModuleCarousel modules={[]} isLoading />
               ) : (

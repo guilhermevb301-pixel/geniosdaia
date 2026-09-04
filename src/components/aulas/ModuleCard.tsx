@@ -5,6 +5,7 @@ import { BookOpen, CheckCircle2, Lock } from "lucide-react";
 import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton";
 import { ModuleCoverArtwork } from "@/components/aulas/ModuleCoverArtwork";
 import type { ModuleCoverMetadata } from "@/lib/moduleCoverCatalog";
+import { getModuleCoverImage } from "@/lib/moduleCoverImages";
 
 interface ModuleCardProps {
   id: string;
@@ -37,13 +38,30 @@ export function ModuleCard({
 }: ModuleCardProps) {
   const progressPercent = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
   const isCompleted = totalLessons > 0 && completedLessons === totalLessons;
+  const generatedCoverUrl = coverMetadata
+    ? getModuleCoverImage(coverMetadata.topic)
+    : null;
 
   const cardContent = (
     <article className="group/card flex h-full flex-col motion-safe:transition-transform motion-safe:duration-200 motion-safe:hover:-translate-y-0.5">
       {/* Capa */}
       <div className="relative overflow-hidden rounded-[8px] border border-border group-hover/card:border-primary/40">
         <AspectRatio ratio={4 / 3}>
-          {coverMetadata ? (
+          {generatedCoverUrl ? (
+            <ImageWithSkeleton
+              src={generatedCoverUrl}
+              alt={title}
+              className={`h-full w-full object-cover motion-safe:transition-transform motion-safe:duration-300 ${
+                locked
+                  ? "grayscale"
+                  : "[filter:brightness(0.92)_saturate(0.98)] group-hover/card:scale-[1.025] group-hover/card:[filter:brightness(1)_saturate(1.04)]"
+              }`}
+              containerClassName="h-full w-full"
+              optimizedWidth={480}
+              optimizedQuality={84}
+              priority={priority}
+            />
+          ) : coverMetadata ? (
             <ModuleCoverArtwork metadata={coverMetadata} locked={locked} />
           ) : coverImageUrl ? (
             <ImageWithSkeleton
