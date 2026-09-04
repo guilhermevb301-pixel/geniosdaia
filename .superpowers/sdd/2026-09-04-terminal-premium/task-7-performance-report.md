@@ -13,7 +13,7 @@ CONCLUÍDO
 - O carrossel base agora remove os listeners `select` e `reInit` com os mesmos callbacks registrados.
 - Setas e indicadores do `AnnouncementCarousel` usam alvos de toque de 44 px; o ponto interno permanece em 8 px.
 - Somente a imagem do banner inicialmente visível recebe prioridade alta.
-- O Dashboard preloads somente a primeira imagem relevante de banner.
+- O Dashboard preloads exclusivamente `banners[0]?.image_url`; se o primeiro slide não tiver imagem, nenhum slide posterior é antecipado.
 - Somente as capas da primeira trilha visível de Aulas recebem prioridade/preload, limitadas às cinco capas potencialmente visíveis nessa trilha. Trilhas posteriores permanecem lazy.
 - O botão `Desbloquear` do `ModuleCarousel` passou a ter 44 px de altura.
 - As duas referências a `/perfil` foram removidas: o rodapé lateral exibe o nível sem navegação, e conquistas aponta para `/certificados` com a copy `Ver certificados`.
@@ -53,14 +53,32 @@ Test Files  8 passed (8)
 Tests       22 passed (22)
 ```
 
+### Fix round 1
+
+- O contrato de rotas foi centralizado em `APP_ROUTE_MANIFEST`, consumido diretamente por `App.tsx`, mantendo todos os imports de páginas via `React.lazy` e os guards reais por categoria.
+- Os testes de rotas cobrem os 30 paths compartilhados e todas as categorias (`public`, `protected`, `admin`, `mentor` e `mentee`) sem substituir os guards por componentes identidade.
+- Com até cinco banners, permanecem os dots com alvo de 44 px e ponto interno de 8 px. Acima disso, o carrossel troca os dots por um status compacto e acessível (`2 de 8`), mantendo a navegação pelas setas.
+- O caso em que o primeiro banner não tem imagem agora garante que o Dashboard não antecipa a imagem do segundo slide.
+
+Testes focados desta correção:
+
+```text
+npm test -- src/test/dashboard-performance.test.tsx \
+  src/test/announcement-carousel.test.tsx \
+  src/test/app-lazy-routes.test.tsx
+
+Test Files  3 passed (3)
+Tests       20 passed (20)
+```
+
 ## Bundle
 
 Medição feita com `npm run build` antes e depois das mudanças, no mesmo checkout e com as mesmas dependências:
 
 | Medida | Antes | Depois | Redução |
 |---|---:|---:|---:|
-| Chunk JavaScript inicial | 1.205,56 kB | 515,04 kB | 690,52 kB (57,28%) |
-| Chunk inicial gzip | 336,67 kB | 154,47 kB | 182,20 kB (54,12%) |
+| Chunk JavaScript inicial | 1.209,40 kB | 515,04 kB | 694,36 kB (57,41%) |
+| Chunk inicial gzip | 336,72 kB | 154,47 kB | 182,25 kB (54,13%) |
 
 Chunks de rota relevantes no build final:
 
@@ -69,13 +87,16 @@ Chunks de rota relevantes no build final:
 
 O entrypoint final permanece ligeiramente acima do limite de aviso de 500 kB do Vite, mas caiu mais de 57% e as páginas deixaram de compor o bundle inicial.
 
+O build da correção round 1, após centralizar o manifesto de 30 rotas, gerou entrypoint de 516,13 kB / 154,93 kB gzip. `/aulas` permaneceu isolada em 35,11 kB / 10,25 kB gzip. A tabela acima preserva a medição reproduzível antes/depois da implementação original de lazy loading solicitada para a Tarefa 7.
+
 ## Verificações
 
-- Testes focados: 8 arquivos, 22/22 testes.
-- Suíte completa: 17 arquivos, 69/69 testes.
-- Lint dos 18 arquivos TypeScript/TSX tocados: 0 erros e 0 warnings.
+- Testes focados: 8 arquivos, 30/30 testes.
+- Suíte completa: 17 arquivos, 79/79 testes.
+- Lint dos 7 arquivos TypeScript/TSX tocados nesta correção: 0 erros e 0 warnings.
+- Lint global executado: 10 erros e 12 warnings preexistentes fora do escopo, incluindo `command.tsx`, `textarea.tsx`, páginas admin e `tailwind.config.ts`.
 - TypeScript: `npx tsc --noEmit` concluído com código zero.
-- Build: 2.769 módulos transformados e build concluído.
+- Build: 2.770 módulos transformados e build concluído.
 - Higiene: `git diff --check` sem erros e nenhuma referência restante a `/perfil` em `src`.
 
 Avisos não bloqueantes permanecem na saída geral: flags futuras do React Router em testes preexistentes, `fetchPriority` no ambiente React 18/jsdom, base Browserslist desatualizada e o entrypoint final acima de 500 kB.
@@ -84,8 +105,14 @@ Avisos não bloqueantes permanecem na saída geral: flags futuras do React Route
 
 Nenhuma alteração foi feita em `Register`, `AcessoNegado`, `AuthContext`, `docs/` ou `supabase/.temp/`. As mudanças preexistentes em `supabase/.temp/cli-latest` e `supabase/.temp/linked-project.json` foram mantidas fora do escopo e do commit.
 
-Mensagem do commit desta onda:
+Mensagem do commit original:
 
 ```text
 fix(design): polish performance and mobile interactions
+```
+
+Mensagem do commit da correção:
+
+```text
+fix(design): harden lazy routes and compact carousel status
 ```

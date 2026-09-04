@@ -29,10 +29,25 @@ describe("Dashboard image preload", () => {
     mocks.useUserStreak.mockReturnValue({ logActivity: vi.fn() });
   });
 
-  it("preloads only the first relevant banner image", () => {
+  it("does not skip the first slide to preload a later banner image", () => {
     mocks.useDashboardBanners.mockReturnValue({
       banners: [
         { id: "empty", image_url: null, title: "Texto" },
+        { id: "second", image_url: "https://example.com/second.jpg" },
+      ],
+    });
+
+    render(<Dashboard />);
+
+    expect(mocks.useImagePreload).toHaveBeenCalledWith(
+      [],
+      { width: 1200, maxPreload: 1 },
+    );
+  });
+
+  it("preloads only the first slide image when it exists", () => {
+    mocks.useDashboardBanners.mockReturnValue({
+      banners: [
         { id: "first", image_url: "https://example.com/first.jpg" },
         { id: "second", image_url: "https://example.com/second.jpg" },
       ],

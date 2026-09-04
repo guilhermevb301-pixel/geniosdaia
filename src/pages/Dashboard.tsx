@@ -15,7 +15,7 @@ export default function Dashboard() {
 
   // Preload banner images for instant display
   const bannerImages = useMemo(() => {
-    const firstBannerImage = banners.find((banner) => Boolean(banner.image_url))?.image_url;
+    const firstBannerImage = banners[0]?.image_url;
     return firstBannerImage ? [firstBannerImage] : [];
   }, [banners]);
   useImagePreload(bannerImages, { width: 1200, maxPreload: 1 });

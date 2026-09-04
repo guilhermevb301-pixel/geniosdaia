@@ -254,6 +254,27 @@ describe("AnnouncementCarousel", () => {
     });
   });
 
+  it("uses one compact live status instead of overflowing dots for eight banners", async () => {
+    const banners = Array.from({ length: 8 }, (_, index) =>
+      createBanner({ id: `banner-${index + 1}`, title: `Promoção ${index + 1}` }),
+    );
+    renderCarousel(banners);
+
+    const next = await screen.findByRole("button", { name: "Próxima promoção" });
+    const status = screen.getByRole("status", { name: "Promoção 1 de 8" });
+
+    expect(screen.queryAllByRole("button", { name: /ir para promoção/i })).toHaveLength(0);
+    expect(screen.queryByRole("group", { name: "Promoção 1 de 8" })).not.toBeInTheDocument();
+    expect(status).toHaveClass("whitespace-nowrap");
+    expect(status).toHaveTextContent("1 de 8");
+
+    fireEvent.click(next);
+
+    await waitFor(() => {
+      expect(screen.getByRole("status", { name: "Promoção 2 de 8" })).toHaveTextContent("2 de 8");
+    });
+  });
+
   it("prioritizes only the initially visible banner image", () => {
     const banners = [
       createBanner({ id: "one", image_url: "https://example.com/one.jpg" }),

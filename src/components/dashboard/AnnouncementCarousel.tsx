@@ -11,6 +11,8 @@ import { useDashboardBanners } from "@/hooks/useDashboardBanners";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton";
 
+const MAX_DOT_INDICATORS = 5;
+
 function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
@@ -164,29 +166,41 @@ export function AnnouncementCarousel() {
             </button>
           </div>
 
-          <div
-            className="absolute bottom-3 right-3 z-10 flex items-center rounded-full bg-black/45 px-1.5 backdrop-blur-sm"
-            role="group"
-            aria-label={`Promoção ${current + 1} de ${count || banners.length}`}
-          >
-            {banners.map((banner, index) => (
-              <button
-                key={banner.id}
-                type="button"
-                onClick={() => scrollTo(index)}
-                disabled={!api}
-                aria-label={`Ir para promoção ${index + 1} de ${count || banners.length}`}
-                aria-current={index === current ? "true" : undefined}
-                className="flex h-11 w-11 items-center justify-center rounded-full hover:scale-110 hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34d399] disabled:pointer-events-none disabled:opacity-40"
-              >
-                <span
-                  className={`h-2 w-2 rounded-full ${
-                    index === current ? "bg-[#34d399]" : "bg-white/60"
-                  }`}
-                />
-              </button>
-            ))}
-          </div>
+          {banners.length <= MAX_DOT_INDICATORS ? (
+            <div
+              className="absolute bottom-3 right-3 z-10 flex items-center rounded-full bg-black/45 px-1.5 backdrop-blur-sm"
+              role="group"
+              aria-label={`Promoção ${current + 1} de ${count || banners.length}`}
+            >
+              {banners.map((banner, index) => (
+                <button
+                  key={banner.id}
+                  type="button"
+                  onClick={() => scrollTo(index)}
+                  disabled={!api}
+                  aria-label={`Ir para promoção ${index + 1} de ${count || banners.length}`}
+                  aria-current={index === current ? "true" : undefined}
+                  className="flex h-11 w-11 items-center justify-center rounded-full hover:scale-110 hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#34d399] disabled:pointer-events-none disabled:opacity-40"
+                >
+                  <span
+                    className={`h-2 w-2 rounded-full ${
+                      index === current ? "bg-[#34d399]" : "bg-white/60"
+                    }`}
+                  />
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+              aria-label={`Promoção ${current + 1} de ${count || banners.length}`}
+              className="absolute bottom-3 right-3 z-10 whitespace-nowrap rounded-full bg-black/55 px-3 py-1.5 text-xs font-medium tabular-nums text-white backdrop-blur-sm"
+            >
+              {current + 1} de {count || banners.length}
+            </div>
+          )}
         </>
       )}
     </Carousel>

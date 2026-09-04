@@ -1,15 +1,19 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, type ComponentType, type ReactNode } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminRoute } from "@/components/admin/AdminRoute";
 import { MentorRoute } from "@/components/admin/MentorRoute";
 import { MenteeRoute } from "@/components/mentoria/MenteeRoute";
-import { APP_ROUTES } from "@/lib/appRoutes";
+import {
+  APP_ROUTE_MANIFEST,
+  type AppRouteGuard,
+  type AppRouteId,
+} from "@/lib/appRoutes";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const Dashboard = lazy(() => import("./pages/Dashboard"));
@@ -42,6 +46,58 @@ const MenteeEditor = lazy(() => import("./pages/admin/MenteeEditor"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const AcessoNegado = lazy(() => import("./pages/AcessoNegado"));
+
+const ROUTE_COMPONENTS = {
+  dashboard: Dashboard,
+  login: Login,
+  register: Register,
+  lessons: Aulas,
+  moduleLessons: ModuleLessons,
+  templates: Templates,
+  mentorship: Mentoria,
+  myMentorship: MinhaMentoria,
+  events: Eventos,
+  prompts: Prompts,
+  challenges: Desafios,
+  certificates: Certificados,
+  certificate: VerifyCertificate,
+  notebook: MeuCaderno,
+  userGpts: MeusGpts,
+  myProducts: MeusProdutos,
+  adminModules: AdminModules,
+  adminLessons: AdminLessons,
+  adminTemplates: AdminTemplates,
+  adminPrompts: AdminPrompts,
+  adminMentees: AdminMentees,
+  adminUsers: AdminUsers,
+  adminChallenges: AdminChallenges,
+  adminGpts: AdminGpts,
+  adminBanners: AdminBanners,
+  adminAppearance: AdminAppearance,
+  menteeEditor: MenteeEditor,
+  forgotPassword: ForgotPassword,
+  notFound: NotFound,
+  accessDenied: AcessoNegado,
+} satisfies Record<AppRouteId, ComponentType>;
+
+function withRouteGuard(element: ReactNode, guard: AppRouteGuard) {
+  switch (guard) {
+    case "protected":
+      return <ProtectedRoute>{element}</ProtectedRoute>;
+    case "admin":
+      return <AdminRoute>{element}</AdminRoute>;
+    case "mentor":
+      return <MentorRoute>{element}</MentorRoute>;
+    case "mentee":
+      return (
+        <ProtectedRoute>
+          <MenteeRoute>{element}</MenteeRoute>
+        </ProtectedRoute>
+      );
+    default:
+      return element;
+  }
+}
 
 function RouteLoadingFallback() {
   return (
@@ -77,220 +133,21 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <ErrorBoundary>
-          <Suspense fallback={<RouteLoadingFallback />}>
-            <Routes>
-            {/* Public routes */}
-            <Route path={APP_ROUTES.login} element={<Login />} />
-            <Route path={APP_ROUTES.register} element={<Register />} />
-            <Route path={APP_ROUTES.forgotPassword} element={<ForgotPassword />} />
-            <Route path="/certificado/:code" element={<VerifyCertificate />} />
-            <Route path={APP_ROUTES.accessDenied} element={<AcessoNegado />} />
-            
-            {/* Protected routes */}
-            <Route
-              path={APP_ROUTES.myProducts}
-              element={
-                <ProtectedRoute>
-                  <MeusProdutos />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path={APP_ROUTES.lessons}
-              element={
-                <ProtectedRoute>
-                  <Aulas />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/aulas/:moduleId"
-              element={
-                <ProtectedRoute>
-                  <ModuleLessons />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/templates"
-              element={
-                <ProtectedRoute>
-                  <Templates />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/mentoria"
-              element={
-                <ProtectedRoute>
-                  <Mentoria />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/eventos"
-              element={
-                <ProtectedRoute>
-                  <Eventos />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/prompts"
-              element={
-                <ProtectedRoute>
-                  <Prompts />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/meus-gpts"
-              element={
-                <ProtectedRoute>
-                  <MeusGpts />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/desafios"
-              element={
-                <AdminRoute>
-                  <Desafios />
-                </AdminRoute>
-              }
-            />
-            <Route
-              path="/certificados"
-              element={
-                <ProtectedRoute>
-                  <Certificados />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/meu-caderno"
-              element={
-                <ProtectedRoute>
-                  <MeuCaderno />
-                </ProtectedRoute>
-              }
-            />
+            <Suspense fallback={<RouteLoadingFallback />}>
+              <Routes>
+                {APP_ROUTE_MANIFEST.map(({ id, path, guard }) => {
+                  const Page = ROUTE_COMPONENTS[id];
 
-            {/* Mentee route */}
-            <Route
-              path="/minha-mentoria"
-              element={
-                <ProtectedRoute>
-                  <MenteeRoute>
-                    <MinhaMentoria />
-                  </MenteeRoute>
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Admin routes */}
-            <Route
-              path="/admin/modules"
-              element={
-                <AdminRoute>
-                  <AdminModules />
-                </AdminRoute>
-              }
-            />
-            <Route
-              path="/admin/lessons"
-              element={
-                <AdminRoute>
-                  <AdminLessons />
-                </AdminRoute>
-              }
-            />
-            <Route
-              path="/admin/templates"
-              element={
-                <MentorRoute>
-                  <AdminTemplates />
-                </MentorRoute>
-              }
-            />
-            <Route
-              path="/admin/prompts"
-              element={
-                <AdminRoute>
-                  <AdminPrompts />
-                </AdminRoute>
-              }
-            />
-            <Route
-              path="/admin/gpts"
-              element={
-                <AdminRoute>
-                  <AdminGpts />
-                </AdminRoute>
-              }
-            />
-
-            {/* Mentor routes */}
-            <Route
-              path="/admin/mentees"
-              element={
-                <MentorRoute>
-                  <AdminMentees />
-                </MentorRoute>
-              }
-            />
-            <Route
-              path="/admin/mentees/:menteeId"
-              element={
-                <MentorRoute>
-                  <MenteeEditor />
-                </MentorRoute>
-              }
-            />
-            <Route
-              path="/admin/users"
-              element={
-                <MentorRoute>
-                  <AdminUsers />
-                </MentorRoute>
-              }
-            />
-            <Route
-              path="/admin/challenges"
-              element={
-                <MentorRoute>
-                  <AdminChallenges />
-                </MentorRoute>
-              }
-            />
-            <Route
-              path="/admin/banners"
-              element={
-                <MentorRoute>
-                  <AdminBanners />
-                </MentorRoute>
-              }
-            />
-            <Route
-              path="/admin/appearance"
-              element={
-                <MentorRoute>
-                  <AdminAppearance />
-                </MentorRoute>
-              }
-            />
-            
-            <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
+                  return (
+                    <Route
+                      key={id}
+                      path={path}
+                      element={withRouteGuard(<Page />, guard)}
+                    />
+                  );
+                })}
+              </Routes>
+            </Suspense>
           </ErrorBoundary>
         </BrowserRouter>
       </TooltipProvider>
