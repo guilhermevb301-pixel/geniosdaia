@@ -192,7 +192,7 @@ export function MentorshipStepper({ onComplete }: MentorshipStepperProps) {
           )}
         </div>
 
-        <div className="mt-8 flex flex-col-reverse items-stretch gap-3 border-t border-border pt-5 sm:flex-row sm:items-center">
+        <div className="mt-8 flex flex-col items-stretch gap-3 border-t border-border pt-5 sm:flex-row sm:items-center">
           {stepIndex > 0 && (
             <Button
               type="button"
