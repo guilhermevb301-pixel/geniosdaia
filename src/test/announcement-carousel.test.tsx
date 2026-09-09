@@ -410,6 +410,25 @@ describe("AnnouncementCarousel", () => {
     ).toBeInTheDocument();
   });
 
+  it("advances automatically even when the pointer remains over the banner", () => {
+    vi.useFakeTimers();
+
+    try {
+      const banners = [
+        createBanner({ id: "one" }),
+        createBanner({ id: "two" }),
+      ];
+      const { carousel, unmount } = renderCarousel(banners);
+
+      act(() => vi.advanceTimersByTime(5000));
+
+      expect(carousel.scrollNext).toHaveBeenCalledOnce();
+      unmount();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("removes its select and reInit listeners on unmount", () => {
     const banners = [createBanner({ id: "one" }), createBanner({ id: "two" })];
     const { carousel, unmount } = renderCarousel(banners);

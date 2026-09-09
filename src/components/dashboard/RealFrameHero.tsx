@@ -35,7 +35,7 @@ export function RealFrameHero() {
       <img
         src={guiHero}
         alt="Guilherme Vilas Boas"
-        className="absolute inset-0 h-full w-full object-cover object-[67%_center] opacity-60 sm:object-center sm:opacity-82 lg:opacity-95"
+        className="absolute inset-0 h-full w-full object-cover object-[72%_top] opacity-52 sm:opacity-76 lg:opacity-90"
         loading="eager"
       />
       <div

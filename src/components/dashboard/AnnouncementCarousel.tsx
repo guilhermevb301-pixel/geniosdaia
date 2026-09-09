@@ -1,7 +1,6 @@
-import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+import { type KeyboardEvent, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import Autoplay from "embla-carousel-autoplay";
 import {
   type CarouselApi,
   Carousel,
@@ -14,6 +13,7 @@ import { ImageWithSkeleton } from "@/components/ui/image-with-skeleton";
 import { MENTORSHIP_APPLICATION_URL } from "@/lib/contactLinks";
 
 const MAX_DOT_INDICATORS = 5;
+const AUTOPLAY_INTERVAL_MS = 5000;
 
 function prefersReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -21,13 +21,6 @@ function prefersReducedMotion() {
 
 export function AnnouncementCarousel() {
   const { banners, isLoading } = useDashboardBanners();
-  const autoplay = useRef(
-    Autoplay({
-      delay: 5200,
-      stopOnInteraction: false,
-      stopOnMouseEnter: true,
-    }),
-  );
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
   const [count, setCount] = useState(0);
@@ -49,6 +42,16 @@ export function AnnouncementCarousel() {
       api.off("reInit", syncPosition);
     };
   }, [api]);
+
+  useEffect(() => {
+    if (!api || banners.length <= 1 || prefersReducedMotion()) return;
+
+    const interval = window.setInterval(() => {
+      if (!document.hidden) api.scrollNext();
+    }, AUTOPLAY_INTERVAL_MS);
+
+    return () => window.clearInterval(interval);
+  }, [api, banners.length]);
 
   if (isLoading) {
     return (
@@ -79,7 +82,6 @@ export function AnnouncementCarousel() {
     <Carousel
       setApi={setApi}
       opts={{ loop: true, align: "start", duration: 24 }}
-      plugins={prefersReducedMotion() ? undefined : [autoplay.current]}
       className="w-full"
       onKeyDownCapture={handleKeyDown}
     >
