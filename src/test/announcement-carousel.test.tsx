@@ -1,4 +1,10 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import type { EmblaCarouselType, EmblaEventType } from "embla-carousel";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -20,7 +26,9 @@ vi.mock("embla-carousel-react", () => ({
 
 type EmblaListener = Parameters<EmblaCarouselType["on"]>[1];
 
-function createBanner(overrides: Partial<DashboardBanner> = {}): DashboardBanner {
+function createBanner(
+  overrides: Partial<DashboardBanner> = {},
+): DashboardBanner {
   return {
     id: "one",
     title: "Confira as próximas lives",
@@ -81,7 +89,8 @@ function createControlledCarousel(totalSlides: number) {
     scrollNext,
     scrollPrev,
     scrollTo,
-    scrollSnapList: () => Array.from({ length: totalSlides }, (_, index) => index),
+    scrollSnapList: () =>
+      Array.from({ length: totalSlides }, (_, index) => index),
     selectedScrollSnap: () => current,
   } as unknown as EmblaCarouselType;
 
@@ -101,11 +110,17 @@ function createControlledCarousel(totalSlides: number) {
 
 function renderCarousel(banners: DashboardBanner[], isLoading = false) {
   const carousel = createControlledCarousel(banners.length);
-  mocks.useDashboardBanners.mockReturnValue({ banners, isLoading, error: null });
+  mocks.useDashboardBanners.mockReturnValue({
+    banners,
+    isLoading,
+    error: null,
+  });
   mocks.useEmblaCarousel.mockReturnValue([vi.fn(), carousel.api]);
 
   const result = render(
-    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <MemoryRouter
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+    >
       <AnnouncementCarousel />
     </MemoryRouter>,
   );
@@ -163,24 +178,38 @@ describe("AnnouncementCarousel", () => {
   });
 
   it("renders one internal promotion without navigation controls", () => {
-    const banner = createBanner({ image_url: "https://example.com/banner.jpg" });
+    const banner = createBanner({
+      image_url: "https://example.com/banner.jpg",
+    });
     const unexpectedConsoleErrors: unknown[][] = [];
     vi.spyOn(console, "error").mockImplementation((...args: unknown[]) => {
-      if (!args.some((argument) => String(argument).includes("fetchPriority"))) {
+      if (
+        !args.some((argument) => String(argument).includes("fetchPriority"))
+      ) {
         unexpectedConsoleErrors.push(args);
       }
     });
     const { container } = renderCarousel([banner]);
     const destination = screen.getByRole("link", { name: banner.title });
-    const images = Array.from(container.querySelectorAll('img:not([aria-hidden="true"])'));
+    const images = Array.from(
+      container.querySelectorAll('img:not([aria-hidden="true"])'),
+    );
 
     expect(destination).toHaveAttribute("href", "/eventos");
     expect(destination).toHaveAttribute("aria-label", banner.title);
-    expect(screen.queryByRole("button", { name: "Promoção anterior" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Próxima promoção" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("group", { name: /promoção 1 de 1/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Promoção anterior" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Próxima promoção" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("group", { name: /promoção 1 de 1/i }),
+    ).not.toBeInTheDocument();
     expect(images.length).toBeGreaterThan(0);
-    expect(images.every((image) => image.getAttribute("alt") === "")).toBe(true);
+    expect(images.every((image) => image.getAttribute("alt") === "")).toBe(
+      true,
+    );
     expect(unexpectedConsoleErrors).toHaveLength(0);
   });
 
@@ -193,22 +222,38 @@ describe("AnnouncementCarousel", () => {
         button_text: "Conhecer programa",
         button_url: "https://example.com/programa",
       }),
-      createBanner({ id: "fallback", title: "", button_text: null, button_url: "/promocao" }),
+      createBanner({
+        id: "fallback",
+        title: "",
+        button_text: null,
+        button_url: "/promocao",
+      }),
     ];
     renderCarousel(banners);
 
-    expect(screen.getByRole("link", { name: "Agenda da comunidade" })).toHaveAttribute(
-      "aria-label",
-      "Agenda da comunidade",
-    );
+    expect(
+      screen.getByRole("link", { name: "Agenda da comunidade" }),
+    ).toHaveAttribute("aria-label", "Agenda da comunidade");
 
-    const externalLink = screen.getByRole("link", { name: "Conhecer programa" });
-    expect(externalLink).toHaveAttribute("href", "https://example.com/programa");
+    const externalLink = screen.getByRole("link", {
+      name: "Conhecer programa",
+    });
+    expect(externalLink).toHaveAttribute(
+      "href",
+      "https://example.com/programa",
+    );
     expect(externalLink).toHaveAttribute("target", "_blank");
     expect(externalLink).toHaveAttribute("rel", "noopener noreferrer");
-    expect(screen.getByRole("link", { name: "Ver promoção" })).toHaveAttribute("href", "/promocao");
+    expect(screen.getByRole("link", { name: "Ver promoção" })).toHaveAttribute(
+      "href",
+      "/promocao",
+    );
 
-    await waitFor(() => expect(screen.getByRole("button", { name: "Próxima promoção" })).toBeEnabled());
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Próxima promoção" }),
+      ).toBeEnabled(),
+    );
   });
 
   it("shows focusable controls and dots without color-transition classes", async () => {
@@ -219,7 +264,9 @@ describe("AnnouncementCarousel", () => {
     ];
     const { container } = renderCarousel(banners);
 
-    const previous = await screen.findByRole("button", { name: "Promoção anterior" });
+    const previous = await screen.findByRole("button", {
+      name: "Promoção anterior",
+    });
     const next = screen.getByRole("button", { name: "Próxima promoção" });
     const dots = screen.getAllByRole("button", { name: /ir para promoção/i });
 
@@ -233,16 +280,25 @@ describe("AnnouncementCarousel", () => {
     dots[1].focus();
     expect(dots[1]).toHaveFocus();
 
-    expect(container.querySelector('[class*="transition"]')).not.toBeInTheDocument();
-    expect(screen.getAllByText("Ver agenda")[0]).toHaveClass("bg-[#34d399]");
-    expect(screen.getAllByText("Ver agenda")[0].className).not.toContain("#6ee7b7");
+    expect(
+      container.querySelector('[class*="transition"]'),
+    ).not.toBeInTheDocument();
+    expect(screen.getAllByText("Ver agenda")[0]).toHaveClass(
+      "bg-primary/12",
+      "text-primary",
+    );
+    expect(screen.getAllByText("Ver agenda")[0].className).not.toContain(
+      "#6ee7b7",
+    );
   });
 
   it("provides 44px touch targets while keeping indicator dots visually small", async () => {
     const banners = [createBanner({ id: "one" }), createBanner({ id: "two" })];
     renderCarousel(banners);
 
-    const previous = await screen.findByRole("button", { name: "Promoção anterior" });
+    const previous = await screen.findByRole("button", {
+      name: "Promoção anterior",
+    });
     const next = screen.getByRole("button", { name: "Próxima promoção" });
     const dots = screen.getAllByRole("button", { name: /ir para promoção/i });
 
@@ -250,28 +306,41 @@ describe("AnnouncementCarousel", () => {
     expect(next).toHaveClass("h-11", "w-11");
     dots.forEach((dot) => {
       expect(dot).toHaveClass("h-11", "w-11");
-      expect(dot.firstElementChild).toHaveClass("h-2", "w-2");
+      expect(dot.firstElementChild).toHaveClass("h-1.5");
     });
+    expect(dots[0].firstElementChild).toHaveClass("w-5");
+    expect(dots[1].firstElementChild).toHaveClass("w-1.5");
   });
 
   it("uses one compact live status instead of overflowing dots for eight banners", async () => {
     const banners = Array.from({ length: 8 }, (_, index) =>
-      createBanner({ id: `banner-${index + 1}`, title: `Promoção ${index + 1}` }),
+      createBanner({
+        id: `banner-${index + 1}`,
+        title: `Promoção ${index + 1}`,
+      }),
     );
     renderCarousel(banners);
 
-    const next = await screen.findByRole("button", { name: "Próxima promoção" });
+    const next = await screen.findByRole("button", {
+      name: "Próxima promoção",
+    });
     const status = screen.getByRole("status", { name: "Promoção 1 de 8" });
 
-    expect(screen.queryAllByRole("button", { name: /ir para promoção/i })).toHaveLength(0);
-    expect(screen.queryByRole("group", { name: "Promoção 1 de 8" })).not.toBeInTheDocument();
+    expect(
+      screen.queryAllByRole("button", { name: /ir para promoção/i }),
+    ).toHaveLength(0);
+    expect(
+      screen.queryByRole("group", { name: "Promoção 1 de 8" }),
+    ).not.toBeInTheDocument();
     expect(status).toHaveClass("whitespace-nowrap");
     expect(status).toHaveTextContent("1 de 8");
 
     fireEvent.click(next);
 
     await waitFor(() => {
-      expect(screen.getByRole("status", { name: "Promoção 2 de 8" })).toHaveTextContent("2 de 8");
+      expect(
+        screen.getByRole("status", { name: "Promoção 2 de 8" }),
+      ).toHaveTextContent("2 de 8");
     });
   });
 
@@ -282,11 +351,17 @@ describe("AnnouncementCarousel", () => {
       createBanner({ id: "three", image_url: "https://example.com/three.jpg" }),
     ];
     const { container } = renderCarousel(banners);
-    const images = Array.from(container.querySelectorAll('img:not([aria-hidden="true"])'));
+    const images = Array.from(
+      container.querySelectorAll('img:not([aria-hidden="true"])'),
+    );
 
     expect(images).toHaveLength(3);
     expect(images[0]).toHaveAttribute("loading", "eager");
-    expect(images.slice(1).every((image) => image.getAttribute("loading") === "lazy")).toBe(true);
+    expect(
+      images
+        .slice(1)
+        .every((image) => image.getAttribute("loading") === "lazy"),
+    ).toBe(true);
   });
 
   it("uses instant Embla navigation when reduced motion is requested", async () => {
@@ -326,15 +401,22 @@ describe("AnnouncementCarousel", () => {
 
     act(() => carousel.select(2));
 
-    await waitFor(() => expect(dots[2]).toHaveAttribute("aria-current", "true"));
+    await waitFor(() =>
+      expect(dots[2]).toHaveAttribute("aria-current", "true"),
+    );
     expect(dots[0]).not.toHaveAttribute("aria-current");
-    expect(screen.getByRole("group", { name: "Promoção 3 de 3" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("group", { name: "Promoção 3 de 3" }),
+    ).toBeInTheDocument();
   });
 
   it("removes its select and reInit listeners on unmount", () => {
     const banners = [createBanner({ id: "one" }), createBanner({ id: "two" })];
     const { carousel, unmount } = renderCarousel(banners);
-    const registered = carousel.on.mock.calls as [EmblaEventType, EmblaListener][];
+    const registered = carousel.on.mock.calls as [
+      EmblaEventType,
+      EmblaListener,
+    ][];
 
     unmount();
 
@@ -342,17 +424,21 @@ describe("AnnouncementCarousel", () => {
       .filter(([event]) => event === "select")
       .map(([, listener]) => listener)
       .filter((listener) =>
-        registered.some(([event, candidate]) => event === "reInit" && candidate === listener),
+        registered.some(
+          ([event, candidate]) => event === "reInit" && candidate === listener,
+        ),
       );
 
     expect(
       sharedCallbacks.some(
         (listener) =>
           carousel.off.mock.calls.some(
-            ([event, candidate]) => event === "select" && candidate === listener,
+            ([event, candidate]) =>
+              event === "select" && candidate === listener,
           ) &&
           carousel.off.mock.calls.some(
-            ([event, candidate]) => event === "reInit" && candidate === listener,
+            ([event, candidate]) =>
+              event === "reInit" && candidate === listener,
           ),
       ),
     ).toBe(true);

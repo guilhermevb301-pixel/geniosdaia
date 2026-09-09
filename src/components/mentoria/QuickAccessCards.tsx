@@ -1,16 +1,14 @@
 import { Calendar, Users, MessageCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { buildWhatsAppUrl, MENTORSHIP_APPLICATION_URL } from "@/lib/contactLinks";
 
 interface QuickAccessCardsProps {
   communityUrl: string | null;
 }
 
-const SCHEDULING_URL = "https://cal.com/guilherme-felice-kutk35/1-hora";
-const SUPPORT_WHATSAPP = "5571981939047";
-
 export function QuickAccessCards({ communityUrl }: QuickAccessCardsProps) {
-  const whatsappUrl = `https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent("Olá! Preciso de suporte.")}`;
+  const whatsappUrl = buildWhatsAppUrl("Olá! Preciso de suporte.");
 
   return (
     <div className="space-y-4">
@@ -26,7 +24,7 @@ export function QuickAccessCards({ communityUrl }: QuickAccessCardsProps) {
             <Button 
               variant="accent"
               className="w-full font-medium"
-              onClick={() => window.open(SCHEDULING_URL, "_blank")}
+              onClick={() => window.open(MENTORSHIP_APPLICATION_URL, "_blank", "noopener,noreferrer")}
             >
               <Calendar className="h-4 w-4 mr-2" />
               Agenda Guilherme

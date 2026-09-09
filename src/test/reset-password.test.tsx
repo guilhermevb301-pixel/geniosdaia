@@ -1,4 +1,11 @@
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import ResetPassword from "@/pages/ResetPassword";
@@ -35,18 +42,24 @@ vi.mock("@/integrations/supabase/client", () => ({
 
 function renderPage() {
   return render(
-    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <MemoryRouter
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+    >
       <ResetPassword />
     </MemoryRouter>,
   );
 }
 
 function submitNewPassword(password: string, confirmation: string) {
-  fireEvent.change(screen.getByLabelText("Nova senha"), { target: { value: password } });
+  fireEvent.change(screen.getByLabelText("Nova senha"), {
+    target: { value: password },
+  });
   fireEvent.change(screen.getByLabelText("Confirmar nova senha"), {
     target: { value: confirmation },
   });
-  fireEvent.submit(screen.getByRole("button", { name: /salvar nova senha/i }).closest("form")!);
+  fireEvent.submit(
+    screen.getByRole("button", { name: /salvar nova senha/i }).closest("form")!,
+  );
 }
 
 function deferred<T>() {
@@ -70,10 +83,15 @@ describe("ResetPassword public flow", () => {
   it("uses the RealFrame recovery shell and exposes accessible new-password fields", () => {
     renderPage();
 
-    expect(screen.getByRole("heading", { name: "RealFrame IA", level: 1 })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Definir nova senha", level: 2 })).toBeInTheDocument();
-    expect(screen.getByRole("complementary")).toHaveTextContent(/acesso seguro/i);
-    expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Definir nova senha", level: 1 }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText(/RealFrame/)).toHaveLength(2);
+    const rail = screen.getByRole("complementary");
+    expect(rail).not.toHaveTextContent(/codex, ia e execução real/i);
+    expect(
+      rail.querySelector('img[src="/brand/gui-login.webp"]'),
+    ).toBeInTheDocument();
 
     for (const name of ["Nova senha", "Confirmar nova senha"]) {
       const field = screen.getByLabelText(name);
@@ -94,13 +112,15 @@ describe("ResetPassword public flow", () => {
       name: "a password without an uppercase letter",
       password: "senha123",
       confirmation: "senha123",
-      description: "A senha deve conter pelo menos uma letra maiúscula e um número",
+      description:
+        "A senha deve conter pelo menos uma letra maiúscula e um número",
     },
     {
       name: "a password without a number",
       password: "SenhaForte",
       confirmation: "SenhaForte",
-      description: "A senha deve conter pelo menos uma letra maiúscula e um número",
+      description:
+        "A senha deve conter pelo menos uma letra maiúscula e um número",
     },
     {
       name: "a confirmation that does not match",
@@ -108,18 +128,21 @@ describe("ResetPassword public flow", () => {
       confirmation: "Senha456",
       description: "As senhas não coincidem",
     },
-  ])("rejects $name before calling Supabase", ({ password, confirmation, description }) => {
-    renderPage();
+  ])(
+    "rejects $name before calling Supabase",
+    ({ password, confirmation, description }) => {
+      renderPage();
 
-    submitNewPassword(password, confirmation);
+      submitNewPassword(password, confirmation);
 
-    expect(mocks.updateUser).not.toHaveBeenCalled();
-    expect(mocks.toast).toHaveBeenCalledWith({
-      variant: "destructive",
-      title: "Erro",
-      description,
-    });
-  });
+      expect(mocks.updateUser).not.toHaveBeenCalled();
+      expect(mocks.toast).toHaveBeenCalledWith({
+        variant: "destructive",
+        title: "Erro",
+        description,
+      });
+    },
+  );
 
   it("updates the password, signs out, then exposes the successful return to login", async () => {
     const signOutRequest = deferred<void>();
@@ -130,12 +153,16 @@ describe("ResetPassword public flow", () => {
     expect(status).toBeEmptyDOMElement();
     submitNewPassword("Senha123", "Senha123");
 
-    expect(screen.getByRole("button", { name: "Atualizando..." })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Atualizando..." }),
+    ).toBeDisabled();
     await waitFor(() => {
       expect(mocks.updateUser).toHaveBeenCalledWith({ password: "Senha123" });
       expect(mocks.signOut).toHaveBeenCalledOnce();
     });
-    expect(screen.queryByRole("heading", { name: "Senha atualizada" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Senha atualizada" }),
+    ).not.toBeInTheDocument();
 
     await act(async () => {
       signOutRequest.resolve();
@@ -149,15 +176,18 @@ describe("ResetPassword public flow", () => {
       title: "Senha atualizada",
       description: "Agora você pode entrar com sua nova senha.",
     });
-    expect(within(status).getByRole("heading", { name: "Senha atualizada" })).toBeInTheDocument();
-    expect(within(status).getByRole("link", { name: /fazer login/i })).toHaveAttribute(
-      "href",
-      "/login",
-    );
+    expect(
+      within(status).getByRole("heading", { name: "Senha atualizada" }),
+    ).toBeInTheDocument();
+    expect(
+      within(status).getByRole("link", { name: /fazer login/i }),
+    ).toHaveAttribute("href", "/login");
   });
 
   it("keeps the form available and reports a Supabase update failure", async () => {
-    mocks.updateUser.mockResolvedValueOnce({ error: new Error("expired recovery session") });
+    mocks.updateUser.mockResolvedValueOnce({
+      error: new Error("expired recovery session"),
+    });
     renderPage();
 
     submitNewPassword("Senha123", "Senha123");
@@ -166,11 +196,14 @@ describe("ResetPassword public flow", () => {
       expect(mocks.toast).toHaveBeenCalledWith({
         variant: "destructive",
         title: "Erro ao atualizar senha",
-        description: "Não foi possível atualizar sua senha. Solicite um novo link e tente novamente.",
+        description:
+          "Não foi possível atualizar sua senha. Solicite um novo link e tente novamente.",
       });
     });
     expect(screen.getByRole("status")).toBeEmptyDOMElement();
-    expect(screen.getByRole("button", { name: /salvar nova senha/i })).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: /salvar nova senha/i }),
+    ).toBeEnabled();
     expect(mocks.signOut).not.toHaveBeenCalled();
   });
 
@@ -178,16 +211,16 @@ describe("ResetPassword public flow", () => {
     mocks.isPasswordRecovery = false;
     renderPage();
 
-    expect(screen.getByRole("heading", { name: /link inválido ou expirado/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /link inválido ou expirado/i }),
+    ).toBeInTheDocument();
     expect(screen.queryByLabelText("Nova senha")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /solicitar novo link/i })).toHaveAttribute(
-      "href",
-      "/forgot-password",
-    );
-    expect(screen.getByRole("link", { name: /voltar para o login/i })).toHaveAttribute(
-      "href",
-      "/login",
-    );
+    expect(
+      screen.getByRole("link", { name: /solicitar novo link/i }),
+    ).toHaveAttribute("href", "/forgot-password");
+    expect(
+      screen.getByRole("link", { name: /voltar para o login/i }),
+    ).toHaveAttribute("href", "/login");
     expect(mocks.updateUser).not.toHaveBeenCalled();
   });
 });

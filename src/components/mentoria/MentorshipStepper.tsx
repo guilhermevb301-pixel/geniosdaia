@@ -11,8 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-
-const WHATSAPP_NUMBER = "5571981939047";
+import { buildWhatsAppUrl } from "@/lib/contactLinks";
 
 const INTEREST_OPTIONS = [
   "Automatizações com IA",
@@ -44,7 +43,7 @@ export function buildMentorshipWhatsAppUrl(answers: MentorshipAnswers): string {
   const objective = answers.objective.trim();
   const message = `Olá, Gui! Meu nome é ${name}. Tenho interesse em ${interest}. Meu objetivo com a mentoria é ${objective}.`;
 
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+  return buildWhatsAppUrl(message);
 }
 
 export function MentorshipStepper({ onComplete }: MentorshipStepperProps) {

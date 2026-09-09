@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import Dashboard from "@/pages/Dashboard";
 
@@ -12,16 +12,27 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/hooks/useDashboardBanners", () => ({
   useDashboardBanners: mocks.useDashboardBanners,
 }));
-vi.mock("@/hooks/useImagePreload", () => ({ useImagePreload: mocks.useImagePreload }));
-vi.mock("@/hooks/useUserStreak", () => ({ useUserStreak: mocks.useUserStreak }));
+vi.mock("@/hooks/useImagePreload", () => ({
+  useImagePreload: mocks.useImagePreload,
+}));
+vi.mock("@/hooks/useUserStreak", () => ({
+  useUserStreak: mocks.useUserStreak,
+}));
 vi.mock("@/components/layout/AppLayout", () => ({
   AppLayout: ({ children }: { children: ReactNode }) => <>{children}</>,
 }));
-vi.mock("@/components/dashboard/AnnouncementCarousel", () => ({ AnnouncementCarousel: () => null }));
-vi.mock("@/components/dashboard/WelcomeHero", () => ({ WelcomeHero: () => null }));
-vi.mock("@/components/dashboard/JourneyStrip", () => ({ JourneyStrip: () => null }));
-vi.mock("@/components/dashboard/DashboardGrid", () => ({ DashboardGrid: () => null }));
-vi.mock("@/components/dashboard/AchievementsStrip", () => ({ AchievementsStrip: () => null }));
+vi.mock("@/components/dashboard/AnnouncementCarousel", () => ({
+  AnnouncementCarousel: () => <section data-testid="announcement-carousel" />,
+}));
+vi.mock("@/components/dashboard/RealFrameHero", () => ({
+  RealFrameHero: () => <section data-testid="realframe-hero" />,
+}));
+vi.mock("@/components/dashboard/DashboardGrid", () => ({
+  DashboardGrid: () => <section data-testid="dashboard-grid" />,
+}));
+vi.mock("@/components/dashboard/AchievementsStrip", () => ({
+  AchievementsStrip: () => <section data-testid="achievements-strip" />,
+}));
 
 describe("Dashboard image preload", () => {
   beforeEach(() => {
@@ -39,10 +50,10 @@ describe("Dashboard image preload", () => {
 
     render(<Dashboard />);
 
-    expect(mocks.useImagePreload).toHaveBeenCalledWith(
-      [],
-      { width: 1200, maxPreload: 1 },
-    );
+    expect(mocks.useImagePreload).toHaveBeenCalledWith([], {
+      width: 1200,
+      maxPreload: 1,
+    });
   });
 
   it("preloads only the first slide image when it exists", () => {
@@ -59,6 +70,32 @@ describe("Dashboard image preload", () => {
       ["https://example.com/first.jpg"],
       { width: 1200, maxPreload: 1 },
     );
+  });
+
+  it("keeps the branded hero first and places announcements after useful content", () => {
+    mocks.useDashboardBanners.mockReturnValue({
+      banners: [
+        {
+          id: "first",
+          image_url: "https://example.com/first.jpg",
+          title: "Destaque",
+        },
+      ],
+    });
+
+    render(<Dashboard />);
+
+    const hero = screen.getByTestId("realframe-hero");
+    const grid = screen.getByTestId("dashboard-grid");
+    const banner = screen.getByTestId("announcement-carousel");
+    expect(
+      hero.compareDocumentPosition(grid) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      grid.compareDocumentPosition(banner) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it("uses the current activity logger when its reference changes", () => {

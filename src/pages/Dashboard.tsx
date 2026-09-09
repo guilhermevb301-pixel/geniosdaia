@@ -1,7 +1,6 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AnnouncementCarousel } from "@/components/dashboard/AnnouncementCarousel";
-import { WelcomeHero } from "@/components/dashboard/WelcomeHero";
-import { JourneyStrip } from "@/components/dashboard/JourneyStrip";
+import { RealFrameHero } from "@/components/dashboard/RealFrameHero";
 import { DashboardGrid } from "@/components/dashboard/DashboardGrid";
 import { AchievementsStrip } from "@/components/dashboard/AchievementsStrip";
 import { useUserStreak } from "@/hooks/useUserStreak";
@@ -21,7 +20,9 @@ export default function Dashboard() {
   useImagePreload(bannerImages, { width: 1200, maxPreload: 1 });
 
   // Só mostra o carrossel de anúncios quando há banner com conteúdo de verdade
-  const hasBanners = banners.some((b) => b.image_url || b.title?.trim() || b.subtitle?.trim());
+  const hasBanners = banners.some(
+    (b) => b.image_url || b.title?.trim() || b.subtitle?.trim(),
+  );
 
   // Log daily activity on dashboard load
   useEffect(() => {
@@ -30,18 +31,13 @@ export default function Dashboard() {
 
   return (
     <AppLayout>
-      <div className="space-y-8">
-        <div className="space-y-4">
-          <WelcomeHero />
-          <JourneyStrip />
-        </div>
+      <div className="space-y-7">
+        <RealFrameHero />
 
         <DashboardGrid />
 
-        {/* Anúncios (só aparecem quando há banner com conteúdo) */}
         {hasBanners && <AnnouncementCarousel />}
 
-        {/* Conquistas desbloqueadas */}
         <AchievementsStrip />
       </div>
     </AppLayout>

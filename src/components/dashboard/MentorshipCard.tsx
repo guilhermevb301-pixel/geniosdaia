@@ -1,10 +1,12 @@
 import { ArrowUpRight } from "lucide-react";
-import { Link } from "react-router-dom";
+import { MENTORSHIP_APPLICATION_URL } from "@/lib/contactLinks";
 
 export function MentorshipCard() {
   return (
-    <Link
-      to="/mentoria"
+    <a
+      href={MENTORSHIP_APPLICATION_URL}
+      target="_blank"
+      rel="noopener noreferrer"
       aria-label="Aplicar para mentoria"
       className="interactive-surface focus-ring group relative flex min-h-[132px] flex-col justify-between overflow-hidden p-5"
     >
@@ -24,6 +26,6 @@ export function MentorshipCard() {
         Aplicar agora
         <ArrowUpRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
       </span>
-    </Link>
+    </a>
   );
 }

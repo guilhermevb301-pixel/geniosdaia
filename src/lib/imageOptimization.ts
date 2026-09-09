@@ -21,6 +21,10 @@ interface ImageOptimizationOptions {
 // In-memory cache for already-constructed URLs
 const urlCache = new Map<string, string>();
 
+function isLocalImageUrl(url: string): boolean {
+  return url.startsWith("/") || url.startsWith("./") || url.startsWith("../") || url.startsWith("data:");
+}
+
 /**
  * Optimizes an image URL through wsrv.nl CDN proxy
  * Provides real resizing, compression, format conversion and edge caching
@@ -30,6 +34,10 @@ export function getOptimizedImageUrl(
   options: ImageOptimizationOptions = {}
 ): string | null {
   if (!url) return null;
+
+  // Local Vite/public assets cannot be fetched by the external wsrv.nl proxy.
+  // They are already fingerprinted and served by the app, so use them directly.
+  if (isLocalImageUrl(url)) return url;
 
   // Don't double-proxy
   if (url.includes('wsrv.nl')) return url;
@@ -88,6 +96,7 @@ export function getOptimizedImageUrl(
  */
 export function getBlurPlaceholderUrl(url: string | null | undefined): string | null {
   if (!url) return null;
+  if (isLocalImageUrl(url)) return null;
   return getOptimizedImageUrl(url, { blur: true });
 }
 

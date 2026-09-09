@@ -1,4 +1,11 @@
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import type { ReactNode } from "react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -30,21 +37,31 @@ vi.mock("@/integrations/supabase/client", () => ({
 
 function renderRoute(component: ReactNode) {
   return render(
-    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <MemoryRouter
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+    >
       {component}
     </MemoryRouter>,
   );
 }
 
 function submitLogin(email = "gui@example.com", password = "senha válida") {
-  fireEvent.change(screen.getByLabelText("Email"), { target: { value: email } });
-  fireEvent.change(screen.getByLabelText("Senha"), { target: { value: password } });
+  fireEvent.change(screen.getByLabelText("Email"), {
+    target: { value: email },
+  });
+  fireEvent.change(screen.getByLabelText("Senha"), {
+    target: { value: password },
+  });
   fireEvent.click(screen.getByRole("button", { name: "Entrar" }));
 }
 
 function submitRecovery(email = "gui@example.com") {
-  fireEvent.change(screen.getByLabelText("Email"), { target: { value: email } });
-  fireEvent.click(screen.getByRole("button", { name: /enviar link de recuperação/i }));
+  fireEvent.change(screen.getByLabelText("Email"), {
+    target: { value: email },
+  });
+  fireEvent.click(
+    screen.getByRole("button", { name: /enviar link de recuperação/i }),
+  );
 }
 
 function deferred<T>() {
@@ -55,7 +72,7 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
-describe("Terminal Premium authentication", () => {
+describe("RealFrame authentication", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.signIn.mockResolvedValue({ error: null });
@@ -65,16 +82,19 @@ describe("Terminal Premium authentication", () => {
   it("presents the RealFrame brand without exposing the internal design codename", () => {
     renderRoute(<Login />);
 
-    expect(screen.getByRole("heading", { name: "RealFrame IA", level: 1 })).toBeInTheDocument();
-    expect(screen.getAllByText("RealFrame IA")).toHaveLength(1);
+    expect(
+      screen.getByRole("heading", { name: "Entrar na RealFrame IA", level: 1 }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText(/RealFrame/)).toHaveLength(3);
     expect(screen.queryByText(/terminal premium/i)).not.toBeInTheDocument();
-    const forgotPasswordLink = screen.getByRole("link", { name: /esqueceu a senha/i });
-    expect(forgotPasswordLink).toHaveAttribute(
-      "href",
-      "/forgot-password",
-    );
+    const forgotPasswordLink = screen.getByRole("link", {
+      name: /esqueceu a senha/i,
+    });
+    expect(forgotPasswordLink).toHaveAttribute("href", "/forgot-password");
     expect(forgotPasswordLink).toHaveClass("min-h-11");
-    expect(screen.getByRole("link", { name: /criar conta/i })).toHaveClass("min-h-11");
+    expect(screen.getByRole("link", { name: /criar conta/i })).toHaveClass(
+      "min-h-11",
+    );
   });
 
   it("keeps AgentMark completely decorative", () => {
@@ -85,34 +105,27 @@ describe("Terminal Premium authentication", () => {
   });
 
   it.each([
-    ["login", <Login />, /sistemas práticos/i],
-    ["password recovery", <ForgotPassword />, /recupere sua conta/i],
-  ])("uses a compact mobile brand rail on %s while preserving desktop", (_, component, copy) => {
-    renderRoute(component);
+    ["login", <Login />, /continue suas aulas/i],
+    ["password recovery", <ForgotPassword />, /digite seu email/i],
+  ])(
+    "uses the founder photo shell on %s while preserving the mobile brand",
+    (_, component, copy) => {
+      renderRoute(component);
 
-    const rail = screen.getByRole("complementary");
-    const shell = rail.closest("section");
-    expect(shell).toHaveClass(
-      "grid-rows-[auto_1fr]",
-      "lg:grid-rows-1",
-      "lg:grid-cols-[0.72fr_1.28fr]",
-    );
-    expect(rail).toHaveClass(
-      "min-h-24",
-      "p-4",
-      "sm:min-h-36",
-      "sm:p-6",
-      "lg:min-h-[620px]",
-      "lg:p-8",
-    );
-    expect(rail.firstElementChild).toHaveClass(
-      "h-14",
-      "w-14",
-      "sm:h-20",
-      "sm:w-20",
-    );
-    expect(within(rail).getByText(copy)).toHaveClass("hidden", "sm:block");
-  });
+      const rail = screen.getByRole("complementary");
+      const shell = rail.closest("section");
+      expect(shell).toHaveClass(
+        "grid",
+        "min-h-screen",
+        "lg:grid-cols-[minmax(0,1.05fr)_minmax(420px,0.72fr)]",
+      );
+      expect(rail).toHaveClass("hidden", "lg:block");
+      expect(
+        rail.querySelector('img[src="/brand/gui-login.webp"]'),
+      ).toBeInTheDocument();
+      expect(screen.getByText(copy)).toBeInTheDocument();
+    },
+  );
 
   it("normalizes the email without changing password whitespace", async () => {
     renderRoute(<Login />);
@@ -141,11 +154,15 @@ describe("Terminal Premium authentication", () => {
 
     submitLogin();
 
-    expect(await screen.findByRole("heading", { name: "Área logada" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Área logada" }),
+    ).toBeInTheDocument();
   });
 
   it("shows the existing destructive toast when login fails", async () => {
-    mocks.signIn.mockResolvedValueOnce({ error: new Error("invalid credentials") });
+    mocks.signIn.mockResolvedValueOnce({
+      error: new Error("invalid credentials"),
+    });
     renderRoute(<Login />);
 
     submitLogin();
@@ -180,9 +197,13 @@ describe("Terminal Premium authentication", () => {
   it("keeps recovery on the RealFrame shell without exposing the codename", () => {
     renderRoute(<ForgotPassword />);
 
-    expect(screen.getByRole("heading", { name: "RealFrame IA", level: 1 })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Recuperar senha", level: 1 }),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/terminal premium/i)).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /fazer login/i })).toHaveClass("min-h-11");
+    expect(screen.getByRole("link", { name: /fazer login/i })).toHaveClass(
+      "min-h-11",
+    );
   });
 
   it("announces successful recovery after sending the normalized email", async () => {
@@ -202,18 +223,24 @@ describe("Terminal Premium authentication", () => {
       await request.promise;
     });
 
-    expect(mocks.resetPasswordForEmail).toHaveBeenCalledWith("gui@example.com", {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    expect(within(status).getByRole("heading", { name: "Email enviado" })).toBeInTheDocument();
-    expect(within(status).getByRole("link", { name: /voltar para o login/i })).toHaveAttribute(
-      "href",
-      "/login",
+    expect(mocks.resetPasswordForEmail).toHaveBeenCalledWith(
+      "gui@example.com",
+      {
+        redirectTo: `${window.location.origin}/reset-password`,
+      },
     );
+    expect(
+      within(status).getByRole("heading", { name: "Email enviado" }),
+    ).toBeInTheDocument();
+    expect(
+      within(status).getByRole("link", { name: /voltar para o login/i }),
+    ).toHaveAttribute("href", "/login");
   });
 
   it("keeps recovery available and shows the existing toast when Supabase fails", async () => {
-    mocks.resetPasswordForEmail.mockResolvedValueOnce({ error: new Error("service unavailable") });
+    mocks.resetPasswordForEmail.mockResolvedValueOnce({
+      error: new Error("service unavailable"),
+    });
     renderRoute(<ForgotPassword />);
 
     submitRecovery();
@@ -226,6 +253,8 @@ describe("Terminal Premium authentication", () => {
       });
     });
     expect(screen.getByRole("status")).toBeEmptyDOMElement();
-    expect(screen.getByRole("button", { name: /enviar link de recuperação/i })).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: /enviar link de recuperação/i }),
+    ).toBeEnabled();
   });
 });

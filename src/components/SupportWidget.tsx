@@ -1,11 +1,10 @@
 import { MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { buildWhatsAppUrl } from "@/lib/contactLinks";
 
 export function SupportWidget() {
-  const whatsappNumber = "5571981939047";
-  const whatsappMessage = encodeURIComponent("Olá! Preciso de ajuda com a plataforma RealFrame IA.");
-  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
+  const whatsappUrl = buildWhatsAppUrl("Olá! Preciso de ajuda com a plataforma RealFrame IA.");
 
   return (
     <Card className="fixed bottom-4 right-4 md:right-auto md:left-[calc(16rem+1rem)] z-50 w-64 bg-card border-border shadow-lg">

@@ -83,6 +83,9 @@ describe("DashboardGrid", () => {
     );
     expect(
       screen.getByRole("link", { name: /aplicar para mentoria/i }),
-    ).toHaveAttribute("href", "/mentoria");
+    ).toHaveAttribute(
+      "href",
+      "https://mentoria-gui.vercel.app/formulario/mentoria",
+    );
   });
 });

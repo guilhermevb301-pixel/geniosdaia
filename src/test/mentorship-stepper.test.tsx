@@ -40,7 +40,7 @@ describe("MentorshipStepper", () => {
     const parsedUrl = new URL(url);
 
     expect(parsedUrl.origin).toBe("https://wa.me");
-    expect(parsedUrl.pathname).toBe("/5571981939047");
+    expect(parsedUrl.pathname).toBe("/5516995414563");
     expect(parsedUrl.hash).toBe("");
     expect(parsedUrl.searchParams.get("text")).toBe(
       "Olá, Gui! Meu nome é Gui & Téo. Tenho interesse em IA + vendas?. Meu objetivo com a mentoria é Vender 10% #meta\nsem perder ritmo.",
@@ -239,7 +239,7 @@ describe("Mentoria page", () => {
 
     expect(openSpy).toHaveBeenCalledOnce();
     expect(openSpy).toHaveBeenCalledWith(
-      expect.stringContaining("https://wa.me/5571981939047?text="),
+      expect.stringContaining("https://wa.me/5516995414563?text="),
       "_blank",
       "noopener,noreferrer",
     );
