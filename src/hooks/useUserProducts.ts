@@ -9,7 +9,8 @@ export type ProductSlug =
   | "videos-cinematograficos"
   | "fotos-profissionais"
   | "influencer-ia"
-  | "clone-criativo";
+  | "clone-criativo"
+  | "bonus-genios";
 
 export function useUserProducts() {
   const { user } = useAuth();
