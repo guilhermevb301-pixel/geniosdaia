@@ -18,8 +18,7 @@ import {
   NotebookPen,
   Bot,
   Palette,
-  Lock,
-  Image
+  Image,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -34,6 +33,8 @@ import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getPrefetchHandler } from "@/lib/prefetchRoutes";
 import { SidebarUserFooter } from "./SidebarUserFooter";
+import { buildWhatsAppUrl, MENTORSHIP_APPLICATION_URL } from "@/lib/contactLinks";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 const NAV_ITEM_BASE =
   "focus-ring group relative flex items-center gap-3 rounded-md px-2 py-2.5 text-[14px] before:absolute before:-left-3 before:top-1/2 before:h-5 before:w-[2px] before:-translate-y-1/2 before:scale-y-0 before:rounded-full before:bg-primary before:opacity-0 before:transition-[transform,opacity] before:duration-200 [&>svg]:text-muted-foreground";
@@ -59,13 +60,6 @@ function adminNavItemClass(active: boolean) {
   );
 }
 
-const tools = [
-  { label: "Meus GPTs", href: "/meus-gpts", icon: MessageSquare },
-  { label: "Lives", href: "/eventos", icon: Radio },
-  { label: "Desafios", href: "/desafios", icon: Trophy },
-];
-
-
 interface SidebarContentProps {
   onNavigate?: () => void;
 }
@@ -78,31 +72,32 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
   const { isMentee } = useIsMentee();
   const [adminOpen, setAdminOpen] = useState(true);
 
-
-  const isActive = (href: string) => location.pathname === href;
+  const isActive = (href: string) =>
+    href === "/"
+      ? location.pathname === href
+      : location.pathname === href || location.pathname.startsWith(`${href}/`);
   const isAdminSection = location.pathname.startsWith("/admin");
-  const isPromptsSection = location.pathname === "/prompts";
 
   const handleClick = () => {
     onNavigate?.();
   };
 
   // Prefetch data when hovering over links
-  const handlePrefetch = useCallback((route: string) => {
-    const prefetchFn = getPrefetchHandler(route, queryClient);
-    if (prefetchFn) {
-      prefetchFn();
-    }
-  }, [queryClient]);
+  const handlePrefetch = useCallback(
+    (route: string) => {
+      const prefetchFn = getPrefetchHandler(route, queryClient);
+      if (prefetchFn) {
+        prefetchFn();
+      }
+    },
+    [queryClient],
+  );
 
   return (
     <div className="flex h-full flex-col bg-sidebar">
       {/* Logo */}
-      <div className="px-6 pb-7 pt-8">
-        <span className="block font-display text-[1.75rem] font-semibold leading-none text-sidebar-foreground">
-          RealFrame{" "}
-          <span className="text-primary [font-size:inherit]">IA</span>
-        </span>
+      <div className="px-6 pb-8 pt-8">
+        <BrandLogo size="lg" />
       </div>
 
       {/* Navigation */}
@@ -130,57 +125,25 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           Aulas
         </Link>
 
-        {/* Templates Link */}
-        <Link
-          to="/templates"
-          onClick={handleClick}
-          onMouseEnter={() => handlePrefetch("/templates")}
-          className={navItemClass(isActive("/templates"))}
-        >
-          <Zap className="h-5 w-5 shrink-0" />
-          Templates
-        </Link>
-
         {/* Banco de Prompts - link direto */}
         <Link
           to="/prompts"
           onClick={handleClick}
           onMouseEnter={() => handlePrefetch("/prompts")}
-          className={navItemClass(isPromptsSection)}
+          className={navItemClass(isActive("/prompts"))}
         >
           <Lightbulb className="h-5 w-5 shrink-0" />
           Banco de Prompts
         </Link>
 
-        {/* Other Tools */}
-        {tools.map((item) => {
-          const isDesafios = item.href === "/desafios";
-          if (isDesafios && !isAdmin) {
-            return (
-              <div
-                key={item.href}
-                className="flex cursor-not-allowed select-none items-center gap-3 rounded-md px-2 py-2.5 text-[14px] text-muted-foreground/45"
-                title="Em breve"
-              >
-                <item.icon className="h-5 w-5 shrink-0" />
-                <span className="[font-size:inherit]">{item.label}</span>
-                <Lock className="ml-auto h-3.5 w-3.5" />
-              </div>
-            );
-          }
-          return (
-            <Link
-              key={item.href}
-              to={item.href}
-              onClick={handleClick}
-              onMouseEnter={() => handlePrefetch(item.href)}
-              className={navItemClass(isActive(item.href))}
-            >
-              <item.icon className="h-5 w-5 shrink-0" />
-              {item.label}
-            </Link>
-          );
-        })}
+        <Link
+          to="/eventos"
+          onClick={handleClick}
+          className={navItemClass(isActive("/eventos"))}
+        >
+          <Radio className="h-5 w-5 shrink-0" />
+          Lives
+        </Link>
 
         {/* Bloco pessoal */}
         <p className="eyebrow mb-3 mt-8 px-2 text-muted-foreground">Você</p>
@@ -205,14 +168,16 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
         </Link>
 
         {/* Mentoria - Apply (visible for all) */}
-        <Link
-          to="/mentoria"
+        <a
+          href={MENTORSHIP_APPLICATION_URL}
+          target="_blank"
+          rel="noopener noreferrer"
           onClick={handleClick}
-          className={navItemClass(isActive("/mentoria"))}
+          className={navItemClass(false)}
         >
           <MessageSquare className="h-5 w-5 shrink-0" />
           Aplicar Mentoria
-        </Link>
+        </a>
 
         {/* Minha Mentoria - Only for approved mentees */}
         {isMentee && (
@@ -236,7 +201,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                     "group flex items-center justify-between rounded-md px-2 py-2.5 text-sm font-medium [&_svg]:text-muted-foreground",
                     isAdminSection
                       ? "bg-secondary text-foreground [&_svg]:text-primary"
-                      : "text-muted-foreground hover:bg-card hover:text-foreground hover:[&_svg]:text-primary"
+                      : "text-muted-foreground hover:bg-card hover:text-foreground hover:[&_svg]:text-primary",
                   )}
                 >
                   <div className="flex items-center gap-3">
@@ -246,7 +211,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                   <ChevronDown
                     className={cn(
                       "h-4 w-4 transition-transform",
-                      adminOpen && "rotate-180"
+                      adminOpen && "rotate-180",
                     )}
                   />
                 </div>
@@ -259,7 +224,9 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                       <Link
                         to="/admin/modules"
                         onClick={handleClick}
-                        className={adminNavItemClass(isActive("/admin/modules"))}
+                        className={adminNavItemClass(
+                          isActive("/admin/modules"),
+                        )}
                       >
                         <Layers className="h-4 w-4" />
                         Módulos
@@ -267,7 +234,9 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                       <Link
                         to="/admin/lessons"
                         onClick={handleClick}
-                        className={adminNavItemClass(isActive("/admin/lessons"))}
+                        className={adminNavItemClass(
+                          isActive("/admin/lessons"),
+                        )}
                       >
                         <BookOpen className="h-4 w-4" />
                         Aulas
@@ -275,7 +244,9 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                       <Link
                         to="/admin/prompts"
                         onClick={handleClick}
-                        className={adminNavItemClass(isActive("/admin/prompts"))}
+                        className={adminNavItemClass(
+                          isActive("/admin/prompts"),
+                        )}
                       >
                         <Lightbulb className="h-4 w-4" />
                         Prompts
@@ -283,7 +254,9 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                       <Link
                         to="/admin/templates"
                         onClick={handleClick}
-                        className={adminNavItemClass(isActive("/admin/templates"))}
+                        className={adminNavItemClass(
+                          isActive("/admin/templates"),
+                        )}
                       >
                         <FileText className="h-4 w-4" />
                         Templates
@@ -298,7 +271,7 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
                       </Link>
                     </>
                   )}
-                  
+
                   {/* Mentor/Admin items */}
                   <Link
                     to="/admin/users"
@@ -347,9 +320,11 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
         )}
 
         {/* Comunidade */}
-        <p className="eyebrow mb-3 mt-8 px-2 text-muted-foreground">Comunidade</p>
+        <p className="eyebrow mb-3 mt-8 px-2 text-muted-foreground">
+          Comunidade
+        </p>
         <a
-          href="https://wa.me/5571981939047?text=Ol%C3%A1!%20Quero%20entrar%20no%20grupo%20da%20RealFrame%20IA."
+          href={buildWhatsAppUrl("Olá! Quero entrar no grupo da RealFrame IA.")}
           target="_blank"
           rel="noopener noreferrer"
           onClick={handleClick}
@@ -358,6 +333,19 @@ export function SidebarContent({ onNavigate }: SidebarContentProps) {
           <MessageCircle className="h-5 w-5 shrink-0" />
           Entrar no grupo
         </a>
+
+        <p className="eyebrow mb-3 mt-8 px-2 text-muted-foreground">
+          Recursos
+        </p>
+        <Link
+          to="/templates"
+          onClick={handleClick}
+          onMouseEnter={() => handlePrefetch("/templates")}
+          className={navItemClass(isActive("/templates"))}
+        >
+          <Zap className="h-5 w-5 shrink-0" />
+          Templates
+        </Link>
       </nav>
 
       <SidebarUserFooter />

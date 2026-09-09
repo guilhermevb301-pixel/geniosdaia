@@ -86,7 +86,6 @@ export function getPrefetchHandler(route: string, queryClient: QueryClient) {
     "/aulas": () => prefetchModules(queryClient),
     "/templates": () => prefetchTemplates(queryClient),
     "/": () => prefetchBanners(queryClient),
-    "/meus-gpts": () => prefetchCustomGpts(queryClient),
   };
 
   return prefetchMap[route] || null;
