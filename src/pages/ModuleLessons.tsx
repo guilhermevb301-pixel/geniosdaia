@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, Navigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,6 +16,7 @@ import { CelebrationModal } from "@/components/certificates/CelebrationModal";
 import { useCertificates } from "@/hooks/useCertificates";
 import { useUserXP } from "@/hooks/useUserXP";
 import { XP_REWARDS } from "@/lib/gamification";
+import { useCourseModuleAccess } from "@/hooks/useCourseModuleAccess";
 
 interface Lesson {
   id: string;
@@ -37,6 +38,7 @@ export default function ModuleLessons() {
   
   const { issueCertificate, hasCertificate } = useCertificates();
   const { addXP } = useUserXP();
+  const moduleAccess = useCourseModuleAccess(moduleId);
 
   // Fetch module info
   const { data: module } = useQuery({
@@ -188,7 +190,7 @@ export default function ModuleLessons() {
   const completedLessons = lessons.filter((l) => l.completed).length;
   const totalLessons = lessons.length;
 
-  if (!module) {
+  if (moduleAccess.isLoading || !module) {
     return (
       <AppLayout>
         <div className="flex items-center justify-center h-[60vh]">
@@ -198,13 +200,23 @@ export default function ModuleLessons() {
     );
   }
 
+  if (moduleAccess.isLocked) {
+    return <Navigate to="/acesso-negado" replace />;
+  }
+
   return (
     <AppLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <Link to="/aulas">
+            <Link
+              to={
+                moduleAccess.section
+                  ? `/aulas/sessao/${moduleAccess.section.id}`
+                  : "/aulas"
+              }
+            >
               <Button variant="ghost" size="icon">
                 <ArrowLeft className="h-5 w-5" />
               </Button>

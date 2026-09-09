@@ -20,6 +20,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Login = lazy(() => import("./pages/Login"));
 const Register = lazy(() => import("./pages/Register"));
 const Aulas = lazy(() => import("./pages/Aulas"));
+const SectionModules = lazy(() => import("./pages/SectionModules"));
 const ModuleLessons = lazy(() => import("./pages/ModuleLessons"));
 const Templates = lazy(() => import("./pages/Templates"));
 const Mentoria = lazy(() => import("./pages/Mentoria"));
@@ -53,6 +54,7 @@ const ROUTE_COMPONENTS = {
   login: Login,
   register: Register,
   lessons: Aulas,
+  sectionModules: SectionModules,
   moduleLessons: ModuleLessons,
   templates: Templates,
   mentorship: Mentoria,

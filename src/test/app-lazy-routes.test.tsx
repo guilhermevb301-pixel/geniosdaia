@@ -79,6 +79,7 @@ const expectedRoutes = {
   prompts: "/prompts",
   register: "/register",
   resetPassword: "/reset-password",
+  sectionModules: "/aulas/sessao/:sectionId",
   templates: "/templates",
   userGpts: "/meus-gpts",
 } as const;
@@ -93,6 +94,7 @@ const expectedManifest: RouteManifest = [
   { id: "myProducts", path: "/meus-produtos", guard: "protected" },
   { id: "dashboard", path: "/", guard: "protected" },
   { id: "lessons", path: "/aulas", guard: "protected" },
+  { id: "sectionModules", path: "/aulas/sessao/:sectionId", guard: "protected" },
   { id: "moduleLessons", path: "/aulas/:moduleId", guard: "protected" },
   { id: "templates", path: "/templates", guard: "protected" },
   { id: "mentorship", path: "/mentoria", guard: "protected" },
@@ -142,7 +144,7 @@ describe("route-level loading", () => {
 
     expect(appRoutes.APP_ROUTES).toEqual(expectedRoutes);
     expect(routeModule.APP_ROUTE_MANIFEST).toEqual(expectedManifest);
-    expect(routeModule.APP_ROUTE_MANIFEST).toHaveLength(31);
+    expect(routeModule.APP_ROUTE_MANIFEST).toHaveLength(32);
   });
 
   it("shows an accessible fallback before rendering the lazy Aulas page", async () => {

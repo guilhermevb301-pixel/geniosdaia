@@ -165,7 +165,11 @@ export function ModuleCard({
   if (locked) return <div className="h-full">{cardContent}</div>;
 
   return (
-    <Link to={`/aulas/${id}`} className="focus-ring block h-full rounded-[8px]">
+    <Link
+      to={`/aulas/${id}`}
+      aria-label={`Abrir módulo ${title}`}
+      className="focus-ring block h-full rounded-[8px]"
+    >
       {cardContent}
     </Link>
   );
