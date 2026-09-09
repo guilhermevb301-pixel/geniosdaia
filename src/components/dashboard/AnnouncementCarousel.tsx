@@ -44,10 +44,10 @@ export function AnnouncementCarousel() {
   }, [api]);
 
   useEffect(() => {
-    if (!api || banners.length <= 1 || prefersReducedMotion()) return;
+    if (!api || banners.length <= 1) return;
 
     const interval = window.setInterval(() => {
-      if (!document.hidden) api.scrollNext();
+      api.scrollNext(prefersReducedMotion());
     }, AUTOPLAY_INTERVAL_MS);
 
     return () => window.clearInterval(interval);

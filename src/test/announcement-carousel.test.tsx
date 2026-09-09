@@ -422,7 +422,27 @@ describe("AnnouncementCarousel", () => {
 
       act(() => vi.advanceTimersByTime(5000));
 
-      expect(carousel.scrollNext).toHaveBeenCalledOnce();
+      expect(carousel.scrollNext).toHaveBeenCalledWith(false);
+      unmount();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("keeps autoplay active with instant transitions under reduced motion", () => {
+    vi.useFakeTimers();
+
+    try {
+      setReducedMotion(true);
+      const banners = [
+        createBanner({ id: "one" }),
+        createBanner({ id: "two" }),
+      ];
+      const { carousel, unmount } = renderCarousel(banners);
+
+      act(() => vi.advanceTimersByTime(5000));
+
+      expect(carousel.scrollNext).toHaveBeenCalledWith(true);
       unmount();
     } finally {
       vi.useRealTimers();
