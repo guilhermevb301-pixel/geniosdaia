@@ -71,6 +71,7 @@ describe("session library", () => {
     );
 
     expect(screen.getByText("sessões")).toBeInTheDocument();
+    expect(screen.getByText("8")).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: /abrir sessão/i })).toHaveLength(7);
     expect(screen.queryByText("Instalando as Ferramentas")).not.toBeInTheDocument();
     expect(

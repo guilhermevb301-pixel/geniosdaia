@@ -29,8 +29,8 @@ export default function Aulas() {
           </div>
           {!isLoading && !isError && (
             <p className="text-sm text-muted-foreground">
-              <strong className="font-medium text-foreground">{sections.length}</strong>{" "}
-              {sections.length === 1 ? "sessão" : "sessões"}
+              <strong className="font-medium text-foreground">{sections.length + 1}</strong>{" "}
+              sessões
             </p>
           )}
         </header>

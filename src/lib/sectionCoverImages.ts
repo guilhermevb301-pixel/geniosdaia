@@ -1,10 +1,11 @@
-import agenteAtendimento from "@/assets/module-icons/agente-atendimento.webp";
-import geniosIa from "@/assets/module-icons/genios-ia.webp";
-import cloneCriativo from "@/assets/module-icons/clone-criativo.webp";
-import influencerIa from "@/assets/module-icons/influencer-ia.webp";
-import fotosProfissionais from "@/assets/module-icons/fotos-profissionais.webp";
-import videosCinematograficos from "@/assets/module-icons/videos-cinematograficos.webp";
-import bonusGenios from "@/assets/module-icons/bonus-genios.webp";
+import agenteAtendimento from "@/assets/session-covers/agents-claude-portrait.webp";
+import geniosIa from "@/assets/session-covers/sales-portrait.webp";
+import cloneCriativo from "@/assets/session-covers/clones-portrait.webp";
+import influencerIa from "@/assets/session-covers/influencers-portrait.webp";
+import fotosProfissionais from "@/assets/session-covers/images-portrait.webp";
+import videosCinematograficos from "@/assets/session-covers/videos-portrait.webp";
+import bonusGenios from "@/assets/session-covers/bonus-portrait.webp";
+import groupMentorship from "@/assets/session-covers/group-mentorship-portrait.webp";
 
 interface SectionPresentation {
   title: string;
@@ -62,3 +63,5 @@ export function getSectionCoverImage(
 ): string | null {
   return getSectionPresentation(productSlug)?.coverImage ?? null;
 }
+
+export const groupMentorshipCoverImage = groupMentorship;
