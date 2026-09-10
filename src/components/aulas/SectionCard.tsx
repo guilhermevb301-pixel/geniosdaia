@@ -12,7 +12,7 @@ interface SectionCardProps {
 }
 
 export function SectionCard({ section, buyUrl, priority = false }: SectionCardProps) {
-  const presentation = getSectionPresentation(section.productSlug);
+  const presentation = getSectionPresentation(section.productSlug, section.title);
   const title = presentation?.title ?? section.title;
   const description = presentation?.description;
   const image = presentation?.coverImage;

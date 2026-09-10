@@ -34,6 +34,7 @@ const INVENTORY_MODULE_IDS = [
   "64f46787-8efc-43fb-8c14-1bd8db442ed4",
   "f2883111-c4b8-443e-b440-65b7737a22f9",
   "d7b56db0-52d2-41e8-8469-386cd5ad465d",
+  "c843f5dd-99e6-4aca-9b84-735906f0f2ad",
 ] as const;
 
 describe("module cover catalog", () => {
@@ -77,7 +78,7 @@ describe("module cover catalog", () => {
     );
 
     expect(resolvedIds).toEqual(INVENTORY_MODULE_IDS);
-    expect(resolvedIds).toHaveLength(29);
+    expect(resolvedIds).toHaveLength(30);
   });
 
   it("uses product and order as a legacy fallback", () => {
@@ -100,7 +101,7 @@ describe("module cover catalog", () => {
     ).toBeNull();
   });
 
-  it("keeps all 29 rendered visual signatures unique beyond identity fields", () => {
+  it("keeps all 30 rendered visual signatures unique beyond identity fields", () => {
     const visualSignatures = MODULE_COVER_CATALOG.map((cover) =>
       [
         cover.icon,
@@ -110,8 +111,8 @@ describe("module cover catalog", () => {
       ].join("|"),
     );
 
-    expect(visualSignatures).toHaveLength(29);
-    expect(new Set(visualSignatures)).toHaveLength(29);
+    expect(visualSignatures).toHaveLength(30);
+    expect(new Set(visualSignatures)).toHaveLength(30);
   });
 
   it("returns null when neither stable nor legacy keys are known", () => {

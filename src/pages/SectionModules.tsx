@@ -67,7 +67,7 @@ export default function SectionModules() {
     );
   }
 
-  const presentation = getSectionPresentation(section.productSlug);
+  const presentation = getSectionPresentation(section.productSlug, section.title);
   const title = presentation?.title ?? section.title;
 
   return (

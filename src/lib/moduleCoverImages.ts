@@ -27,6 +27,7 @@ import aiPodcast from "@/assets/module-covers-3d/ai-podcast.webp";
 import videoMonetization from "@/assets/module-covers-3d/video-monetization.webp";
 import viralVideos from "@/assets/module-covers-3d/viral-videos.webp";
 import salesPage from "@/assets/module-covers-3d/sales-page.webp";
+import groupMentorship from "@/assets/session-covers/group-mentorship-portrait.webp";
 
 const MODULE_COVER_IMAGES: Readonly<Record<string, string>> = {
   "service-welcome": serviceWelcome,
@@ -58,6 +59,7 @@ const MODULE_COVER_IMAGES: Readonly<Record<string, string>> = {
   "video-monetization": videoMonetization,
   "viral-videos": viralVideos,
   "sales-page": salesPage,
+  "group-mentorship": groupMentorship,
 };
 
 export function getModuleCoverImage(topic: string): string | null {

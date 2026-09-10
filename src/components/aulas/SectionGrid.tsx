@@ -7,7 +7,6 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import type { CourseSectionView } from "@/lib/courseLibrary";
-import { GroupMentorshipCard } from "./GroupMentorshipCard";
 import { SectionCard } from "./SectionCard";
 
 interface SectionGridProps {
@@ -53,9 +52,6 @@ export function SectionGrid({ sections, isLoading = false, buyUrls = {} }: Secti
             />
           </CarouselItem>
         ))}
-        <CarouselItem className={`pl-4 sm:pl-5 ${ITEM_BASIS}`}>
-          <GroupMentorshipCard />
-        </CarouselItem>
       </CarouselContent>
 
       <CarouselPrevious

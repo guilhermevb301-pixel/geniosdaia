@@ -12,6 +12,7 @@ const sections = [
   "Genios das Imagens",
   "Genios dos Videos",
   "Bonus",
+  "Mentorias em grupo",
 ];
 
 const productSlugs = [
@@ -22,6 +23,7 @@ const productSlugs = [
   "fotos-profissionais",
   "videos-cinematograficos",
   "bonus-genios",
+  null,
 ];
 
 const sectionViews = sections.map((title, index) => ({
@@ -72,7 +74,7 @@ describe("session library", () => {
 
     expect(screen.getByText("sessões")).toBeInTheDocument();
     expect(screen.getByText("8")).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: /abrir sessão/i })).toHaveLength(7);
+    expect(screen.getAllByRole("link", { name: /abrir sessão/i })).toHaveLength(8);
     expect(screen.queryByText("Instalando as Ferramentas")).not.toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: /abrir sessão agentes de ia \+ claude/i }),

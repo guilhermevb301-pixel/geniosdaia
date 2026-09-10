@@ -331,6 +331,15 @@ export const MODULE_COVER_CATALOG = [
     layout: "browser",
     reflection: "emerald",
   },
+  {
+    moduleId: "c843f5dd-99e6-4aca-9b84-735906f0f2ad",
+    productSlug: "mentorias-grupo",
+    orderIndex: 0,
+    topic: "group-mentorship",
+    icon: "broadcast",
+    layout: "stage",
+    reflection: "emerald",
+  },
 ] as const satisfies readonly ModuleCoverMetadata[];
 
 export interface ModuleCoverLookup {

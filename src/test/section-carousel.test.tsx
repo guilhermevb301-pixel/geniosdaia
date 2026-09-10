@@ -4,9 +4,9 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 import { SectionGrid } from "@/components/aulas/SectionGrid";
 import type { CourseSectionView } from "@/lib/courseLibrary";
 
-const sections: CourseSectionView[] = Array.from({ length: 7 }, (_, index) => ({
+const sections: CourseSectionView[] = Array.from({ length: 8 }, (_, index) => ({
   id: `section-${index + 1}`,
-  title: `Sessão ${index + 1}`,
+  title: index === 7 ? "Mentorias em grupo" : `Sessão ${index + 1}`,
   productSlug: [
     "agente-atendimento",
     "genios-ia",
@@ -15,6 +15,7 @@ const sections: CourseSectionView[] = Array.from({ length: 7 }, (_, index) => ({
     "fotos-profissionais",
     "videos-cinematograficos",
     "bonus-genios",
+    null,
   ][index],
   orderIndex: index,
   moduleCount: index + 1,
@@ -45,7 +46,7 @@ beforeAll(() => {
 });
 
 describe("SectionGrid", () => {
-  it("renders the sessions in one horizontal carousel and appends group mentorship", () => {
+  it("renders all database sessions in one horizontal carousel", () => {
     render(
       <MemoryRouter>
         <SectionGrid sections={sections} />
@@ -55,9 +56,9 @@ describe("SectionGrid", () => {
     expect(screen.getByRole("region", { name: "Sessões de aulas" })).toBeInTheDocument();
     expect(screen.getAllByRole("group")).toHaveLength(8);
     expect(screen.getByText("Mentorias em grupo")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Ver mentorias em grupo" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Abrir sessão Mentorias em grupo" })).toHaveAttribute(
       "href",
-      "/eventos",
+      "/aulas/sessao/section-8",
     );
   });
 

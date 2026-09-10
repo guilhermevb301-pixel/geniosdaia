@@ -51,17 +51,27 @@ const SECTION_PRESENTATION: Readonly<Record<string, SectionPresentation>> = {
   },
 };
 
+const GROUP_MENTORSHIP_PRESENTATION: SectionPresentation = {
+  title: "Mentorias em grupo",
+  description: "Encontros ao vivo para avançar com direção e feedback.",
+  coverImage: groupMentorship,
+};
+
 export function getSectionPresentation(
   productSlug: string | null | undefined,
+  sectionTitle?: string | null,
 ): SectionPresentation | null {
+  if (sectionTitle?.trim().toLocaleLowerCase("pt-BR") === "mentorias em grupo") {
+    return GROUP_MENTORSHIP_PRESENTATION;
+  }
+
   if (!productSlug) return null;
   return SECTION_PRESENTATION[productSlug] ?? null;
 }
 
 export function getSectionCoverImage(
   productSlug: string | null | undefined,
+  sectionTitle?: string | null,
 ): string | null {
-  return getSectionPresentation(productSlug)?.coverImage ?? null;
+  return getSectionPresentation(productSlug, sectionTitle)?.coverImage ?? null;
 }
-
-export const groupMentorshipCoverImage = groupMentorship;

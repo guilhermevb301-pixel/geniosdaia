@@ -29,7 +29,7 @@ export default function Aulas() {
           </div>
           {!isLoading && !isError && (
             <p className="text-sm text-muted-foreground">
-              <strong className="font-medium text-foreground">{sections.length + 1}</strong>{" "}
+              <strong className="font-medium text-foreground">{sections.length}</strong>{" "}
               sessões
             </p>
           )}
