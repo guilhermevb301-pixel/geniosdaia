@@ -23,7 +23,22 @@ const sections: CourseSectionView[] = Array.from({ length: 8 }, (_, index) => ({
   totalLessons: 3,
   progressPercent: 0,
   locked: false,
-  modules: [],
+  modules:
+    index === 7
+      ? [
+          {
+            id: "mentorship-module",
+            title: "Mentorias em grupo",
+            description: null,
+            coverImageUrl: null,
+            orderIndex: 0,
+            sectionId: "section-8",
+            completedLessons: 0,
+            totalLessons: 3,
+            progressPercent: 0,
+          },
+        ]
+      : [],
 }));
 
 beforeAll(() => {
@@ -58,7 +73,7 @@ describe("SectionGrid", () => {
     expect(screen.getByText("Mentorias em grupo")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Abrir sessão Mentorias em grupo" })).toHaveAttribute(
       "href",
-      "/aulas/sessao/section-8",
+      "/aulas/mentorship-module",
     );
   });
 

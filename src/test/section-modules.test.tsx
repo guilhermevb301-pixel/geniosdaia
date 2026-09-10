@@ -46,6 +46,30 @@ vi.mock("@/hooks/useCourseLibrary", () => ({
           },
         ],
       },
+      {
+        id: "section-mentorship",
+        title: "Mentorias em grupo",
+        productSlug: null,
+        orderIndex: 7,
+        moduleCount: 1,
+        totalLessons: 1,
+        completedLessons: 0,
+        progressPercent: 0,
+        locked: false,
+        modules: [
+          {
+            id: "mentorship-module",
+            title: "Mentorias em grupo",
+            description: null,
+            coverImageUrl: null,
+            orderIndex: 0,
+            sectionId: "section-mentorship",
+            completedLessons: 0,
+            totalLessons: 1,
+            progressPercent: 0,
+          },
+        ],
+      },
     ],
     modulesWithoutSection: [],
     isLoading: false,
@@ -69,11 +93,12 @@ beforeAll(() => {
   );
 });
 
-function renderPage() {
+function renderPage(path = "/aulas/sessao/section-influencers") {
   return render(
-    <MemoryRouter initialEntries={["/aulas/sessao/section-influencers"]}>
+    <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path="/aulas/sessao/:sectionId" element={<SectionModules />} />
+        <Route path="/aulas/:moduleId" element={<h1>Sequência de aulas</h1>} />
         <Route path="/acesso-negado" element={<h1>Acesso negado</h1>} />
       </Routes>
     </MemoryRouter>,
@@ -96,5 +121,13 @@ describe("SectionModules", () => {
 
     expect(screen.getByRole("heading", { name: "Acesso negado" })).toBeInTheDocument();
     expect(screen.queryByText("Influencer com IA")).not.toBeInTheDocument();
+  });
+
+  it("opens group mentorship directly in its lesson sequence", () => {
+    libraryState.locked = false;
+    renderPage("/aulas/sessao/section-mentorship");
+
+    expect(screen.getByRole("heading", { name: "Sequência de aulas" })).toBeInTheDocument();
+    expect(screen.queryByText("Módulos de Mentorias em grupo")).not.toBeInTheDocument();
   });
 });

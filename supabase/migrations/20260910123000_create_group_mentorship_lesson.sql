@@ -14,7 +14,7 @@ ON CONFLICT (id) DO UPDATE SET
 INSERT INTO public.modules (id, title, description, order_index, section_id)
 VALUES (
   'c843f5dd-99e6-4aca-9b84-735906f0f2ad',
-  'Mentoria em grupo #1',
+  'Mentorias em grupo',
   'Aula completa com as ferramentas e referências usadas durante a mentoria.',
   0,
   'a2a5d8ad-16ae-4d4f-a960-84783cbb82b4'

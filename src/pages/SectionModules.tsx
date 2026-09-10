@@ -67,6 +67,10 @@ export default function SectionModules() {
     );
   }
 
+  if (section.title.trim().toLocaleLowerCase("pt-BR") === "mentorias em grupo" && section.modules[0]) {
+    return <Navigate to={`/aulas/${section.modules[0].id}`} replace />;
+  }
+
   const presentation = getSectionPresentation(section.productSlug, section.title);
   const title = presentation?.title ?? section.title;
 

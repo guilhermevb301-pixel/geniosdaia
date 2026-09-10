@@ -16,6 +16,10 @@ export function SectionCard({ section, buyUrl, priority = false }: SectionCardPr
   const title = presentation?.title ?? section.title;
   const description = presentation?.description;
   const image = presentation?.coverImage;
+  const destination =
+    title === "Mentorias em grupo" && section.modules[0]
+      ? `/aulas/${section.modules[0].id}`
+      : `/aulas/sessao/${section.id}`;
 
   const body = (
     <article className="group/card flex h-full flex-col">
@@ -112,7 +116,7 @@ export function SectionCard({ section, buyUrl, priority = false }: SectionCardPr
 
   return (
     <Link
-      to={`/aulas/sessao/${section.id}`}
+      to={destination}
       aria-label={`Abrir sessão ${title}`}
       className="focus-ring block h-full rounded-lg"
     >
