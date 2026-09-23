@@ -101,6 +101,7 @@ h3{font-size:17px;font-weight:650}
 .link{background:none;border:0;padding:6px 0;color:var(--accent-strong);font-weight:700;font-size:14px}
 .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px;background:var(--surface-2);padding:5px;border-radius:16px}
 .seg button{min-height:46px;border:0;border-radius:12px;background:transparent;font-weight:650;font-size:15px;color:var(--ink-2)}
+.seg-wrap{grid-auto-flow:row;grid-template-columns:repeat(auto-fit,minmax(96px,1fr))}
 .seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{min-height:48px;padding:0 16px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface);font-weight:650;font-size:15px;display:flex;align-items:center;gap:8px}
@@ -251,7 +252,7 @@ const clone=o=>JSON.parse(JSON.stringify(o));
 
 /* ---------- dados padrão ---------- */
 const DEFAULT_CONFIG={
-  v:1,baseIncome:20000,bigPurchase:1000,annualStart:0,
+  v:1,baseIncome:20000,taxRate:10,bigPurchase:1000,annualStart:0,
   slices:[
     {id:'invest',name:'Liberdade financeira',value:4000,subs:[]},
     {id:'needs',name:'Necessidades básicas',value:11000,subs:[
@@ -288,7 +289,7 @@ let config=normalizeConfig(LS.get('fdf.config'));
 let months=LS.get('fdf.months')||{};
 const ui={
   tab:'home',sub:{milhao:'painel',mais:'protecao'},
-  inc:{amount:'',date:todayISO(),note:'',choice:'all'},
+  inc:{amount:'',date:todayISO(),note:'',choice:'all',net:false},
   exp:{slice:'needs',amount:'',desc:'',date:todayISO(),sub:'',cat:'IPVA',big:false,kind:'',maint:''},
   box:{cat:'IPVA',amount:'',desc:'',date:todayISO()},
   bal:{month:curMonth(),value:''},
@@ -304,6 +305,10 @@ const sliceVal=s=>s.subs&&s.subs.length?s.subs.reduce((a,x)=>a+(+x.value||0),0):
 const sliceTotal=()=>config.slices.reduce((a,s)=>a+sliceVal(s),0);
 const pctOf=s=>config.baseIncome?sliceVal(s)/config.baseIncome*100:0;
 const sumInc=mk=>M(mk).incomes.reduce((a,i)=>a+i.amount,0);
+const sumGross=mk=>M(mk).incomes.reduce((a,i)=>a+(i.gross!=null?i.gross:i.amount),0);
+const sumTax=mk=>M(mk).incomes.reduce((a,i)=>a+(+i.tax||0),0);
+const taxRate=()=>Math.min(99,Math.max(0,+config.taxRate||0));
+function taxSplit(g,isNet){const t=isNet?0:r2(g*taxRate()/100);return {gross:r2(g),tax:t,net:r2(g-t)};}
 const allocSum=(mk,id)=>M(mk).incomes.reduce((a,i)=>a+((i.alloc||{})[id]||0),0);
 const spent=(mk,id)=>M(mk).expenses.filter(e=>e.slice===id).reduce((a,e)=>a+e.amount,0);
 const aporteDone=mk=>M(mk).incomes.filter(i=>i.investDone).reduce((a,i)=>a+((i.alloc||{}).invest||0),0);
@@ -481,7 +486,7 @@ function vHome(){
   </section>
 
   <section class="grid2">
-    <div class="tile"><div class="eyebrow">Entrou em ${MS[+mk.slice(5)-1]}</div><div class="v num">${fmt(inc)}</div><div class="small muted num">base ${fmt(base)}</div></div>
+    <button class="tile" style="border:0;text-align:left" data-act="goTax"><div class="eyebrow">Líquido em ${MS[+mk.slice(5)-1]}</div><div class="v num">${fmt(inc)}</div><div class="small muted num">${sumTax(mk)>0?`imposto ${fmt(sumTax(mk))}`:`base ${fmt(base)}`}</div></button>
     <button class="tile" style="border:0;text-align:left" data-act="tab" data-tab="milhao"><div class="eyebrow">Rumo ao milhão</div><div class="v num">${P1.format(lb.v/config.goal.target*100)}%</div><div class="small muted num">${compact(lb.v)} investidos</div></button>
   </section>
   ${extra>0?`<div class="alert ${followed?'ok':'warn'}">${followed?I.check:I.warn}<div><b>Renda extra de ${fmt(extra)} este mês.</b><div class="small">${followed?'Você seguiu a regra: o excedente foi para o investimento.':'O excedente não foi para o investimento. Na próxima entrada, mande pelo menos metade.'}</div></div></div>`:''}
@@ -501,9 +506,10 @@ function vRecebi(){
   const incs=allMonthKeys().filter(k=>k>=addMonths(mk,-2)).reverse().flatMap(k=>M(k).incomes.map(i=>({...i,mk:k}))).sort((a,b)=>a.date<b.date?1:-1);
   return `<div class="stack">
   <h2>Recebi dinheiro</h2>
-  <p class="sub" style="margin:-6px 0 0">Digite o que caiu na conta. O investimento sai primeiro, no mesmo dia.</p>
-  ${moneyInput('incAmount','ui.inc.amount',ui.inc.amount,{huge:true,hook:'incPreview',label:'Valor recebido'})}
-  <div class="chips">${[config.baseIncome,5000,10000].map(v=>`<button class="chip" data-act="incQuick" data-v="${v}">${fmt(v)}</button>`).join('')}</div>
+  <p class="sub" style="margin:-6px 0 0">${ui.inc.net?'Digite o valor líquido que caiu na conta.':`Digite quanto a empresa te pagou. O app tira ${P2.format(taxRate())}% de imposto e divide só o líquido.`} O investimento sai primeiro, no mesmo dia.</p>
+  <div class="seg" role="group" aria-label="Tipo de valor"><button data-act="incNet" data-v="0" aria-pressed="${!ui.inc.net}">Bruto da empresa</button><button data-act="incNet" data-v="1" aria-pressed="${!!ui.inc.net}">Já é líquido</button></div>
+  ${moneyInput('incAmount','ui.inc.amount',ui.inc.amount,{huge:true,hook:'incPreview',label:ui.inc.net?'Valor líquido recebido':'Valor bruto pago pela empresa'})}
+  <div class="chips">${[config.baseIncome,config.baseIncome+5000,config.baseIncome+10000].map(v=>`<button class="chip" data-act="incQuick" data-v="${v}">${fmt(v)}</button>`).join('')}</div>
   <div class="grid2">
     <label class="f">Data<input class="in" type="date" id="incDate" data-in="ui.inc.date" data-hook="incPreview" value="${esc(ui.inc.date)}"></label>
     <label class="f">De onde veio<input class="in" id="incNote" data-in="ui.inc.note" placeholder="Pró-labore, lucros…" value="${esc(ui.inc.note)}"></label>
@@ -514,8 +520,8 @@ function vRecebi(){
   </section></div>`;
 }
 function incPreview(){
-  const amt=parseMoney(ui.inc.amount);
-  if(!(amt>0))return `<div class="empty">Digite um valor para ver como dividir entre as fatias.</div>`;
+  const ts=taxSplit(parseMoney(ui.inc.amount),ui.inc.net),amt=ts.net;
+  if(!(amt>0))return `<div class="empty">Digite um valor para ver ${ui.inc.net?'':'o imposto e '}como dividir entre as fatias.</div>`;
   const mk=(ui.inc.date||todayISO()).slice(0,7);
   const before=sumInc(mk);
   const d=distribute(amt,before,ui.inc.choice);
@@ -528,15 +534,20 @@ function incPreview(){
     <div class="seg" role="group" aria-label="Destino da renda extra">
       ${[['all','Tudo'],['half','Metade'],['none','Não agora']].map(([k,l])=>`<button data-act="choice" data-v="${k}" aria-pressed="${ui.inc.choice===k}">${l}</button>`).join('')}
     </div></div>`:'';
-  return `<div class="stack">${rule}<div class="card" style="padding:14px 16px"><div class="dist">${rows}</div></div>
-  <button class="btn primary" data-act="saveIncome">${I.check} Registrar entrada de ${fmt(amt)}</button></div>`;
+  const taxCard=ui.inc.net?'':`<div class="card stack-s" style="padding:14px 16px">
+    <div class="between"><span class="sub">Bruto pago pela empresa</span><b class="num">${fmt(ts.gross)}</b></div>
+    <div class="between"><span class="sub">− Imposto (${P2.format(taxRate())}%)</span><b class="num" style="color:var(--crit-ink)">− ${fmt(ts.tax)}</b></div>
+    <div class="divider"></div>
+    <div class="between"><span style="font-weight:700">= Líquido, o que você ganhou</span><span class="mid num">${fmt(ts.net)}</span></div></div>`;
+  return `<div class="stack">${taxCard}${rule}<div class="card" style="padding:14px 16px"><div class="eyebrow" style="margin-bottom:6px">Divisão do líquido</div><div class="dist">${rows}</div></div>
+  <button class="btn primary" data-act="saveIncome">${I.check} Registrar ${fmt(amt)} líquidos</button></div>`;
 }
 function incomeItem(i){
   const key='inc|'+i.mk+'|'+i.id;
   const rule=i.excess>0?(i.choice==='none'?pill('over','Regra extra: não seguiu'):pill('ok','Regra extra: '+(i.choice==='all'?'tudo':'metade'))):'';
   return `<div class="item" style="flex-wrap:wrap">
-    <div class="grow"><div class="t num">${fmt(i.amount)} <span class="muted small" style="font-weight:500">· ${dLabel(i.date)}${i.note?' · '+esc(i.note):''}</span></div>
-    <div class="small muted num">Investir ${fmt((i.alloc||{}).invest||0)}</div>${rule?`<div style="margin-top:4px">${rule}</div>`:''}</div>
+    <div class="grow"><div class="t num">${fmt(i.amount)} <span class="muted small" style="font-weight:500">líquido · ${dLabel(i.date)}${i.note?' · '+esc(i.note):''}</span></div>
+    <div class="small muted num">${i.tax>0?`Bruto ${fmt(i.gross)} · imposto ${fmt(i.tax)} · `:''}Investir ${fmt((i.alloc||{}).invest||0)}</div>${rule?`<div style="margin-top:4px">${rule}</div>`:''}</div>
     ${confirmDel(key,'entrada')}
     <button class="btn sm ${i.investDone?'':'good'}" style="width:100%" data-act="aporte" data-mk="${i.mk}" data-id="${i.id}">${i.investDone?I.check+' Aporte feito · desfazer':'Marcar aporte feito'}</button>
   </div>`;
@@ -711,10 +722,10 @@ function simOut(){
 }
 
 function vMais(){
-  const tabs=[['protecao','Proteção'],['caixinha','Caixinha'],['historico','Histórico'],['fatias','Fatias']];
+  const tabs=[['protecao','Proteção'],['caixinha','Caixinha'],['impostos','Impostos'],['historico','Histórico'],['fatias','Fatias']];
   const v=ui.sub.mais;
-  return `<div class="stack"><div class="seg" role="group" aria-label="Seção">${tabs.map(([k,l])=>`<button data-act="sub" data-g="mais" data-v="${k}" aria-pressed="${v===k}">${l}</button>`).join('')}</div>
-  ${v==='caixinha'?vCaixinha():v==='historico'?vHistorico():v==='fatias'?vFatias():vProtecao()}</div>`;
+  return `<div class="stack"><div class="seg seg-wrap" role="group" aria-label="Seção">${tabs.map(([k,l])=>`<button data-act="sub" data-g="mais" data-v="${k}" aria-pressed="${v===k}">${l}</button>`).join('')}</div>
+  ${v==='impostos'?vImpostos():v==='caixinha'?vCaixinha():v==='historico'?vHistorico():v==='fatias'?vFatias():vProtecao()}</div>`;
 }
 function vProtecao(){
   const p=config.protection,needs=sliceVal(slice('needs'));
@@ -749,6 +760,39 @@ function boxCalc(){
   allMonthKeys().forEach(mk=>{dep+=allocSum(mk,'anual');M(mk).expenses.filter(e=>e.slice==='anual').forEach(e=>{out+=e.amount;const c=e.cat||'Outros';cats[c]=(cats[c]||0)+e.amount;outs.push({...e,mk});});});
   return {dep,out,cats,outs:outs.sort((a,b)=>a.date<b.date?1:-1),bal:(+config.annualStart||0)+dep-out};
 }
+function vImpostos(){
+  const cm=curMonth(),yr=cm.slice(0,4),t=taxRate();
+  const ym=allMonthKeys().filter(k=>k.startsWith(yr));
+  const yG=ym.reduce((a,k)=>a+sumGross(k),0),yT=ym.reduce((a,k)=>a+sumTax(k),0),yN=ym.reduce((a,k)=>a+sumInc(k),0);
+  const mG=sumGross(cm),mT=sumTax(cm),mN=sumInc(cm);
+  const need=t<100?config.baseIncome/(1-t/100):0;
+  const rows=histData().slice().reverse().filter(r=>r.gross>0);
+  return `<h2>Impostos</h2>
+  <p class="sub" style="margin:-6px 0 0">O que a empresa te paga não é o que você ganhou. O app tira o imposto de cada entrada bruta e só divide o líquido entre as fatias.</p>
+  <section class="card lift stack">
+    <div class="between"><span class="eyebrow">${mName(cm)} · bruto → líquido</span>${mT>0?pill('info',P2.format(mG?mT/mG*100:0)+'% efetivo'):pill('neutral','Sem entradas')}</div>
+    <div class="stack-s">
+      <div class="between"><span class="sub">Bruto pago pela empresa</span><b class="num">${fmt(mG)}</b></div>
+      <div class="between"><span class="sub">− Imposto</span><b class="num" style="color:var(--crit-ink)">− ${fmt(mT)}</b></div>
+      <div class="divider"></div>
+      <div class="between"><span style="font-weight:700">= Líquido</span><span class="mid num">${fmt(mN)}</span></div>
+    </div>
+  </section>
+  <section class="card stack">
+    <label class="f">Imposto descontado de cada entrada bruta<div class="pct"><input class="in num" inputmode="decimal" id="taxRate" data-in="cfg.taxRate" data-hook2="tax" value="${P2.format(t)}"><span>%</span></div></label>
+    <p class="small muted" style="margin:0">Vale para as próximas entradas; as já registradas guardam a taxa do dia. Para uma entrada que já cai líquida, escolha “Já é líquido” em Recebi.</p>
+    <div class="alert ok">${I.check}<div class="small" id="taxNeed">Para ter a renda base de <b>${fmt(config.baseIncome)}</b> líquidos, a empresa precisa te pagar <b>${fmt(need)}</b> brutos por mês.</div></div>
+    <button class="btn" data-act="rerender">Aplicar</button>
+  </section>
+  <section class="section"><h3>Em ${yr}</h3>
+    <div class="grid3">
+      <div class="tile"><div class="eyebrow">Bruto</div><div class="v num">${fmt(yG)}</div></div>
+      <div class="tile"><div class="eyebrow">Imposto</div><div class="v num">${fmt(yT)}</div></div>
+      <div class="tile"><div class="eyebrow">Líquido</div><div class="v num">${fmt(yN)}</div></div>
+    </div>
+    ${rows.length?`<div class="card" style="padding:8px 12px"><div class="tablewrap"><table><thead><tr><th>Mês</th><th>Bruto</th><th>Imposto</th><th>Líquido</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${mLabel(r.mk)}</td><td>${fmt(r.gross)}</td><td>${fmt(r.tax)}</td><td>${fmt(r.inc)}</td></tr>`).join('')}</tbody></table></div></div>`:`<div class="empty">Quando você registrar entradas brutas, o imposto de cada mês aparece aqui.</div>`}
+  </section>`;
+}
 function vCaixinha(){
   const b=boxCalc(),s=slice('anual'),yr=sliceVal(s)*12;
   return `<h2>Caixinha de gastos anuais</h2>
@@ -782,7 +826,7 @@ function histData(){
   const start=monthDiff(first,cm)>11?addMonths(cm,-11):first;
   const ms=[];for(let k=start;k<=cm;k=addMonths(k,1))ms.push(k);
   while(ms.length<6)ms.unshift(addMonths(ms[0],-1));
-  return ms.map(mk=>({mk,inc:sumInc(mk),invest:aporteDone(mk),needs:spent(mk,'needs'),lazer:spent(mk,'lazer'),anual:spent(mk,'anual'),edu:spent(mk,'edu')}));
+  return ms.map(mk=>({mk,inc:sumInc(mk),gross:sumGross(mk),tax:sumTax(mk),invest:aporteDone(mk),needs:spent(mk,'needs'),lazer:spent(mk,'lazer'),anual:spent(mk,'anual'),edu:spent(mk,'edu')}));
 }
 function vHistorico(){
   const rows=histData();
@@ -792,11 +836,11 @@ function vHistorico(){
   <div class="legend">${ids.map(id=>`<span><span class="dot" style="background:${COLOR[id]}"></span>${SHORT[id]}</span>`).join('')}</div>
   <div class="chart" data-chart="hist"></div>
   <div class="card" style="padding:8px 12px"><div class="tablewrap"><table>
-    <thead><tr><th>Mês</th><th>Entrou</th>${ids.map(id=>`<th>${SHORT[id]}</th>`).join('')}</tr></thead>
-    <tbody>${rows.slice().reverse().map(r=>`<tr><td>${mLabel(r.mk)}</td><td>${fmt(r.inc)}</td>${ids.map(id=>`<td>${fmt(r[id])}</td>`).join('')}</tr>`).join('')}</tbody>
+    <thead><tr><th>Mês</th><th>Bruto</th><th>Imposto</th><th>Líquido</th>${ids.map(id=>`<th>${SHORT[id]}</th>`).join('')}</tr></thead>
+    <tbody>${rows.slice().reverse().map(r=>`<tr><td>${mLabel(r.mk)}</td><td>${fmt(r.gross)}</td><td>${fmt(r.tax)}</td><td>${fmt(r.inc)}</td>${ids.map(id=>`<td>${fmt(r[id])}</td>`).join('')}</tr>`).join('')}</tbody>
   </table></div></div>
   <button class="btn primary" data-act="csv">Exportar dados em CSV</button>
-  <p class="small muted" style="margin:0">O arquivo traz todas as entradas, gastos e saldos, com separador “;” e vírgula decimal — abre direto no Excel ou Google Planilhas.</p>`;
+  <p class="small muted" style="margin:0">O arquivo traz todas as entradas (bruto, imposto e líquido), gastos e saldos, com separador “;” e vírgula decimal — abre direto no Excel ou Google Planilhas.</p>`;
 }
 function vFatias(){
   const tot=config.slices.reduce((a,s)=>a+pctOf(s),0);
@@ -805,7 +849,7 @@ function vFatias(){
   <p class="sub" style="margin:-6px 0 0">Edite em % ou em R$ — um atualiza o outro.</p>
   <section class="card stack">
     <label class="f">Renda mensal base${moneyInput('baseIncome','cfg.baseIncome',fmtIn(config.baseIncome))}</label>
-    <p class="small muted" style="margin:0">Acima deste valor, o que entrar no mês conta como renda extra.</p>
+    <p class="small muted" style="margin:0">Valor líquido, já sem imposto. Acima dele, o que entrar no mês conta como renda extra.</p>
   </section>
   ${config.slices.map(s=>`<section class="card stack">
     <div class="row"><span class="dot" style="background:${COLOR[s.id]};width:14px;height:14px"></span><input class="in" style="min-height:44px;font-weight:700" id="sn-${s.id}" data-in="slice.name" data-id="${s.id}" value="${esc(s.name)}" aria-label="Nome da fatia"></div>
@@ -970,16 +1014,18 @@ const actions={
   sub:el=>{ui.sub[el.dataset.g]=el.dataset.v;ui.confirm=null;render(true);},
   theme:()=>{const root=document.documentElement;const dark=root.dataset.theme==='dark'||(!root.dataset.theme&&matchMedia('(prefers-color-scheme: dark)').matches);root.dataset.theme=dark?'light':'dark';try{localStorage.setItem('fdf.theme',root.dataset.theme);}catch(e){}render(true);},
   rerender:()=>{render(true);toast('Atualizado');},
+  goTax:()=>{ui.sub.mais='impostos';goTab('mais');},
   goSlice:el=>{ui.exp.slice=el.dataset.id;goTab('gastos');},
   incQuick:el=>{ui.inc.amount=fmtIn(+el.dataset.v);const i=document.getElementById('incAmount');if(i)i.value=ui.inc.amount;hooks.incPreview();},
   choice:el=>{ui.inc.choice=el.dataset.v;hooks.incPreview();},
+  incNet:el=>{ui.inc.net=el.dataset.v==='1';render(true);},
   saveIncome:()=>{
-    const amt=parseMoney(ui.inc.amount);if(!(amt>0)){toast('Digite quanto entrou.');return;}
+    const ts=taxSplit(parseMoney(ui.inc.amount),ui.inc.net),amt=ts.net;if(!(amt>0)){toast('Digite quanto entrou.');return;}
     const date=ui.inc.date||todayISO(),mk=date.slice(0,7),before=sumInc(mk),d=distribute(amt,before,ui.inc.choice);
-    const inc={id:uid(),date,amount:r2(amt),note:ui.inc.note.trim(),excess:r2(d.excess),choice:d.excess>0?ui.inc.choice:null,alloc:d.alloc,investDone:false};
+    const inc={id:uid(),date,amount:r2(amt),gross:ts.gross,tax:ts.tax,taxRate:ui.inc.net?0:taxRate(),note:ui.inc.note.trim(),excess:r2(d.excess),choice:d.excess>0?ui.inc.choice:null,alloc:d.alloc,investDone:false};
     ensureM(mk).incomes.push(inc);saveMonth(mk);
-    ui.inc={amount:'',date:todayISO(),note:'',choice:'all'};
-    render(true);window.scrollTo(0,0);toast(`Entrada registrada. Agora invista ${fmt(d.alloc.invest)} primeiro.`);
+    ui.inc={amount:'',date:todayISO(),note:'',choice:'all',net:ui.inc.net};
+    render(true);window.scrollTo(0,0);toast(`${ts.tax>0?`Imposto de ${fmt(ts.tax)} separado. `:''}Agora invista ${fmt(d.alloc.invest)} primeiro.`);
   },
   aporte:el=>{const i=findEntry(el.dataset.mk,el.dataset.id,'inc');if(!i)return;i.investDone=!i.investDone;i.investDoneAt=i.investDone?todayISO():null;saveMonth(el.dataset.mk);render(true);toast(i.investDone?'Aporte feito. O eu do futuro agradece.':'Aporte desmarcado.');},
   expSlice:el=>{ui.exp.slice=el.dataset.id;render(true);},
@@ -1092,14 +1138,14 @@ app.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName==='INPUT
 function csvNum(v){return v==null||v===''?'':String(r2(v)).replace('.',',');}
 function csvCell(s){s=String(s??'');return /[;"\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
 function buildCsv(){
-  const head=['tipo','data','mes','fatia','categoria','descricao','valor','investimento_separado','aporte_feito','renda_extra','regra_renda_extra','ativo_passivo','custo_mensal_futuro'];
+  const head=['tipo','data','mes','fatia','categoria','descricao','valor','bruto','imposto','investimento_separado','aporte_feito','renda_extra','regra_renda_extra','ativo_passivo','custo_mensal_futuro'];
   const rows=[head];
   allMonthKeys().forEach(mk=>{
-    M(mk).incomes.forEach(i=>rows.push(['entrada',i.date,mk,'','',i.note,csvNum(i.amount),csvNum((i.alloc||{}).invest),i.investDone?'sim':'não',csvNum(i.excess||0),i.excess>0?(i.choice==='none'?'não seguiu':'seguiu ('+(i.choice==='all'?'tudo':'metade')+')'):'','','']));
+    M(mk).incomes.forEach(i=>rows.push(['entrada',i.date,mk,'','',i.note,csvNum(i.amount),csvNum(i.gross!=null?i.gross:i.amount),csvNum(i.tax||0),csvNum((i.alloc||{}).invest),i.investDone?'sim':'não',csvNum(i.excess||0),i.excess>0?(i.choice==='none'?'não seguiu':'seguiu ('+(i.choice==='all'?'tudo':'metade')+')'):'','','']));
     M(mk).expenses.forEach(x=>{const cat=x.slice==='needs'&&x.sub?((slice('needs').subs.find(s=>s.id===x.sub)||{}).name||''):(x.cat||'');
-      rows.push(['gasto',x.date,mk,(slice(x.slice)||{}).name||x.slice,cat,x.desc,csvNum(x.amount),'','','','',x.kind||'',csvNum(x.maint)]);});
+      rows.push(['gasto',x.date,mk,(slice(x.slice)||{}).name||x.slice,cat,x.desc,csvNum(x.amount),'','','','','','',x.kind||'',csvNum(x.maint)]);});
   });
-  balancesSorted().forEach(b=>rows.push(['saldo_investido','',b.mk,'Liberdade financeira','','Saldo informado',csvNum(b.v),'','','','','','']));
+  balancesSorted().forEach(b=>rows.push(['saldo_investido','',b.mk,'Liberdade financeira','','Saldo informado',csvNum(b.v),'','','','','','','','']));
   return '﻿'+rows.map(r=>r.map(csvCell).join(';')).join('\r\n');
 }
 async function exportCsv(){
