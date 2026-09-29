@@ -1,4 +1,6 @@
 import type { User } from "@supabase/supabase-js";
+import { toast } from "@/components/ui/feedback";
+import { capturedAuth } from "@/lib/authRedirect";
 import { DEFAULT_SETTINGS } from "@/lib/constants";
 import {
   clearLocal,
@@ -367,6 +369,14 @@ export async function boot() {
       }
     }, 0);
   });
+
+  // Chegou por um link de e-mail (convite / redefinir senha / confirmação)
+  if (capturedAuth?.error) {
+    setTimeout(() => toast.error("Link inválido ou expirado", "Peça um novo link em “Esqueci minha senha”."), 400);
+  } else if (capturedAuth?.access_token && capturedAuth.refresh_token) {
+    const { error } = await supabase.auth.setSession({ access_token: capturedAuth.access_token, refresh_token: capturedAuth.refresh_token });
+    if (!error && (capturedAuth.type === "invite" || capturedAuth.type === "recovery")) useStore.setState({ recovery: true });
+  }
 
   try {
     const { data } = await supabase.auth.getSession();

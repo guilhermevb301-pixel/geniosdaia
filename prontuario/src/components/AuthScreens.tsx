@@ -1,8 +1,8 @@
 import { motion } from "framer-motion";
 import { ArrowRight, Check, Copy, Database, ExternalLink, KeyRound, Loader2, Lock, Mail, RefreshCw, ShieldCheck, Sparkles, WifiOff } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import schemaSQL from "../../supabase/schema.sql?raw";
-import { SQL_EDITOR_URL, supabase } from "@/lib/supabase";
+import { SQL_EDITOR_URL, signupsEnabled, supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/store/store";
 import { retryStart, signOut, startDemo } from "@/store/sync";
@@ -17,7 +17,8 @@ function translateAuthError(msg: string) {
   if (/email not confirmed/i.test(msg)) return "Confirme seu e-mail antes de entrar (verifique a caixa de entrada e o spam).";
   if (/already registered|already been registered/i.test(msg)) return "Este e-mail já tem cadastro. Use “Entrar”.";
   if (/password should be at least/i.test(msg)) return "A senha precisa ter pelo menos 6 caracteres.";
-  if (/signups not allowed|signup is disabled/i.test(msg)) return "Novos cadastros estão desativados. Peça o acesso ao administrador.";
+  if (/signups not allowed|signup is disabled|Database error saving new user|Cadastro fechado/i.test(msg))
+    return "Novos cadastros estão fechados neste prontuário. Entre com o e-mail e a senha já criados.";
   if (/fetch|network/i.test(msg)) return "Sem conexão com o servidor. Verifique a internet.";
   if (/rate limit/i.test(msg)) return "Muitas tentativas. Aguarde alguns minutos e tente novamente.";
   return msg;
@@ -76,6 +77,10 @@ export function LoginScreen() {
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [demoBusy, setDemoBusy] = useState(false);
+  const [canSignup, setCanSignup] = useState(true);
+  useEffect(() => {
+    void signupsEnabled().then(setCanSignup);
+  }, []);
 
   const submit = async () => {
     setError("");
@@ -177,9 +182,11 @@ export function LoginScreen() {
               <button className="font-semibold text-brand hover:underline" onClick={() => setMode("reset")}>
                 Esqueci minha senha
               </button>
-              <button className="font-semibold text-ink-2 hover:text-brand" onClick={() => setMode("signup")}>
-                Primeiro acesso? Criar conta
-              </button>
+              {canSignup && (
+                <button className="font-semibold text-ink-2 hover:text-brand" onClick={() => setMode("signup")}>
+                  Primeiro acesso? Criar conta
+                </button>
+              )}
             </>
           ) : (
             <button className="font-semibold text-brand hover:underline" onClick={() => setMode("login")}>
@@ -337,7 +344,7 @@ export function RecoveryModal() {
       open={recovery}
       onClose={() => useStore.setState({ recovery: false })}
       size="sm"
-      title="Definir nova senha"
+      title="Defina sua senha"
       icon={<Lock className="h-5 w-5" />}
       footer={
         <Button
@@ -357,6 +364,7 @@ export function RecoveryModal() {
         </Button>
       }
     >
+      <p className="mb-4 text-sm text-ink-2">Crie a senha que você vai usar para entrar no prontuário.</p>
       <Field label="Nova senha (mínimo 6 caracteres)">
         <input type="password" className={cn("input h-11")} value={password} onChange={(e) => setPassword(e.target.value)} autoFocus />
       </Field>

@@ -126,4 +126,27 @@ create policy "prontuario: apagar próprios arquivos" on storage.objects
   for delete to authenticated
   using (bucket_id = 'prontuario' and (storage.foldername(name))[1] = (select auth.uid())::text);
 
+-- ---------------------------------------------------------------------
+-- Cadastro fechado: no máximo 3 contas neste projeto
+-- (Dr. Mizael + reserva). Para liberar mais, aumente o número abaixo.
+-- ---------------------------------------------------------------------
+create or replace function public.pront_limit_accounts()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if (select count(*) from auth.users) >= 3 then
+    raise exception 'Cadastro fechado: limite de contas do prontuário atingido';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists pront_limit_accounts on auth.users;
+create trigger pront_limit_accounts
+  before insert on auth.users
+  for each row execute function public.pront_limit_accounts();
+
 -- Pronto! Volte ao prontuário e recarregue a página.

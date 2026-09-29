@@ -27,23 +27,32 @@ Prontuário odontológico completo, em verde, feito sob medida para o consultór
 - Segurança por **RLS**: cada login só enxerga os próprios registros. O navegador usa apenas a chave pública *anon*.
 - O app mantém um cache local e continua funcionando sem internet; as alterações são enviadas quando a conexão volta (o status aparece no topo: "Salvo na nuvem").
 
-## Colocar no ar (passo a passo)
+## Colocar no ar — automático (recomendado)
 
-### 1. Banco de dados (uma vez só)
-1. Abra o [SQL Editor do Supabase](https://supabase.com/dashboard/project/wubzprfmwsfvwvptywlf/sql/new).
-2. Cole todo o conteúdo de [`supabase/schema.sql`](./supabase/schema.sql) e clique em **Run**.
-   (Se esquecer, o próprio app mostra essa tela com botão "Copiar SQL" depois do primeiro login.)
+O script `scripts/publicar.mjs` faz tudo sozinho: build, banco de dados (tabelas, RLS, bucket, limite de 3 contas), publicação na Vercel como **mizaelprontuario.vercel.app**, configuração do login e conferência final. Nenhuma chave é impressa na tela.
 
-### 2. Login do doutor
-- Em **Authentication → Users → Add user**, crie o usuário do Dr. Mizael (e-mail + senha) marcando **Auto Confirm User**.
-- Depois, em **Authentication → Sign In / Providers**, desative **Allow new users to sign up** para ninguém mais criar conta.
-- Em **Authentication → URL Configuration**, coloque `https://mizaelprontuario.vercel.app` em **Site URL** e em **Redirect URLs** (necessário para "Esqueci minha senha").
+Precisa de duas chaves de acesso (crie e guarde como variáveis de ambiente — nunca cole em chats):
 
-### 3. Vercel → `mizaelprontuario.vercel.app`
-1. Em [vercel.com/new](https://vercel.com/new), importe o repositório `geniosdaia`.
-2. **Project Name:** `mizaelprontuario` (é isso que gera o endereço `mizaelprontuario.vercel.app`).
-3. **Root Directory:** `prontuario` (Framework: Vite — já detectado pelo `vercel.json`).
-4. Clique em **Deploy**. Não precisa de variáveis de ambiente (a URL e a chave pública já estão no código; se quiser, pode sobrescrever com `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`).
+| Variável | Onde criar |
+| --- | --- |
+| `SUPABASE_ACCESS_TOKEN` | [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens) → *Generate new token* |
+| `VERCEL_TOKEN` | [vercel.com/account/tokens](https://vercel.com/account/tokens) → *Create Token* (escopo: sua conta, sem expiração curta) |
+| `DOCTOR_EMAIL` e `DOCTOR_PASSWORD` *(opcional)* | e-mail e senha iniciais do Dr. Mizael — se não informar, ele cria no site em “Primeiro acesso? Criar conta” |
+
+```sh
+cd prontuario
+npm run publicar
+```
+
+Para atualizar o site depois de qualquer mudança no código, é só rodar `npm run publicar` de novo.
+
+**Segurança:** as tabelas só respondem a usuários logados (RLS: cada conta vê apenas os próprios dados), as imagens ficam em bucket privado e o banco aceita no máximo **3 contas** — ninguém de fora consegue se cadastrar depois disso. A confirmação por e-mail fica desligada para o doutor entrar direto.
+
+## Colocar no ar — manual (alternativa)
+
+1. **Banco:** cole [`supabase/schema.sql`](./supabase/schema.sql) no [SQL Editor](https://supabase.com/dashboard/project/wubzprfmwsfvwvptywlf/sql/new) e clique em **Run**.
+2. **Login:** em *Authentication → URL Configuration* use `https://mizaelprontuario.vercel.app` como Site URL e Redirect URL; em *Sign In / Providers → Email*, desligue *Confirm email*.
+3. **Vercel:** em [vercel.com/new](https://vercel.com/new) importe o repositório, **Project Name** `mizaelprontuario`, **Root Directory** `prontuario`, **Deploy**.
 
 > ⚠️ Nunca coloque a chave **service_role** no código ou na Vercel. Se ela foi compartilhada em algum lugar, gere uma nova no painel do Supabase (Project Settings → API Keys).
 

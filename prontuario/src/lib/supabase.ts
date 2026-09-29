@@ -19,10 +19,23 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
-    detectSessionInUrl: true,
+    // os tokens de links de e-mail são tratados em authRedirect.ts (o app usa rotas com #)
+    detectSessionInUrl: false,
     storageKey: "prontuario-mizael-auth",
   },
 });
+
+/** Consulta pública: o Supabase está aceitando novos cadastros? */
+export async function signupsEnabled(): Promise<boolean> {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: SUPABASE_ANON_KEY } });
+    if (!res.ok) return true;
+    const json = await res.json();
+    return !json.disable_signup;
+  } catch {
+    return true;
+  }
+}
 
 export class SchemaMissingError extends Error {
   constructor() {
