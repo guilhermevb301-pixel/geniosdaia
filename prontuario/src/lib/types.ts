@@ -96,6 +96,7 @@ export interface Payment {
   description?: string;
   installments?: number;
   installmentId?: string;
+  receiptAttachmentId?: string;
 }
 
 export interface Installment {

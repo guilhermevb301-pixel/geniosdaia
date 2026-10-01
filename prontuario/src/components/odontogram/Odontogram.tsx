@@ -3,6 +3,7 @@ import { Eraser, MousePointer2, Undo2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Segmented } from "@/components/ui/misc";
 import { FACE_CONDITIONS, TOOTH_CONDITIONS } from "@/lib/constants";
+import { toggleToothSelection } from "@/lib/derive";
 import {
   LOWER_DECIDUOUS,
   LOWER_PERMANENT,
@@ -187,14 +188,14 @@ function Tooth({
   );
 }
 
-function Row({ teeth, ...rest }: { teeth: number[] } & Omit<Parameters<typeof Tooth>[0], "n" | "state" | "selected"> & { odo: Odo; selected: number | null }) {
+function Row({ teeth, ...rest }: { teeth: number[] } & Omit<Parameters<typeof Tooth>[0], "n" | "state" | "selected"> & { odo: Odo; selected: number[] }) {
   const half = teeth.length / 2;
   const { odo, selected, ...toothProps } = rest;
   return (
     <div className="flex items-stretch justify-center">
       {teeth.map((n, i) => (
         <div key={n} className={cn("flex", i === half && "border-l-2 border-dashed border-jade-300/70 pl-1 dark:border-jade-700", i === half - 1 && "pr-1")}>
-          <Tooth n={n} state={odo.teeth[String(n)]} selected={selected === n} {...toothProps} />
+          <Tooth n={n} state={odo.teeth[String(n)]} selected={selected.includes(n)} {...toothProps} />
         </div>
       ))}
     </div>
@@ -212,8 +213,8 @@ export function Odontogram({
 }: {
   value: Odo;
   onChange: (next: Odo) => void;
-  selected: number | null;
-  onSelect: (n: number | null) => void;
+  selected: number[];
+  onSelect: (teeth: number[]) => void;
   extraToolbar?: ReactNode;
 }) {
   const [tool, setTool] = useState<Tool>({ kind: "select" });
@@ -263,8 +264,16 @@ export function Odontogram({
     commit({ ...value, teeth });
   };
 
+  const includeSelection = (n: number) => {
+    if (!selected.includes(n)) onSelect([...selected, n]);
+  };
+
   const onApplyFace = (n: number, face: ToothFace) => {
-    onSelect(n);
+    if (tool.kind === "select") {
+      onSelect(toggleToothSelection(selected, n));
+      return;
+    }
+    includeSelection(n);
     if (tool.kind === "face") {
       setTooth(n, (t) => {
         if (t.faces![face] === tool.value) delete t.faces![face];
@@ -280,7 +289,11 @@ export function Odontogram({
   };
 
   const onApplyTooth = (n: number) => {
-    onSelect(n);
+    if (tool.kind === "select") {
+      onSelect(toggleToothSelection(selected, n));
+      return;
+    }
+    includeSelection(n);
     if (tool.kind === "tooth") {
       setTooth(n, (t) => {
         const w = t.whole!;
@@ -303,7 +316,7 @@ export function Odontogram({
       <div className="flex min-w-0 flex-col gap-3 border-b border-line p-4 2xl:flex-row 2xl:items-center">
         <div className="scrollbar-thin flex min-w-0 flex-wrap items-center gap-1.5">
           <button onClick={() => setTool({ kind: "select" })} className={cn(TOOL_BTN, isActive({ kind: "select" }) ? "border-jade-500 bg-jade-600 text-white" : "border-line bg-surface text-ink-2 hover:border-jade-300")}>
-            <MousePointer2 className="h-3.5 w-3.5" /> Selecionar
+            <MousePointer2 className="h-3.5 w-3.5" /> Selecionar{selected.length ? ` · ${selected.length}` : ""}
           </button>
           <span className="mx-1 h-6 w-px shrink-0 bg-line" />
           {(Object.keys(FACE_CONDITIONS) as FaceCondition[]).map((k) => {
@@ -359,7 +372,7 @@ export function Odontogram({
       </div>
 
       <motion.p key={JSON.stringify(tool)} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-4 pt-3 text-center text-xs text-ink-3">
-        {tool.kind === "select" && "Clique em um dente para ver detalhes. Escolha uma ferramenta acima para marcar."}
+        {tool.kind === "select" && (selected.length ? `${selected.length} dente${selected.length > 1 ? "s" : ""} selecionado${selected.length > 1 ? "s" : ""}. Clique para adicionar ou remover dentes da seleção.` : "Clique nos dentes para selecionar um ou vários. Escolha uma ferramenta acima para marcar.")}
         {tool.kind === "face" && `Clique nas faces dos dentes para marcar “${FACE_CONDITIONS[tool.value].label}”. Clique de novo para desmarcar.`}
         {tool.kind === "tooth" && `Clique nos dentes para marcar “${TOOTH_CONDITIONS[tool.value].label}”.`}
         {tool.kind === "eraser" && "Clique em uma face para limpá-la, ou no desenho do dente para limpar tudo."}

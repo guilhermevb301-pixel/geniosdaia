@@ -139,6 +139,24 @@ export function applyClinicalTreatmentStatus(
   };
 }
 
+export function toggleToothSelection(selected: number[], tooth: number) {
+  return selected.includes(tooth) ? selected.filter((item) => item !== tooth) : [...selected, tooth];
+}
+
+export type TreatmentPriceMode = "per_tooth" | "total";
+
+export function treatmentPriceTotal(mode: TreatmentPriceMode, value: number, toothCount: number) {
+  if (!Number.isFinite(value) || value < 0 || !Number.isInteger(toothCount) || toothCount < 1) return Number.NaN;
+  return Math.round((mode === "per_tooth" ? value * toothCount : value) * 100) / 100;
+}
+
+export function sameTreatmentScope(item: Pick<Patient["treatments"][number], "procedure" | "teeth">, procedure: string, teeth: number[]) {
+  if (item.procedure.trim().toLocaleLowerCase("pt-BR") !== procedure.trim().toLocaleLowerCase("pt-BR")) return false;
+  const current = [...new Set((item.teeth?.match(/\d+/g) ?? []).map(Number))].sort((a, b) => a - b);
+  const requested = [...new Set(teeth)].sort((a, b) => a - b);
+  return current.length === requested.length && current.every((value, index) => value === requested[index]);
+}
+
 export type PatientAgeGroup = "Criança" | "Adulto" | "Idoso";
 
 export function patientAgeGroup(p: Pick<Patient, "birthDate">, today = new Date()): PatientAgeGroup | null {

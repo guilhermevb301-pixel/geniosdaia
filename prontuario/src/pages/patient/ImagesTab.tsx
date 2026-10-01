@@ -296,7 +296,10 @@ function Viewer({ patient, list, index, onIndex, onClose }: { patient: Patient; 
               onClick={async () => {
                 if (!(await confirmDialog({ title: "Excluir este arquivo?", description: a.name, danger: true, confirmLabel: "Excluir" }))) return;
                 await deleteFile(a.id);
-                updatePatient(patient.id, (p) => ({ attachments: p.attachments.filter((x) => x.id !== a.id) }));
+                updatePatient(patient.id, (p) => ({
+                  attachments: p.attachments.filter((x) => x.id !== a.id),
+                  payments: p.payments.map((payment) => payment.receiptAttachmentId === a.id ? { ...payment, receiptAttachmentId: undefined } : payment),
+                }));
                 if (list.length <= 1) onClose();
                 else onIndex(Math.max(0, index - 1));
               }}

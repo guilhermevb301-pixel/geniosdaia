@@ -1,5 +1,5 @@
 import { addMonths, format, parseISO, isValid } from "date-fns";
-import type { Installment, Payment } from "./types";
+import type { Installment, Payment, PaymentMethod } from "./types";
 
 export type PaymentAgreementMode = "avista" | "parcelado" | "depois";
 
@@ -38,4 +38,30 @@ export function splitInstallments(total: number, count: number, firstDate: strin
 
 export function installmentBalance(item: Installment, payments: Payment[]) {
   return Math.max(0, Math.round((item.amount - payments.filter(p => p.installmentId === item.id).reduce((sum, p) => sum + p.amount, 0)) * 100) / 100);
+}
+
+export function buildPaymentRecord(input: {
+  id: string;
+  amount: number;
+  maxAmount?: number;
+  method: PaymentMethod;
+  date: string;
+  description?: string;
+  installmentId?: string;
+  receiptAttachmentId?: string;
+}): Payment {
+  const amount = Math.round(input.amount * 100) / 100;
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error("Informe um valor positivo.");
+  if (input.maxAmount !== undefined && amount > input.maxAmount + 0.001) throw new Error("O valor ultrapassa o saldo desta parcela.");
+  const date = parseISO(input.date);
+  if (!isValid(date)) throw new Error("Informe a data do recebimento.");
+  return {
+    id: input.id,
+    amount,
+    method: input.method,
+    date: input.date,
+    ...(input.description?.trim() ? { description: input.description.trim() } : {}),
+    ...(input.installmentId ? { installmentId: input.installmentId } : {}),
+    ...(input.receiptAttachmentId ? { receiptAttachmentId: input.receiptAttachmentId } : {}),
+  };
 }

@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { build } from "esbuild";
 
 // Bundle the actual TypeScript helpers; no browser, real patient, or cloud writes.
-const result = await build({ stdin: { contents: 'export * from "./src/lib/finance"; export * from "./src/lib/reminders"; export { treatmentTotals, financialSituation, automaticPatientStage, patientAgeGroup, applyClinicalTreatmentStatus } from "./src/lib/derive"; export { parseMoney } from "./src/lib/utils"; export { DEFAULT_SETTINGS, STAGES } from "./src/lib/constants";', resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm" });
-const { splitInstallments, buildPaymentAgreement, installmentBalance, reminderAttention, installmentAttention, treatmentTotals, financialSituation, automaticPatientStage, patientAgeGroup, applyClinicalTreatmentStatus, parseMoney, DEFAULT_SETTINGS, STAGES } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
+const result = await build({ stdin: { contents: 'export * from "./src/lib/finance"; export * from "./src/lib/reminders"; export { treatmentTotals, financialSituation, automaticPatientStage, patientAgeGroup, applyClinicalTreatmentStatus, toggleToothSelection, treatmentPriceTotal, sameTreatmentScope } from "./src/lib/derive"; export { parseMoney } from "./src/lib/utils"; export { DEFAULT_SETTINGS, STAGES } from "./src/lib/constants";', resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm" });
+const { splitInstallments, buildPaymentAgreement, installmentBalance, buildPaymentRecord, reminderAttention, installmentAttention, treatmentTotals, financialSituation, automaticPatientStage, patientAgeGroup, applyClinicalTreatmentStatus, toggleToothSelection, treatmentPriceTotal, sameTreatmentScope, parseMoney, DEFAULT_SETTINGS, STAGES } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
 let checks = 0;
 function check(name, fn) { fn(); checks++; console.log(`✓ ${name}`); }
 
@@ -154,5 +154,40 @@ check("Desfazer a realização remove apenas o registro clínico automático daq
   }) ?? { treatments: [], evolutions: [] };
   assert.equal(result.treatments[0].status, "andamento");
   assert.deepEqual(result.evolutions.map((item) => item.id), ["ev_manual", "ev_other"]);
+});
+
+check("A seleção do odontograma adiciona e remove vários dentes sem duplicar", () => {
+  const first = toggleToothSelection?.([], 15) ?? [];
+  const second = toggleToothSelection?.(first, 23) ?? [];
+  const repeated = toggleToothSelection?.(second, 15) ?? [];
+  assert.deepEqual(first, [15]);
+  assert.deepEqual(second, [15, 23]);
+  assert.deepEqual(repeated, [23]);
+});
+
+check("O preço pode ser informado por dente ou como total do conjunto", () => {
+  assert.equal(treatmentPriceTotal?.("per_tooth", 1000, 5), 5000);
+  assert.equal(treatmentPriceTotal?.("total", 5000, 5), 5000);
+  assert.ok(Number.isNaN(treatmentPriceTotal?.("per_tooth", -1, 5)));
+  assert.ok(Number.isNaN(treatmentPriceTotal?.("per_tooth", 1000, 0)));
+});
+
+check("O plano detecta o mesmo procedimento nos mesmos dentes independentemente da ordem", () => {
+  const item = { procedure: "Implante dentário", teeth: "15, 23, 25" };
+  assert.equal(sameTreatmentScope?.(item, "Implante dentário", [25, 15, 23]), true);
+  assert.equal(sameTreatmentScope?.(item, "Implante dentário", [15, 23]), false);
+  assert.equal(sameTreatmentScope?.(item, "Coroa", [15, 23, 25]), false);
+});
+
+check("O recebimento mantém o vínculo com a parcela e o comprovante", () => {
+  const payment = buildPaymentRecord?.({ id: "pg_1", amount: 300, maxAmount: 300, method: "pix", date: "2026-10-01", description: "Parcela 1/3", installmentId: "par_1", receiptAttachmentId: "arq_1" });
+  assert.deepEqual(payment, { id: "pg_1", amount: 300, method: "pix", date: "2026-10-01", description: "Parcela 1/3", installmentId: "par_1", receiptAttachmentId: "arq_1" });
+});
+
+check("O recebimento rejeita zero, data inválida e valor maior que a parcela", () => {
+  const base = { id: "pg_1", method: "pix", date: "2026-10-01" };
+  assert.throws(() => buildPaymentRecord?.({ ...base, amount: 0 }));
+  assert.throws(() => buildPaymentRecord?.({ ...base, amount: 301, maxAmount: 300 }));
+  assert.throws(() => buildPaymentRecord?.({ ...base, amount: 100, date: "inválida" }));
 });
 console.log(`${checks} grupos de testes passaram.`);

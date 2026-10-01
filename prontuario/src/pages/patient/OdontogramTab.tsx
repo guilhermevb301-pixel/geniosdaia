@@ -1,14 +1,15 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ClipboardPlus, History, Info, StickyNote, Trash2, X } from "lucide-react";
+import { Calculator, ClipboardPlus, History, Info, Layers3, StickyNote, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Odontogram, OdontogramLegend } from "@/components/odontogram/Odontogram";
 import { Button } from "@/components/ui/Button";
 import { toast } from "@/components/ui/feedback";
-import { Card, Select } from "@/components/ui/misc";
+import { Card, Field, Select } from "@/components/ui/misc";
 import { FACE_CONDITIONS, TOOTH_CONDITIONS, TREATMENT_STATUS } from "@/lib/constants";
+import { sameTreatmentScope, treatmentPriceTotal, type TreatmentPriceMode } from "@/lib/derive";
 import { faceLabel, suggestProcedure, toothName } from "@/lib/teeth";
 import type { Odontogram as Odo, Patient, ToothFace } from "@/lib/types";
-import { cn, fmtDate, money, nowISO, uid } from "@/lib/utils";
+import { cn, fmtDate, money, nowISO, parseMoney, uid } from "@/lib/utils";
 import { useStore } from "@/store/store";
 
 function ToothPanel({ patient, n, onClose }: { patient: Patient; n: number; onClose: () => void }) {
@@ -19,10 +20,15 @@ function ToothPanel({ patient, n, onClose }: { patient: Patient; n: number; onCl
   const whole = state?.whole ?? [];
   const suggestion = suggestProcedure([...faces.map(([, c]) => c), ...whole]);
   const [proc, setProc] = useState(suggestion ?? procedures[0]?.name ?? "");
+  const initialDef = procedures.find((item) => item.name === (suggestion ?? procedures[0]?.name));
+  const [price, setPrice] = useState(initialDef && !initialDef.pricePending ? String(initialDef.price) : "");
   const [note, setNote] = useState(state?.note ?? "");
 
   useEffect(() => {
-    setProc(suggestProcedure([...faces.map(([, c]) => c), ...whole]) ?? procedures[0]?.name ?? "");
+    const nextProc = suggestProcedure([...faces.map(([, c]) => c), ...whole]) ?? procedures[0]?.name ?? "";
+    const nextDef = procedures.find((item) => item.name === nextProc);
+    setProc(nextProc);
+    setPrice(nextDef && !nextDef.pricePending ? String(nextDef.price) : "");
     setNote(patient.odontogram.teeth[String(n)]?.note ?? "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [n]);
@@ -49,13 +55,15 @@ function ToothPanel({ patient, n, onClose }: { patient: Patient; n: number; onCl
   };
 
   const addToPlan = () => {
-    const def = procedures.find((p) => p.name === proc);
-    if (!def || def.pricePending) return toast.error("Defina o valor em Configurações → Procedimentos ou adicione este item na aba Tratamentos com o valor combinado.");
+    if (!price.trim()) return toast.error("Informe o valor combinado com este paciente. Para cortesia, digite 0.");
+    const value = parseMoney(price);
+    if (!Number.isFinite(value) || value < 0) return toast.error("Informe um valor válido.");
+    if (patient.treatments.some((item) => sameTreatmentScope(item, proc, [n]))) return toast.warning("Este procedimento já está no plano", `Confira o item do dente ${n} na aba Tratamentos.`);
     const faceTxt = faces.length ? ` (${faces.map(([f]) => faceLabel(f, n)[0]).join("")})` : "";
     updatePatient(patient.id, (p) => ({
-      treatments: [...p.treatments, { id: uid("tr_"), procedure: proc, teeth: `${n}${faceTxt}`, price: def?.price ?? 0, status: "planejado", createdAt: nowISO() }],
+      treatments: [...p.treatments, { id: uid("tr_"), procedure: proc, teeth: `${n}${faceTxt}`, price: value, status: "planejado", createdAt: nowISO() }],
     }));
-    toast.success("Adicionado ao plano de tratamento", `${proc} · dente ${n}`);
+    toast.success("Adicionado ao plano de tratamento", `${proc} · dente ${n} · ${money(value)}`);
   };
 
   return (
@@ -102,15 +110,18 @@ function ToothPanel({ patient, n, onClose }: { patient: Patient; n: number; onCl
           <p className="label flex items-center gap-1.5 text-brand">
             <ClipboardPlus className="h-3.5 w-3.5" /> Adicionar ao plano de tratamento
           </p>
-          <div className="flex gap-2">
-            <Select value={proc} onChange={(e) => setProc(e.target.value)} className="flex-1">
+          <div className="space-y-3">
+            <Select value={proc} onChange={(e) => { const name = e.target.value; const def = procedures.find((item) => item.name === name); setProc(name); setPrice(def && !def.pricePending ? String(def.price) : ""); }} className="w-full">
               {procedures.map((p) => (
                 <option key={p.id} value={p.name}>
                   {p.name} — {p.pricePending ? "valor a definir" : money(p.price)}
                 </option>
               ))}
             </Select>
-            <Button onClick={addToPlan}>Adicionar</Button>
+            <div className="grid grid-cols-[1fr_auto] gap-2">
+              <Field label="Valor para este paciente (R$)"><input className="input" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0,00" /></Field>
+              <div className="flex items-end"><Button onClick={addToPlan}>Adicionar</Button></div>
+            </div>
           </div>
           {suggestion && <p className="mt-1.5 text-xs text-ink-3">Sugestão com base nas marcações: {suggestion}</p>}
         </div>
@@ -159,9 +170,69 @@ function ToothPanel({ patient, n, onClose }: { patient: Patient; n: number; onCl
   );
 }
 
+function MultiToothPanel({ patient, selected, onClear }: { patient: Patient; selected: number[]; onClear: () => void }) {
+  const updatePatient = useStore((s) => s.updatePatient);
+  const procedures = useStore((s) => s.settings.procedures);
+  const [proc, setProc] = useState(procedures[0]?.name ?? "");
+  const [mode, setMode] = useState<TreatmentPriceMode>("per_tooth");
+  const [price, setPrice] = useState(() => procedures[0] && !procedures[0].pricePending ? String(procedures[0].price) : "");
+  const teeth = useMemo(() => [...new Set(selected)].sort((a, b) => a - b), [selected]);
+  const parsed = price.trim() ? parseMoney(price) : Number.NaN;
+  const total = treatmentPriceTotal(mode, parsed, teeth.length);
+
+  const addToPlan = () => {
+    if (!price.trim()) return toast.error("Informe o valor combinado com este paciente. Para cortesia, digite 0.");
+    if (!Number.isFinite(total) || total < 0) return toast.error("Confira o valor e os dentes selecionados.");
+    if (patient.treatments.some((item) => sameTreatmentScope(item, proc, teeth))) return toast.warning("Este procedimento já está no plano", "Confira os mesmos dentes na aba Tratamentos.");
+    updatePatient(patient.id, (current) => ({
+      treatments: [...current.treatments, { id: uid("tr_"), procedure: proc, teeth: teeth.join(", "), price: total, status: "planejado", createdAt: nowISO() }],
+    }));
+    toast.success("Adicionado ao plano de tratamento", `${proc} · ${teeth.length} dentes · ${money(total)}`);
+    onClear();
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 16 }} className="card overflow-hidden">
+      <div className="hero-bg relative px-5 py-4 text-white">
+        <div className="flex items-start gap-3">
+          <Layers3 className="mt-1 h-6 w-6 shrink-0" />
+          <div className="min-w-0 flex-1"><p className="font-display text-2xl font-semibold">{teeth.length} dentes selecionados</p><p className="mt-1 text-sm text-jade-100/80">{teeth.join(" · ")}</p></div>
+          <button onClick={onClear} className="rounded-lg p-1.5 text-white/70 hover:bg-white/10 hover:text-white" aria-label="Limpar seleção"><X className="h-5 w-5" /></button>
+        </div>
+      </div>
+      <div className="space-y-5 p-5">
+        <div className="rounded-2xl border border-jade-200 bg-jade-50/60 p-4 dark:border-jade-800 dark:bg-jade-900/20">
+          <p className="label flex items-center gap-1.5 text-brand"><ClipboardPlus className="h-3.5 w-3.5" /> Adicionar todos ao plano</p>
+          <div className="space-y-4">
+            <Field label="Procedimento">
+              <Select value={proc} onChange={(e) => { const name = e.target.value; const def = procedures.find((item) => item.name === name); setProc(name); setPrice(def && !def.pricePending ? String(def.price) : ""); }}>
+                {procedures.map((item) => <option key={item.id} value={item.name}>{item.name} — {item.pricePending ? "valor a definir" : money(item.price)}</option>)}
+              </Select>
+            </Field>
+            <div>
+              <p className="label">Como este valor foi combinado?</p>
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={() => setMode("per_tooth")} className={cn("rounded-xl border p-3 text-left text-sm font-bold", mode === "per_tooth" ? "border-jade-500 bg-white text-brand-ink ring-1 ring-jade-500 dark:bg-jade-950" : "border-line bg-surface")}><span className="block">Por dente</span><span className="text-xs font-normal text-ink-3">Multiplica pela quantidade</span></button>
+                <button onClick={() => setMode("total")} className={cn("rounded-xl border p-3 text-left text-sm font-bold", mode === "total" ? "border-jade-500 bg-white text-brand-ink ring-1 ring-jade-500 dark:bg-jade-950" : "border-line bg-surface")}><span className="block">Total do conjunto</span><span className="text-xs font-normal text-ink-3">Um valor para todos</span></button>
+              </div>
+            </div>
+            <Field label={mode === "per_tooth" ? "Valor de cada dente (R$)" : "Valor total dos dentes (R$)"}><input className="input text-lg font-bold" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0,00" /></Field>
+            <div className="rounded-xl border border-line bg-surface p-3">
+              <p className="flex items-center gap-2 text-sm text-ink-2"><Calculator className="h-4 w-4 text-brand" />{mode === "per_tooth" ? `${teeth.length} dentes × ${Number.isFinite(parsed) ? money(parsed) : "—"}` : `${teeth.length} dentes pelo valor combinado`}</p>
+              <p className="mt-1 flex items-center justify-between font-semibold"><span>Total do tratamento</span><strong className="text-lg text-brand">{Number.isFinite(total) ? money(total) : "—"}</strong></p>
+            </div>
+            <Button className="w-full" onClick={addToPlan}>Adicionar {teeth.length} dentes ao plano</Button>
+          </div>
+        </div>
+        <button className="w-full text-center text-sm font-semibold text-ink-3 hover:text-brand" onClick={onClear}>Limpar seleção</button>
+      </div>
+    </motion.div>
+  );
+}
+
 export function OdontogramTab({ patient }: { patient: Patient }) {
   const updatePatient = useStore((s) => s.updatePatient);
-  const [selected, setSelected] = useState<number | null>(null);
+  const [selected, setSelected] = useState<number[]>([]);
   const onChange = (odontogram: Odo) => updatePatient(patient.id, { odontogram });
 
   return (
@@ -180,15 +251,17 @@ export function OdontogramTab({ patient }: { patient: Patient }) {
       </div>
       <div className="2xl:sticky 2xl:top-32 2xl:self-start">
         <AnimatePresence mode="wait">
-          {selected ? (
-            <ToothPanel key={selected} patient={patient} n={selected} onClose={() => setSelected(null)} />
+          {selected.length > 1 ? (
+            <MultiToothPanel key={selected.join("-")} patient={patient} selected={selected} onClear={() => setSelected([])} />
+          ) : selected.length === 1 ? (
+            <ToothPanel key={selected[0]} patient={patient} n={selected[0]} onClose={() => setSelected([])} />
           ) : (
             <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card flex flex-col items-center p-8 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-soft text-brand">
                 <Info className="h-6 w-6" />
               </div>
-              <p className="mt-3 font-display text-lg font-semibold text-ink">Selecione um dente</p>
-              <p className="mt-1 text-sm text-ink-3">Veja condições, escreva anotações e adicione procedimentos ao plano de tratamento com um clique.</p>
+              <p className="mt-3 font-display text-lg font-semibold text-ink">Selecione um ou vários dentes</p>
+              <p className="mt-1 text-sm text-ink-3">Um dente abre os detalhes. Vários permitem calcular e adicionar o conjunto ao plano de tratamento.</p>
             </motion.div>
           )}
         </AnimatePresence>
