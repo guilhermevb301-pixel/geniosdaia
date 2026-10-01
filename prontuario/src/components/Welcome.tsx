@@ -8,7 +8,7 @@ import { Button } from "./ui/Button";
 
 const FEATURES = [
   { icon: Stethoscope, title: "Odontograma interativo", text: "Marque cáries, restaurações, canais e implantes com um clique." },
-  { icon: Users, title: "Pacientes organizados", text: "Busca instantânea, etiquetas, favoritos e quadro por etapa." },
+  { icon: Users, title: "Pacientes organizados", text: "Busca instantânea, favoritos e etapas que mudam automaticamente." },
   { icon: CalendarDays, title: "Agenda inteligente", text: "Arraste consultas e confirme pelo WhatsApp." },
   { icon: Images, title: "Radiografias e fotos", text: "Negatoscópio, zoom e comparação antes/depois." },
   { icon: BellRing, title: "Lembretes e alertas", text: "Alergias em destaque, retornos e aniversários." },

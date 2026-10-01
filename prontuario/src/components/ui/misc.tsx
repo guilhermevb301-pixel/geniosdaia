@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import { Check, ChevronDown } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode, type SelectHTMLAttributes } from "react";
-import { useStore } from "@/store/store";
 import type { Patient } from "@/lib/types";
 import { cn, initials } from "@/lib/utils";
 
@@ -114,25 +113,6 @@ export function Avatar({ patient, size = 40, ring }: { patient: Pick<Patient, "n
     >
       {initials(patient.name || "?")}
     </div>
-  );
-}
-
-export function TagChip({ name, onRemove, small }: { name: string; onRemove?: () => void; small?: boolean }) {
-  const tags = useStore((s) => s.settings.tags);
-  const color = tags.find((t) => t.name === name)?.color ?? "#64748B";
-  return (
-    <span
-      className={cn("chip border", small ? "px-2 py-0 text-[11px]" : "")}
-      style={{ color, background: `${color}14`, borderColor: `${color}40` }}
-    >
-      <span className="h-1.5 w-1.5 rounded-full" style={{ background: color }} />
-      {name}
-      {onRemove && (
-        <button onClick={onRemove} className="-mr-1 ml-0.5 rounded-full px-1 hover:bg-black/5" aria-label={`Remover ${name}`}>
-          ×
-        </button>
-      )}
-    </span>
   );
 }
 

@@ -1,6 +1,6 @@
 import { addDays, addMonths, differenceInCalendarDays, isSameDay, startOfDay } from "date-fns";
 import { ANAMNESIS_CONDITIONS } from "./constants";
-import type { Appointment, Patient, Settings } from "./types";
+import type { Appointment, Patient, Settings, Stage } from "./types";
 import { toDate } from "./utils";
 import { reminderAttention } from "./reminders";
 import { installmentBalance } from "./finance";
@@ -81,6 +81,29 @@ export function financialSituation(p: Pick<Patient, "treatments" | "payments" | 
   if (totals.balance > 0) return { id: "receivable" as const, label: "A receber", amount: totals.balance };
   if (totals.planned > 0) return { id: "proposal" as const, label: "Proposta não aprovada", amount: totals.planned };
   return { id: "none" as const, label: "Sem cobrança", amount: 0 };
+}
+
+export function automaticPatientStage(p: Pick<Patient, "stage" | "treatments">): Stage {
+  const hasActiveTreatment = p.treatments.some((item) => item.status === "aprovado" || item.status === "andamento");
+  if (hasActiveTreatment) return "tratamento";
+  if (p.treatments.some((item) => item.status === "planejado")) return "orcamento";
+  if (p.treatments.length > 0 && p.treatments.every((item) => item.status === "concluido")) {
+    return p.stage === "concluido" ? "concluido" : "manutencao";
+  }
+  return "avaliacao";
+}
+
+export type PatientAgeGroup = "Criança" | "Adulto" | "Idoso";
+
+export function patientAgeGroup(p: Pick<Patient, "birthDate">, today = new Date()): PatientAgeGroup | null {
+  const birth = toDate(p.birthDate);
+  if (!birth || birth > today) return null;
+  let age = today.getFullYear() - birth.getFullYear();
+  const birthdayHasPassed = today.getMonth() > birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() >= birth.getDate());
+  if (!birthdayHasPassed) age--;
+  if (age < 18) return "Criança";
+  if (age < 60) return "Adulto";
+  return "Idoso";
 }
 
 function nextBirthday(birth: Date, from: Date) {

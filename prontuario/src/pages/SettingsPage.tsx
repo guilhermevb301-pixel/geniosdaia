@@ -13,7 +13,6 @@ import {
   Plus,
   Sparkles,
   Stethoscope,
-  Tags,
   Trash2,
   Upload,
   UserRound,
@@ -24,13 +23,13 @@ import { handleSignOut } from "@/components/Layout";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/Button";
 import { confirmDialog, toast } from "@/components/ui/feedback";
-import { Field, Segmented, Select, Switch, TagChip } from "@/components/ui/misc";
+import { Field, Segmented, Select, Switch } from "@/components/ui/misc";
 import { Modal } from "@/components/ui/Modal";
-import { TAG_PALETTE, SPECIALTY_PROCEDURES } from "@/lib/constants";
+import { SPECIALTY_PROCEDURES } from "@/lib/constants";
 import { blobToDataURL, dataURLToBlob, getFile, putFile, resizeImage } from "@/lib/storage";
 import { supabase } from "@/lib/supabase";
 import type { AppData, Settings } from "@/lib/types";
-import { cn, downloadBlob, fmtDate, nowISO, parseMoney, sha256, uid } from "@/lib/utils";
+import { downloadBlob, fmtDate, nowISO, parseMoney, sha256, uid } from "@/lib/utils";
 import { DATA_VERSION, useStore } from "@/store/store";
 import { eraseEverything, removeDemoPatients } from "@/store/sync";
 
@@ -38,7 +37,6 @@ const SECTIONS = [
   { id: "perfil", label: "Perfil do consultório", icon: UserRound },
   { id: "agenda", label: "Agenda", icon: CalendarDays },
   { id: "procedimentos", label: "Procedimentos e preços", icon: Stethoscope },
-  { id: "etiquetas", label: "Etiquetas", icon: Tags },
   { id: "mensagens", label: "Mensagens do WhatsApp", icon: MessageCircle },
   { id: "seguranca", label: "Segurança e notificações", icon: Lock },
   { id: "aparencia", label: "Aparência", icon: Palette },
@@ -113,7 +111,6 @@ export function SettingsPage() {
   const [params] = useSearchParams();
   const [pinOpen, setPinOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
-  const [newTag, setNewTag] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const importRef = useRef<HTMLInputElement>(null);
   const sigRef = useRef<HTMLInputElement>(null);
@@ -333,41 +330,6 @@ export function SettingsPage() {
             <p className="mt-2 text-xs text-ink-3">
               {settings.procedures.filter(p => p.pricePending).length} serviço(s) com valor a definir. Valores já personalizados são preservados.
             </p>
-          </Section>
-
-          <Section id="etiquetas" title="Etiquetas" desc="Para organizar e filtrar pacientes." icon={<Tags className="h-5 w-5" />}>
-            <div className="flex flex-wrap gap-2">
-              {settings.tags.map((t) => (
-                <div key={t.name} className="flex items-center gap-1">
-                  <TagChip name={t.name} onRemove={() => set({ tags: settings.tags.filter((x) => x.name !== t.name) })} />
-                  <div className="flex gap-0.5">
-                    {TAG_PALETTE.slice(0, 4).map((c) => (
-                      <button
-                        key={c}
-                        onClick={() => set({ tags: settings.tags.map((x) => (x.name === t.name ? { ...x, color: c } : x)) })}
-                        className={cn("h-3 w-3 rounded-full opacity-0 transition hover:opacity-100", t.color === c && "opacity-100")}
-                        style={{ background: c }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <form
-              className="mt-4 flex gap-2"
-              onSubmit={(e) => {
-                e.preventDefault();
-                const name = newTag.trim();
-                if (!name || settings.tags.some((t) => t.name.toLowerCase() === name.toLowerCase())) return;
-                set({ tags: [...settings.tags, { name, color: TAG_PALETTE[settings.tags.length % TAG_PALETTE.length] }] });
-                setNewTag("");
-              }}
-            >
-              <input className="input max-w-xs" value={newTag} onChange={(e) => setNewTag(e.target.value)} placeholder="Nova etiqueta" />
-              <Button type="submit" variant="soft" icon={<Plus className="h-4 w-4" />}>
-                Criar
-              </Button>
-            </form>
           </Section>
 
           <Section id="mensagens" title="Mensagens do WhatsApp" desc="Use {nome}, {data}, {hora} e {procedimento} — são preenchidos automaticamente." icon={<MessageCircle className="h-5 w-5" />}>

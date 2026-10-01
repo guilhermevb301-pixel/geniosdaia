@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { build } from "esbuild";
 
 // Bundle the actual TypeScript helpers; no browser, real patient, or cloud writes.
-const result = await build({ stdin: { contents: 'export * from "./src/lib/finance"; export * from "./src/lib/reminders"; export { treatmentTotals, financialSituation } from "./src/lib/derive"; export { parseMoney } from "./src/lib/utils"; export { DEFAULT_SETTINGS, STAGES } from "./src/lib/constants";', resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm" });
-const { splitInstallments, installmentBalance, reminderAttention, treatmentTotals, financialSituation, parseMoney, DEFAULT_SETTINGS, STAGES } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
+const result = await build({ stdin: { contents: 'export * from "./src/lib/finance"; export * from "./src/lib/reminders"; export { treatmentTotals, financialSituation, automaticPatientStage, patientAgeGroup } from "./src/lib/derive"; export { parseMoney } from "./src/lib/utils"; export { DEFAULT_SETTINGS, STAGES } from "./src/lib/constants";', resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm" });
+const { splitInstallments, installmentBalance, reminderAttention, treatmentTotals, financialSituation, automaticPatientStage, patientAgeGroup, parseMoney, DEFAULT_SETTINGS, STAGES } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
 let checks = 0;
 function check(name, fn) { fn(); checks++; console.log(`✓ ${name}`); }
 
@@ -67,5 +67,30 @@ check("Situação financeira nunca presume pagamento", () => {
   assert.deepEqual(financialSituation({ ...base, treatments: [{ status: "aprovado", price: 500 }] }), { id: "receivable", label: "A receber", amount: 500 });
   assert.deepEqual(financialSituation({ ...base, treatments: [{ status: "aprovado", price: 500 }, { status: "planejado", price: 900 }] }), { id: "mixed", label: "A receber + proposta", amount: 500, proposal: 900 });
   assert.deepEqual(financialSituation({ ...base, treatments: [{ status: "aprovado", price: 500 }], payments: [{ amount: 500 }] }), { id: "paid", label: "Pago", amount: 500 });
+});
+
+check("Etapa acompanha automaticamente o trabalho clínico sem confundir aprovação com pagamento", () => {
+  const base = { stage: "avaliacao", treatments: [], payments: [] };
+  assert.equal(automaticPatientStage(base), "avaliacao");
+  assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "planejado" }] }), "orcamento");
+  assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "aprovado" }] }), "tratamento");
+  assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "andamento" }] }), "tratamento");
+  assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "concluido" }] }), "manutencao");
+  assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "planejado" }, { status: "aprovado" }] }), "tratamento");
+  assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "concluido" }, { status: "planejado" }] }), "orcamento");
+  assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "concluido" }, { status: "andamento" }] }), "tratamento");
+  assert.equal(automaticPatientStage({ ...base, stage: "concluido", treatments: [{ status: "concluido" }] }), "concluido");
+  assert.equal(automaticPatientStage({ ...base, stage: "concluido", treatments: [{ status: "concluido" }, { status: "planejado" }] }), "orcamento");
+  assert.equal(automaticPatientStage({ ...base, stage: "concluido", treatments: [{ status: "concluido" }, { status: "aprovado" }] }), "tratamento");
+});
+
+check("Faixa etária é calculada pela data de nascimento e não por etiqueta manual", () => {
+  const today = new Date("2026-10-01T12:00:00");
+  assert.equal(patientAgeGroup({ birthDate: "2010-10-02" }, today), "Criança");
+  assert.equal(patientAgeGroup({ birthDate: "2008-10-01" }, today), "Adulto");
+  assert.equal(patientAgeGroup({ birthDate: "1966-10-02" }, today), "Adulto");
+  assert.equal(patientAgeGroup({ birthDate: "1966-10-01" }, today), "Idoso");
+  assert.equal(patientAgeGroup({}, today), null);
+  assert.equal(patientAgeGroup({ birthDate: "inválida" }, today), null);
 });
 console.log(`${checks} grupos de testes passaram.`);

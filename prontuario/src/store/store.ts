@@ -1,13 +1,14 @@
 import { create } from "zustand";
 import { DEFAULT_SETTINGS, AVATAR_COLORS } from "@/lib/constants";
-import type { AppData, Appointment, ID, Patient, Settings, Stage } from "@/lib/types";
+import type { AppData, Appointment, ID, Patient, Settings } from "@/lib/types";
 import { nowISO, uid } from "@/lib/utils";
+import { automaticPatientStage } from "@/lib/derive";
 
 export const DATA_VERSION = 1;
 
 export function emptyPatient(partial: Partial<Patient> = {}): Patient {
   const now = nowISO();
-  return {
+  const patient: Patient = {
     id: uid("pac_"),
     name: "",
     color: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)],
@@ -26,6 +27,7 @@ export function emptyPatient(partial: Partial<Patient> = {}): Patient {
     attachments: [],
     ...partial,
   };
+  return { ...patient, stage: automaticPatientStage(patient) };
 }
 
 export function withDefaults(settings?: Partial<Settings> | null): Settings {
@@ -72,7 +74,6 @@ export interface State {
   addPatient: (p: Partial<Patient>) => Patient;
   updatePatient: (id: ID, patch: Partial<Patient> | ((p: Patient) => Partial<Patient>)) => void;
   deletePatient: (id: ID) => void;
-  setStage: (id: ID, stage: Stage) => void;
   toggleFavorite: (id: ID) => void;
   markRecent: (id: ID) => void;
   addAppointment: (a: Omit<Appointment, "id">) => Appointment;
@@ -102,7 +103,7 @@ export const useStore = create<State>((set, get) => ({
       const { buildDemoData } = await import("@/lib/seed");
       const d = await buildDemoData();
       set((s) => ({
-        patients: [...d.patients, ...s.patients],
+        patients: [...d.patients.map((patient) => emptyPatient(patient)), ...s.patients],
         appointments: [...d.appointments, ...s.appointments],
         settings: { ...s.settings },
         onboarded: true,
@@ -123,7 +124,8 @@ export const useStore = create<State>((set, get) => ({
       patients: s.patients.map((p) => {
         if (p.id !== id) return p;
         const changes = typeof patch === "function" ? patch(p) : patch;
-        return { ...p, ...changes, updatedAt: nowISO() };
+        const next = { ...p, ...changes, updatedAt: nowISO() };
+        return { ...next, stage: automaticPatientStage(next) };
       }),
     })),
 
@@ -133,8 +135,6 @@ export const useStore = create<State>((set, get) => ({
       appointments: s.appointments.filter((a) => a.patientId !== id),
       recent: s.recent.filter((r) => r !== id),
     })),
-
-  setStage: (id, stage) => get().updatePatient(id, { stage }),
 
   toggleFavorite: (id) => get().updatePatient(id, (p) => ({ favorite: !p.favorite })),
 

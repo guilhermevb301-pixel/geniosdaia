@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   BellRing,
   CalendarPlus,
+  CheckCircle2,
   ClipboardList,
   FileText,
   HeartPulse,
@@ -16,6 +17,7 @@ import {
   Pencil,
   Phone,
   Printer,
+  RotateCcw,
   Star,
   Trash2,
   Wallet,
@@ -25,11 +27,10 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { ToothGlyph } from "@/components/Logo";
 import { Button, WhatsAppIcon } from "@/components/ui/Button";
 import { confirmDialog, toast } from "@/components/ui/feedback";
-import { Avatar, EmptyState, Menu, Select, TagChip } from "@/components/ui/misc";
-import { STAGES, stageById } from "@/lib/constants";
-import { isBirthdayToday, patientAlerts, treatmentTotals } from "@/lib/derive";
+import { Avatar, EmptyState, Menu } from "@/components/ui/misc";
+import { stageById } from "@/lib/constants";
+import { isBirthdayToday, patientAgeGroup, patientAlerts, treatmentTotals } from "@/lib/derive";
 import { printPatientRecord } from "@/lib/print";
-import type { Stage } from "@/lib/types";
 import { ageLabel, cn, fmtDate, formatPhone, money, whatsappLink } from "@/lib/utils";
 import { usePatient, useStore } from "@/store/store";
 import { useUI } from "@/store/ui";
@@ -94,6 +95,7 @@ export function PatientRecord() {
   const stage = stageById(patient.stage);
   const wa = whatsappLink(patient.phone);
   const bday = isBirthdayToday(patient);
+  const ageGroup = patientAgeGroup(patient);
 
   const tabs: { id: TabId; label: string; icon: ReactNode; count?: number; alert?: boolean }[] = [
     { id: "visao", label: "Visão geral", icon: <LayoutDashboard className="h-4 w-4" /> },
@@ -161,9 +163,7 @@ export function PatientRecord() {
                   <span className="h-1.5 w-1.5 rounded-full" style={{ background: stage.color }} />
                   {stage.label}
                 </span>
-                {patient.tags.map((t) => (
-                  <TagChip key={t} name={t} />
-                ))}
+                {ageGroup && <span className="chip bg-surface-2 text-ink-2">{ageGroup}</span>}
                 {patient.archived && <span className="chip bg-slate-200 text-slate-700">Arquivado</span>}
               </div>
             </div>
@@ -197,6 +197,8 @@ export function PatientRecord() {
                 { label: "Editar dados", icon: <Pencil className="h-4 w-4" />, onClick: () => openPatientModal(patient.id) },
                 { label: "Imprimir prontuário completo", icon: <Printer className="h-4 w-4" />, onClick: () => printPatientRecord(patient, settings, appointments) },
                 ...(patient.email ? [{ label: "Enviar e-mail", icon: <Mail className="h-4 w-4" />, onClick: () => window.open(`mailto:${patient.email}`) }] : []),
+                ...(patient.stage === "manutencao" ? [{ label: "Dar alta ao paciente", icon: <CheckCircle2 className="h-4 w-4" />, onClick: async () => { if (await confirmDialog({ title: "Dar alta ao paciente?", description: "Use a alta somente quando o acompanhamento clínico tiver terminado. Um novo procedimento reabrirá o fluxo automaticamente.", confirmLabel: "Dar alta" })) { updatePatient(patient.id, { stage: "concluido" }); toast.success("Alta registrada"); } } }] : []),
+                ...(patient.stage === "concluido" ? [{ label: "Reabrir acompanhamento", icon: <RotateCcw className="h-4 w-4" />, onClick: () => { updatePatient(patient.id, { stage: "manutencao" }); toast.success("Acompanhamento reaberto"); } }] : []),
                 "divider" as const,
                 {
                   label: patient.archived ? "Desarquivar" : "Arquivar paciente",
@@ -232,7 +234,7 @@ export function PatientRecord() {
 
         <div className="relative grid grid-cols-2 border-t border-line xl:grid-cols-4">
           {[
-            { label: "Etapa do paciente", value: <Select aria-label="Etapa do paciente" value={patient.stage} onChange={(e) => updatePatient(patient.id, { stage: e.target.value as Stage })} className="[&_select]:font-semibold">{STAGES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}</Select> },
+            { label: "Etapa automática", value: <span className="inline-flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ background: stage.color }} />{stage.label}</span> },
             { label: "Plano de tratamento", value: totals.count ? `${totals.done}/${totals.count} concluídos` : "Sem plano" },
             { label: "Total contratado", value: money(totals.total) },
             { label: "Saldo a receber", value: <span className={totals.balance ? "text-amber-600" : "text-jade-600"}>{money(totals.balance)}</span> },
@@ -243,7 +245,7 @@ export function PatientRecord() {
             </div>
           ))}
         </div>
-        <div className="border-t border-line bg-surface-2 px-5 py-3 text-sm leading-relaxed text-ink-2 sm:px-6"><b className="text-ink">{stage.label}:</b> {stage.hint} <span>A etapa organiza o acompanhamento; não altera pagamentos nem agenda retornos.</span></div>
+        <div className="border-t border-line bg-surface-2 px-5 py-3 text-sm leading-relaxed text-ink-2 sm:px-6"><b className="text-ink">{stage.label}:</b> {stage.hint} <span>A etapa muda automaticamente pelo plano; aprovação e pagamento continuam sendo informações separadas.</span></div>
       </section>
 
       {/* Abas */}

@@ -15,12 +15,12 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { useMemo, useState, type DragEvent } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button, WhatsAppIcon } from "@/components/ui/Button";
-import { Avatar, EmptyState, Menu, ProgressRing, Segmented, TagChip } from "@/components/ui/misc";
+import { Avatar, EmptyState, Menu, ProgressRing, Segmented } from "@/components/ui/misc";
 import { STAGES, stageById } from "@/lib/constants";
-import { birthdayIn, financialSituation, lastVisit, nextAppointment, patientAlerts, recallDue, treatmentTotals } from "@/lib/derive";
+import { birthdayIn, financialSituation, lastVisit, nextAppointment, patientAgeGroup, patientAlerts, recallDue, treatmentTotals } from "@/lib/derive";
 import type { Appointment, Patient, Stage } from "@/lib/types";
 import { ageLabel, cn, digits, fmtDate, formatPhone, money, normalize, toDate, whatsappLink } from "@/lib/utils";
 import { useStore } from "@/store/store";
@@ -101,9 +101,7 @@ function PatientCard({ r }: { r: Row }) {
           <span className="h-1.5 w-1.5 rounded-full" style={{ background: stage.color }} />
           {stage.label}
         </span>
-        {r.p.tags.map((t) => (
-          <TagChip key={t} name={t} small />
-        ))}
+        {patientAgeGroup(r.p) && <span className="chip bg-surface-2 text-ink-2">{patientAgeGroup(r.p)}</span>}
       </div>
       {r.alerts.length > 0 && (
         <p className="mt-3 flex items-start gap-1.5 rounded-lg bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">
@@ -211,33 +209,13 @@ function ListView({ rows }: { rows: Row[] }) {
 }
 
 function BoardView({ rows }: { rows: Row[] }) {
-  const setStage = useStore((s) => s.setStage);
-  const [over, setOver] = useState<Stage | null>(null);
-  const onDrop = (e: DragEvent, stage: Stage) => {
-    e.preventDefault();
-    const id = e.dataTransfer.getData("text/patient");
-    if (id) setStage(id, stage);
-    setOver(null);
-  };
   return (
     <div className="scrollbar-thin -mx-4 overflow-x-auto px-4 pb-4 lg:-mx-8 lg:px-8">
       <div className="flex min-w-max gap-4">
         {STAGES.map((st) => {
           const items = rows.filter((r) => r.p.stage === st.id);
           return (
-            <div
-              key={st.id}
-              onDragOver={(e) => {
-                e.preventDefault();
-                setOver(st.id);
-              }}
-              onDragLeave={() => setOver((o) => (o === st.id ? null : o))}
-              onDrop={(e) => onDrop(e, st.id)}
-              className={cn(
-                "flex w-[280px] flex-col rounded-2xl border bg-surface-2/60 p-3 transition",
-                over === st.id ? "border-jade-400 bg-brand-soft/40 shadow-glow" : "border-line",
-              )}
-            >
+            <div key={st.id} className="flex w-[280px] flex-col rounded-2xl border border-line bg-surface-2/60 p-3">
               <div className="mb-3 flex items-center gap-2 px-1">
                 <span className="h-2.5 w-2.5 rounded-full" style={{ background: st.color }} />
                 <p className="flex-1 text-sm font-bold text-ink">{st.label}</p>
@@ -256,12 +234,7 @@ function BoardView({ rows }: { rows: Row[] }) {
                     >
                       <Link
                         to={`/pacientes/${r.p.id}`}
-                        draggable
-                        onDragStart={(e) => {
-                          e.dataTransfer.setData("text/patient", r.p.id);
-                          e.dataTransfer.effectAllowed = "move";
-                        }}
-                        className="block cursor-grab rounded-xl border border-line bg-surface p-3 shadow-sm transition hover:border-jade-300 hover:shadow-card active:cursor-grabbing"
+                        className="block rounded-xl border border-line bg-surface p-3 shadow-sm transition hover:border-jade-300 hover:shadow-card"
                       >
                         <div className="flex items-center gap-2.5">
                           <Avatar patient={r.p} size={32} />
@@ -274,11 +247,9 @@ function BoardView({ rows }: { rows: Row[] }) {
                           {r.alerts.length > 0 && <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-rose-500" />}
                           {r.p.favorite && <Star className="h-3.5 w-3.5 shrink-0 text-amber-400" fill="currentColor" />}
                         </div>
-                        {(r.p.tags.length > 0 || r.p.treatments.length > 0) && (
+                        {(patientAgeGroup(r.p) || r.p.treatments.length > 0) && (
                           <div className="mt-2 flex flex-wrap items-center gap-1">
-                            {r.p.tags.slice(0, 2).map((t) => (
-                              <TagChip key={t} name={t} small />
-                            ))}
+                            {patientAgeGroup(r.p) && <span className="chip bg-surface-2 text-ink-2">{patientAgeGroup(r.p)}</span>}
                             {r.p.treatments.length > 0 && (
                               <div className="ml-auto h-1.5 w-16 overflow-hidden rounded-full bg-line">
                                 <div className="h-full rounded-full bg-jade-500" style={{ width: `${r.progress * 100}%` }} />
@@ -291,7 +262,7 @@ function BoardView({ rows }: { rows: Row[] }) {
                   ))}
                 </AnimatePresence>
                 {items.length === 0 && (
-                  <div className="flex flex-1 items-center justify-center rounded-xl border-2 border-dashed border-line p-4 text-center text-xs text-ink-3">Arraste pacientes para cá</div>
+                  <div className="flex flex-1 items-center justify-center rounded-xl border-2 border-dashed border-line p-4 text-center text-xs text-ink-3">Os pacientes aparecem aqui automaticamente</div>
                 )}
               </div>
             </div>
@@ -305,7 +276,6 @@ function BoardView({ rows }: { rows: Row[] }) {
 export function Patients() {
   const patients = useStore((s) => s.patients);
   const appointments = useStore((s) => s.appointments);
-  const tagDefs = useStore((s) => s.settings.tags);
   const recallMonths = useStore((s) => s.settings.recallMonths);
   const openPatientModal = useUI((s) => s.openPatientModal);
   const [params, setParams] = useSearchParams();
@@ -313,7 +283,6 @@ export function Patients() {
   const [view, setViewState] = useState<View>(() => lsGet("pront:view", "cards") as View);
   const [sort, setSortState] = useState<SortKey>(() => lsGet("pront:sort", "nome") as SortKey);
   const stageFilter = (params.get("etapa") as Stage | null) ?? null;
-  const [tags, setTags] = useState<string[]>([]);
   const [quick, setQuick] = useState<Quick | null>(null);
 
   const setView = (v: View) => {
@@ -336,9 +305,8 @@ export function Patients() {
     const dq = digits(q);
     const list = patients
       .filter((p) => (quick === "arquivados" ? p.archived : !p.archived))
-      .filter((p) => !nq || normalize(p.name).includes(nq) || (dq.length >= 3 && (digits(p.phone).includes(dq) || digits(p.cpf).includes(dq))) || p.tags.some((t) => normalize(t).includes(nq)))
+      .filter((p) => !nq || normalize(p.name).includes(nq) || (dq.length >= 3 && (digits(p.phone).includes(dq) || digits(p.cpf).includes(dq))))
       .filter((p) => view === "quadro" || !stageFilter || p.stage === stageFilter)
-      .filter((p) => tags.every((t) => p.tags.includes(t)))
       .map<Row>((p) => {
         const t = treatmentTotals(p);
         return { p, last: lastVisit(p, appointments), next: nextAppointment(p.id, appointments), balance: t.balance, progress: t.progress, alerts: patientAlerts(p) };
@@ -364,7 +332,7 @@ export function Patients() {
       idade: (a, b) => (a.p.birthDate ?? "9999").localeCompare(b.p.birthDate ?? "9999"),
     };
     return list.sort((a, b) => Number(b.p.favorite) - Number(a.p.favorite) || sorters[sort](a, b));
-  }, [patients, appointments, q, stageFilter, tags, quick, sort, view, recallMonths]);
+  }, [patients, appointments, q, stageFilter, quick, sort, view, recallMonths]);
 
   const stageCounts = useMemo(() => {
     const c: Record<string, number> = {};
@@ -373,7 +341,7 @@ export function Patients() {
   }, [patients]);
 
   const activeCount = patients.filter((p) => !p.archived).length;
-  const hasFilters = !!q || !!stageFilter || tags.length > 0 || !!quick;
+  const hasFilters = !!q || !!stageFilter || !!quick;
   const bdays = patients.filter((p) => birthdayIn(p, 0) === 0).length;
 
   return (
@@ -405,7 +373,7 @@ export function Patients() {
       <div className="mt-6 flex flex-col gap-3 lg:flex-row lg:items-center">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3" />
-          <input className="input h-11 pl-10" placeholder="Buscar por nome, telefone, CPF ou etiqueta…" value={q} onChange={(e) => setQ(e.target.value)} />
+          <input className="input h-11 pl-10" placeholder="Buscar por nome, telefone ou CPF…" value={q} onChange={(e) => setQ(e.target.value)} />
           {q && (
             <button onClick={() => setQ("")} className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-ink-3 hover:text-ink">
               <X className="h-4 w-4" />
@@ -425,20 +393,11 @@ export function Patients() {
           <Menu
             align="right"
             trigger={() => (
-              <Button variant={quick || tags.length ? "soft" : "secondary"} icon={<Filter className="h-4 w-4" />}>
-                Filtros{quick || tags.length ? ` (${(quick ? 1 : 0) + tags.length})` : ""}
+              <Button variant={quick ? "soft" : "secondary"} icon={<Filter className="h-4 w-4" />}>
+                Filtros{quick ? " (1)" : ""}
               </Button>
             )}
-            items={[
-              ...QUICK.map((f) => ({ label: f.label, icon: <f.icon className="h-4 w-4" />, onClick: () => setQuick(quick === f.id ? null : f.id), checked: quick === f.id })),
-              "divider" as const,
-              ...tagDefs.map((t) => ({
-                label: t.name,
-                icon: <span className="block h-2.5 w-2.5 rounded-full" style={{ background: t.color }} />,
-                onClick: () => setTags((cur) => (cur.includes(t.name) ? cur.filter((x) => x !== t.name) : [...cur, t.name])),
-                checked: tags.includes(t.name),
-              })),
-            ]}
+            items={QUICK.map((f) => ({ label: f.label, icon: <f.icon className="h-4 w-4" />, onClick: () => setQuick(quick === f.id ? null : f.id), checked: quick === f.id }))}
           />
         </div>
       </div>
@@ -468,7 +427,7 @@ export function Patients() {
 
       {stageFilter && view !== "quadro" && <p className="mt-3 text-sm text-ink-2">{stageById(stageFilter).hint}</p>}
 
-      {(quick || tags.length > 0) && (
+      {quick && (
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
           <span className="font-semibold text-ink-3">Filtrando:</span>
           {quick && (
@@ -476,9 +435,6 @@ export function Patients() {
               {QUICK.find((f) => f.id === quick)?.label} ×
             </button>
           )}
-          {tags.map((t) => (
-            <TagChip key={t} name={t} onRemove={() => setTags(tags.filter((x) => x !== t))} />
-          ))}
         </div>
       )}
 
@@ -495,7 +451,6 @@ export function Patients() {
                     variant="secondary"
                     onClick={() => {
                       setQ("");
-                      setTags([]);
                       setQuick(null);
                       setStageFilter(null);
                     }}

@@ -1,7 +1,8 @@
 import { Camera, ImagePlus, Trash2, UserPlus, UserRoundPen } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AVATAR_COLORS, STAGES } from "@/lib/constants";
+import { AVATAR_COLORS } from "@/lib/constants";
+import { patientAgeGroup } from "@/lib/derive";
 import { blobToDataURL, resizeImage } from "@/lib/storage";
 import type { Patient } from "@/lib/types";
 import { cn, maskCPF, maskPhone } from "@/lib/utils";
@@ -9,7 +10,7 @@ import { useStore } from "@/store/store";
 import { useUI } from "@/store/ui";
 import { Button } from "./ui/Button";
 import { toast } from "./ui/feedback";
-import { Avatar, Field, Select, TagChip } from "./ui/misc";
+import { Avatar, Field, Select } from "./ui/misc";
 import { Modal } from "./ui/Modal";
 
 type Form = Pick<
@@ -29,8 +30,6 @@ type Form = Pick<
   | "emergencyContact"
   | "photo"
   | "color"
-  | "tags"
-  | "stage"
 >;
 
 const blank = (): Form => ({
@@ -49,15 +48,12 @@ const blank = (): Form => ({
   emergencyContact: "",
   photo: undefined,
   color: AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)],
-  tags: [],
-  stage: "avaliacao",
 });
 
 export function PatientFormModal() {
   const { open, id } = useUI((s) => s.patientModal);
   const close = useUI((s) => s.closePatientModal);
   const patient = useStore((s) => s.patients.find((p) => p.id === id));
-  const tagDefs = useStore((s) => s.settings.tags);
   const addPatient = useStore((s) => s.addPatient);
   const updatePatient = useStore((s) => s.updatePatient);
   const navigate = useNavigate();
@@ -67,9 +63,9 @@ export function PatientFormModal() {
   useEffect(() => {
     if (!open) return;
     if (patient) {
-      const { name, birthDate, gender, cpf, rg, phone, email, address, city, profession, insurance, referredBy, emergencyContact, photo, color, tags, stage } =
+      const { name, birthDate, gender, cpf, rg, phone, email, address, city, profession, insurance, referredBy, emergencyContact, photo, color } =
         patient;
-      setForm({ name, birthDate, gender, cpf, rg, phone, email, address, city, profession, insurance, referredBy, emergencyContact, photo, color, tags, stage });
+      setForm({ name, birthDate, gender, cpf, rg, phone, email, address, city, profession, insurance, referredBy, emergencyContact, photo, color });
     } else setForm(blank());
   }, [open, patient]);
 
@@ -102,8 +98,6 @@ export function PatientFormModal() {
       navigate(`/pacientes/${p.id}`);
     }
   };
-
-  const toggleTag = (name: string) => set("tags", form.tags.includes(name) ? form.tags.filter((t) => t !== name) : [...form.tags, name]);
 
   return (
     <Modal
@@ -183,14 +177,10 @@ export function PatientFormModal() {
               <option value="O">Outro</option>
             </Select>
           </Field>
-          <Field label="Etapa do tratamento">
-            <Select value={form.stage} onChange={(e) => set("stage", e.target.value as Form["stage"])}>
-              {STAGES.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.label}
-                </option>
-              ))}
-            </Select>
+          <Field label="Classificação automática">
+            <div className="input flex items-center bg-surface-2 text-sm font-semibold text-ink-2">
+              {patientAgeGroup(form) ?? "Informe a data de nascimento"}
+            </div>
           </Field>
           <Field label="Celular / WhatsApp">
             <input className="input" inputMode="tel" value={form.phone ?? ""} onChange={(e) => set("phone", maskPhone(e.target.value))} placeholder="(11) 99999-9999" />
@@ -224,16 +214,7 @@ export function PatientFormModal() {
           </Field>
         </div>
 
-        <div>
-          <span className="label">Etiquetas</span>
-          <div className="flex flex-wrap gap-2">
-            {tagDefs.map((t) => (
-              <button type="button" key={t.name} onClick={() => toggleTag(t.name)} className={cn("transition", !form.tags.includes(t.name) && "opacity-40 grayscale hover:opacity-80")}>
-                <TagChip name={t.name} />
-              </button>
-            ))}
-          </div>
-        </div>
+        {!patient && <p className="rounded-xl bg-brand-soft px-4 py-3 text-sm text-brand-ink"><b>Começa em Avaliação.</b> A etapa muda sozinha quando um procedimento é proposto, aprovado ou concluído.</p>}
         <button type="submit" className="hidden" />
       </form>
     </Modal>

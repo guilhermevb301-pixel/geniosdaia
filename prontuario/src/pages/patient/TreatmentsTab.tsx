@@ -63,9 +63,8 @@ export function TreatmentsTab({ patient }: { patient: Patient }) {
     if (!(await confirmDialog({ title: "O paciente confirmou que aceita?", description: "Os itens não aprovados passarão a formar o total contratado e o saldo a receber.", confirmLabel: "Sim, confirmou" }))) return;
     updatePatient(patient.id, (p) => ({
       treatments: p.treatments.map((t) => (t.status === "planejado" ? { ...t, status: "aprovado" } : t)),
-      stage: p.stage === "avaliacao" || p.stage === "orcamento" ? "tratamento" : p.stage,
     }));
-    toast.success("Tratamento aprovado", "Os valores agora fazem parte do total contratado.");
+    toast.success("Tratamento aprovado", "O paciente foi movido para Em tratamento. O valor permanece a receber até o pagamento ser registrado.");
   };
 
   const planned = patient.treatments.filter((t) => t.status === "planejado");
