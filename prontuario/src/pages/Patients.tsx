@@ -20,7 +20,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button, WhatsAppIcon } from "@/components/ui/Button";
 import { Avatar, EmptyState, Menu, ProgressRing, Segmented, TagChip } from "@/components/ui/misc";
 import { STAGES, stageById } from "@/lib/constants";
-import { birthdayIn, lastVisit, nextAppointment, patientAlerts, recallDue, treatmentTotals } from "@/lib/derive";
+import { birthdayIn, financialSituation, lastVisit, nextAppointment, patientAlerts, recallDue, treatmentTotals } from "@/lib/derive";
 import type { Appointment, Patient, Stage } from "@/lib/types";
 import { ageLabel, cn, digits, fmtDate, formatPhone, money, normalize, toDate, whatsappLink } from "@/lib/utils";
 import { useStore } from "@/store/store";
@@ -77,6 +77,7 @@ function PatientCard({ r }: { r: Row }) {
   const toggleFavorite = useStore((s) => s.toggleFavorite);
   const stage = stageById(r.p.stage);
   const wa = whatsappLink(r.p.phone);
+  const finance = financialSituation(r.p);
   return (
     <motion.div layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="card group relative flex flex-col p-4 transition hover:-translate-y-0.5 hover:border-jade-300 hover:shadow-lift">
       <button
@@ -129,7 +130,7 @@ function PatientCard({ r }: { r: Row }) {
           </div>
         )}
         <div className="ml-auto flex gap-1">
-          {r.balance > 0 && <span className="chip bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">{money(r.balance)}</span>}
+          <span className={cn("chip", finance.id === "paid" ? "bg-jade-100 text-jade-800" : finance.id === "receivable" || finance.id === "mixed" ? "bg-amber-100 text-amber-800" : finance.id === "proposal" ? "bg-sky-100 text-sky-800" : "bg-surface-2 text-ink-3")}>{finance.label}{finance.amount > 0 ? ` · ${money(finance.amount)}` : ""}{finance.id === "mixed" ? ` + ${money(finance.proposal)} não aprovados` : ""}</span>
           {wa && (
             <a href={wa} target="_blank" rel="noreferrer" className="rounded-lg p-1.5 text-[#25D366] transition hover:bg-[#25D366]/10" title="WhatsApp">
               <WhatsAppIcon className="h-4 w-4" />
@@ -156,12 +157,13 @@ function ListView({ rows }: { rows: Row[] }) {
               <th className="px-3 py-3">Etapa</th>
               <th className="px-3 py-3">Última visita</th>
               <th className="px-3 py-3">Próxima</th>
-              <th className="px-3 py-3 text-right">A receber</th>
+              <th className="px-3 py-3 text-right">Situação financeira</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => {
               const stage = stageById(r.p.stage);
+              const finance = financialSituation(r.p);
               return (
                 <tr key={r.p.id} onClick={() => navigate(`/pacientes/${r.p.id}`)} className="cursor-pointer border-b border-line/60 transition last:border-0 hover:bg-brand-soft/30">
                   <td className="px-4 py-2.5">
@@ -197,7 +199,7 @@ function ListView({ rows }: { rows: Row[] }) {
                   </td>
                   <td className="px-3 py-2.5 text-ink-2">{r.last ? fmtDate(r.last) : "—"}</td>
                   <td className="px-3 py-2.5 font-semibold text-brand">{r.next ? fmtDate(r.next.start, "dd/MM HH:mm") : <span className="font-normal text-ink-3">—</span>}</td>
-                  <td className={cn("px-3 py-2.5 text-right font-semibold", r.balance ? "text-amber-600" : "text-ink-3")}>{r.balance ? money(r.balance) : "—"}</td>
+                  <td className={cn("px-3 py-2.5 text-right font-semibold", finance.id === "receivable" || finance.id === "mixed" ? "text-amber-600" : finance.id === "paid" ? "text-jade-600" : "text-ink-3")}>{finance.label}{finance.amount > 0 ? ` · ${money(finance.amount)}` : ""}{finance.id === "mixed" ? ` + ${money(finance.proposal)} não aprovados` : ""}</td>
                 </tr>
               );
             })}

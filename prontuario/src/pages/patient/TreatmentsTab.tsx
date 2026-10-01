@@ -59,12 +59,13 @@ export function TreatmentsTab({ patient }: { patient: Patient }) {
     } else setItem(t.id, { status, completedAt: status === "concluido" ? t.completedAt : undefined });
   };
 
-  const approveAll = () => {
+  const approveAll = async () => {
+    if (!(await confirmDialog({ title: "O paciente confirmou que aceita?", description: "Os itens não aprovados passarão a formar o total contratado e o saldo a receber.", confirmLabel: "Sim, confirmou" }))) return;
     updatePatient(patient.id, (p) => ({
       treatments: p.treatments.map((t) => (t.status === "planejado" ? { ...t, status: "aprovado" } : t)),
       stage: p.stage === "avaliacao" || p.stage === "orcamento" ? "tratamento" : p.stage,
     }));
-    toast.success("Orçamento aprovado!", "Paciente movido para “Em tratamento”.");
+    toast.success("Tratamento aprovado", "Os valores agora fazem parte do total contratado.");
   };
 
   const planned = patient.treatments.filter((t) => t.status === "planejado");
@@ -150,6 +151,10 @@ export function TreatmentsTab({ patient }: { patient: Patient }) {
 
       <div className="space-y-4 xl:sticky xl:top-32 xl:self-start">
         <div className="card p-5">
+          <p className="font-display text-lg font-semibold text-ink">O que fazer agora?</p>
+          {!patient.treatments.length ? <p className="mt-2 text-sm leading-relaxed text-ink-2">Adicione somente os procedimentos que serão propostos ao paciente.</p> : planned.length ? <div className="mt-3 space-y-3 text-sm leading-relaxed text-ink-2"><p><b className="text-ink">1.</b> Confira procedimentos e valores.</p><p><b className="text-ink">2.</b> Se quiser entregar uma proposta, use o PDF abaixo. Ele é opcional.</p><p><b className="text-ink">3.</b> Só confirme a aprovação depois que o paciente aceitar.</p></div> : <p className="mt-2 text-sm leading-relaxed text-ink-2">Os itens desta ficha já foram aprovados. Registre os recebimentos no Financeiro e conclua cada procedimento quando ele for realizado.</p>}
+        </div>
+        <div className="card p-5">
           <div className="flex items-center gap-4">
             <ProgressRing value={totals.progress} size={64} stroke={7}>
               <span className="text-sm">{Math.round(totals.progress * 100)}%</span>
@@ -163,7 +168,7 @@ export function TreatmentsTab({ patient }: { patient: Patient }) {
           </div>
           <div className="mt-5 space-y-2 text-sm">
             <div className="flex justify-between text-ink-2">
-              <span>Aguardando aprovação</span>
+              <span>Proposta não aprovada</span>
               <b className="text-ink">{money(totals.planned)}</b>
             </div>
             <div className="flex justify-between text-ink-2">
@@ -197,11 +202,11 @@ export function TreatmentsTab({ patient }: { patient: Patient }) {
         </div>
         {planned.length > 0 && (
           <Button className="w-full" icon={<CheckCheck className="h-4 w-4" />} onClick={approveAll}>
-            Paciente aprovou o orçamento
+            Confirmar que o paciente aceitou
           </Button>
         )}
         <Button variant="secondary" className="w-full" icon={<FileText className="h-4 w-4" />} onClick={() => printBudget(patient, settings)} disabled={!patient.treatments.length}>
-          Gerar orçamento para imprimir
+          Gerar PDF / imprimir proposta (opcional)
         </Button>
       </div>
     </div>

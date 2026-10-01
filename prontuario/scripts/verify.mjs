@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { build } from "esbuild";
 
 // Bundle the actual TypeScript helpers; no browser, real patient, or cloud writes.
-const result = await build({ stdin: { contents: 'export * from "./src/lib/finance"; export * from "./src/lib/reminders"; export { treatmentTotals } from "./src/lib/derive"; export { parseMoney } from "./src/lib/utils"; export { DEFAULT_SETTINGS, STAGES } from "./src/lib/constants";', resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm" });
-const { splitInstallments, installmentBalance, reminderAttention, treatmentTotals, parseMoney, DEFAULT_SETTINGS, STAGES } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
+const result = await build({ stdin: { contents: 'export * from "./src/lib/finance"; export * from "./src/lib/reminders"; export { treatmentTotals, financialSituation } from "./src/lib/derive"; export { parseMoney } from "./src/lib/utils"; export { DEFAULT_SETTINGS, STAGES } from "./src/lib/constants";', resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm" });
+const { splitInstallments, installmentBalance, reminderAttention, treatmentTotals, financialSituation, parseMoney, DEFAULT_SETTINGS, STAGES } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
 let checks = 0;
 function check(name, fn) { fn(); checks++; console.log(`✓ ${name}`); }
 
@@ -58,5 +58,14 @@ check("Criar parcelas não equivale a receber dinheiro; orçamento não aprovado
   assert.equal(treatmentTotals(patient).paid, 0);
   assert.equal(treatmentTotals(patient).planned, 500);
   assert.equal(treatmentTotals({ ...patient, payments: [{ amount: 200 }] }).balance, 700);
+});
+
+check("Situação financeira nunca presume pagamento", () => {
+  const base = { treatments: [], payments: [], planDiscount: 0 };
+  assert.deepEqual(financialSituation(base), { id: "none", label: "Sem cobrança", amount: 0 });
+  assert.deepEqual(financialSituation({ ...base, treatments: [{ status: "planejado", price: 500 }] }), { id: "proposal", label: "Proposta não aprovada", amount: 500 });
+  assert.deepEqual(financialSituation({ ...base, treatments: [{ status: "aprovado", price: 500 }] }), { id: "receivable", label: "A receber", amount: 500 });
+  assert.deepEqual(financialSituation({ ...base, treatments: [{ status: "aprovado", price: 500 }, { status: "planejado", price: 900 }] }), { id: "mixed", label: "A receber + proposta", amount: 500, proposal: 900 });
+  assert.deepEqual(financialSituation({ ...base, treatments: [{ status: "aprovado", price: 500 }], payments: [{ amount: 500 }] }), { id: "paid", label: "Pago", amount: 500 });
 });
 console.log(`${checks} grupos de testes passaram.`);

@@ -74,6 +74,15 @@ export function treatmentTotals(p: Patient) {
   };
 }
 
+export function financialSituation(p: Pick<Patient, "treatments" | "payments" | "planDiscount">) {
+  const totals = treatmentTotals(p as Patient);
+  if (totals.total > 0 && totals.balance <= 0) return { id: "paid" as const, label: "Pago", amount: totals.paid };
+  if (totals.balance > 0 && totals.planned > 0) return { id: "mixed" as const, label: "A receber + proposta", amount: totals.balance, proposal: totals.planned };
+  if (totals.balance > 0) return { id: "receivable" as const, label: "A receber", amount: totals.balance };
+  if (totals.planned > 0) return { id: "proposal" as const, label: "Proposta não aprovada", amount: totals.planned };
+  return { id: "none" as const, label: "Sem cobrança", amount: 0 };
+}
+
 function nextBirthday(birth: Date, from: Date) {
   const nb = new Date(from.getFullYear(), birth.getMonth(), birth.getDate());
   if (nb < startOfDay(from)) nb.setFullYear(nb.getFullYear() + 1);

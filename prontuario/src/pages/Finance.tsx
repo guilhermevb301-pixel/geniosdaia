@@ -76,7 +76,7 @@ export function Finance() {
     <div className="mx-auto max-w-[1400px] space-y-6 px-4 py-6 lg:px-8">
       <div>
         <h1 className="font-display text-3xl font-semibold text-ink">Financeiro</h1>
-        <p className="mt-1 text-sm text-ink-3">Recebimentos, saldos a receber e orçamentos em aberto.</p>
+        <p className="mt-1 text-sm text-ink-3">Dinheiro recebido, valores a receber e propostas que ainda não foram aprovadas.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
@@ -88,7 +88,7 @@ export function Finance() {
           hint={data.prev ? `${growth >= 0 ? "▲" : "▼"} ${Math.abs(growth).toFixed(0)}% vs. mês anterior` : `${data.countMonth} pagamentos`}
         />
         <Stat icon={<HandCoins className="h-5 w-5" />} tone="bg-amber-500" label="A receber" value={moneyShort(data.receivable)} hint={`${data.debtors.length} pacientes com saldo`} />
-        <Stat icon={<PiggyBank className="h-5 w-5" />} tone="bg-sky-500" label="Orçamentos em aberto" value={moneyShort(data.pipeline)} hint="aguardando aprovação" />
+        <Stat icon={<PiggyBank className="h-5 w-5" />} tone="bg-sky-500" label="Propostas não aprovadas" value={moneyShort(data.pipeline)} hint="não contam como dinheiro a receber" />
         <Stat icon={<TrendingUp className="h-5 w-5" />} tone="bg-violet-500" label={`Últimos ${range} meses`} value={moneyShort(data.periodTotal)} hint={`média ${moneyShort(data.periodTotal / Number(range))}/mês`} />
       </div>
 
