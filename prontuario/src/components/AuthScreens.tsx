@@ -8,6 +8,7 @@ import { DEFAULT_SETTINGS } from "@/lib/constants";
 import { useStore } from "@/store/store";
 import { retryStart, signOut, startDemo } from "@/store/sync";
 import { Logo, ToothPattern } from "./Logo";
+import { DoctorLoginIdentity } from "./DoctorLoginIdentity";
 import { Button } from "./ui/Button";
 import { toast } from "./ui/feedback";
 import { Field } from "./ui/misc";
@@ -63,7 +64,10 @@ function Shell({ children }: { children: ReactNode }) {
             ))}
           </ul>
         </div>
-        <p className="relative text-sm text-jade-200/50">Feito com carinho para o Dr. Mizael Cardoso 💚</p>
+        <div className="relative flex items-end justify-between gap-6">
+          <p className="max-w-48 text-sm leading-relaxed text-jade-200/45">Feito com carinho para cuidar de cada paciente. 💚</p>
+          <DoctorLoginIdentity />
+        </div>
       </div>
       <div className="flex items-center justify-center px-5 py-10 sm:px-10">{children}</div>
     </div>
@@ -132,6 +136,9 @@ export function LoginScreen() {
             <p className="font-display text-lg font-semibold text-ink">Dr. {DEFAULT_SETTINGS.doctorName}</p>
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-3">Prontuário digital</p>
           </div>
+        </div>
+        <div className="mb-6 lg:hidden">
+          <DoctorLoginIdentity compact />
         </div>
         <h2 className="font-display text-3xl font-semibold text-ink">
           {mode === "login" ? "Bem-vindo de volta" : mode === "signup" ? "Criar acesso" : "Recuperar senha"}

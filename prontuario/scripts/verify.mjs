@@ -1,11 +1,22 @@
 import assert from "node:assert/strict";
 import { build } from "esbuild";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
 // Bundle the actual TypeScript helpers; no browser, real patient, or cloud writes.
 const result = await build({ stdin: { contents: 'export * from "./src/lib/finance"; export * from "./src/lib/reminders"; export { treatmentTotals, financialSituation, automaticPatientStage, patientAgeGroup, applyClinicalTreatmentStatus, toggleToothSelection, treatmentPriceTotal, sameTreatmentScope } from "./src/lib/derive"; export { parseMoney } from "./src/lib/utils"; export { DEFAULT_SETTINGS, STAGES } from "./src/lib/constants";', resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm" });
 const { splitInstallments, buildPaymentAgreement, installmentBalance, buildPaymentRecord, reminderAttention, installmentAttention, treatmentTotals, financialSituation, automaticPatientStage, patientAgeGroup, applyClinicalTreatmentStatus, toggleToothSelection, treatmentPriceTotal, sameTreatmentScope, parseMoney, DEFAULT_SETTINGS, STAGES } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
 let checks = 0;
 function check(name, fn) { fn(); checks++; console.log(`✓ ${name}`); }
+
+const identityResult = await build({ stdin: { contents: 'export { DoctorLoginIdentity } from "./src/components/DoctorLoginIdentity";', resolveDir: process.cwd(), loader: "tsx" }, bundle: true, write: false, platform: "node", format: "esm" });
+const { DoctorLoginIdentity } = await import(`data:text/javascript;base64,${Buffer.from(identityResult.outputFiles[0].text).toString("base64")}`);
+
+check("O login apresenta o retrato e a identidade profissional do Dr. Mizael", () => {
+  const html = renderToStaticMarkup(createElement(DoctorLoginIdentity));
+  assert.match(html, /<img[^>]+src="\/dr-mizael\.png"[^>]+alt="Dr\. Mizael Magalhães Cardoso"/);
+  assert.match(html, /Cirurgia e Traumatologia Bucomaxilofacial/);
+});
 
 check("Perfil especializado sem preços inventados e etapas compatíveis com dados anteriores", () => {
   assert.equal(DEFAULT_SETTINGS.doctorName, "Mizael Magalhães Cardoso");
