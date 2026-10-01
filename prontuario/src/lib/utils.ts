@@ -139,9 +139,11 @@ export function clamp(v: number, min: number, max: number) {
 }
 
 export function parseMoney(s: string) {
-  const clean = s.replace(/[^\d,.-]/g, "");
-  if (clean.includes(",")) return Number(clean.replace(/\./g, "").replace(",", ".")) || 0;
-  return Number(clean) || 0;
+  const clean = s.trim().replace(/^R\$\s*/, "").replace(/\s/g, "");
+  if (/^-?(?:\d+|\d{1,3}(?:\.\d{3})+),\d{1,2}$/.test(clean)) return Number(clean.replace(/\./g, "").replace(",", "."));
+  if (/^-?\d{1,3}(\.\d{3})+$/.test(clean)) return Number(clean.replace(/\./g, ""));
+  if (/^-?\d+(?:\.\d{1,2})?$/.test(clean)) return Number(clean);
+  return NaN;
 }
 
 /* ---------- Valor por extenso (recibos) ---------- */

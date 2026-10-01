@@ -83,7 +83,8 @@
   }
 
   .chip {
-    @apply inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold;
+    @apply inline-flex max-w-full items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold leading-snug;
+    overflow-wrap: anywhere;
   }
 
   .scrollbar-thin {

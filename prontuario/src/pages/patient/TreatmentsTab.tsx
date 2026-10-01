@@ -22,6 +22,7 @@ export function TreatmentsTab({ patient }: { patient: Patient }) {
   const add = () => {
     if (!proc.trim()) return toast.error("Informe o procedimento");
     const def = procedures.find((p) => p.name === proc);
+    if (!price.trim() && (!def || def.pricePending)) return toast.error("Informe o valor combinado. Para cortesia, digite 0.");
     const value = price ? parseMoney(price) : def?.price ?? 0;
     if (!Number.isFinite(value) || value < 0) return toast.error("O valor do procedimento não pode ser negativo.");
     updatePatient(patient.id, (p) => ({
@@ -81,14 +82,14 @@ export function TreatmentsTab({ patient }: { patient: Patient }) {
                 onChange={(e) => {
                   setProc(e.target.value);
                   const def = procedures.find((p) => p.name === e.target.value);
-                  if (def) setPrice(String(def.price));
+                  if (def) setPrice(def.pricePending ? "" : String(def.price));
                 }}
                 placeholder="Digite ou escolha…"
               />
               <datalist id="proc-options">
                 {procedures.map((p) => (
                   <option key={p.id} value={p.name}>
-                    {money(p.price)}
+                    {p.pricePending ? "Informe o valor" : money(p.price)}
                   </option>
                 ))}
               </datalist>
@@ -118,11 +119,12 @@ export function TreatmentsTab({ patient }: { patient: Patient }) {
                     <p className="text-xs text-ink-3">{t.teeth ? `Dente ${t.teeth}` : "Geral"}{t.completedAt ? ` · concluído em ${new Date(t.completedAt).toLocaleDateString("pt-BR")}` : ""}</p>
                   </div>
                   <input
+                    aria-label={`Valor de ${t.procedure}`}
                     className="input h-9 w-28 text-right font-semibold"
                     defaultValue={t.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                    onBlur={(e) => setItem(t.id, { price: parseMoney(e.target.value) })}
+                    onBlur={(e) => { const value = parseMoney(e.target.value); if (!Number.isFinite(value) || value < 0) { e.target.value = t.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 }); return toast.error("Informe um valor válido. Use 0 somente para cortesia."); } setItem(t.id, { price: value }); }}
                   />
-                  <Select value={t.status} onChange={(e) => setStatus(t, e.target.value as TreatmentStatus)} className="w-40 [&_select]:h-9">
+                  <Select aria-label={`Situação de ${t.procedure}`} value={t.status} onChange={(e) => setStatus(t, e.target.value as TreatmentStatus)} className="w-40 [&_select]:h-9">
                     {(Object.keys(TREATMENT_STATUS) as TreatmentStatus[]).map((s) => (
                       <option key={s} value={s}>
                         {TREATMENT_STATUS[s].label}
@@ -130,11 +132,12 @@ export function TreatmentsTab({ patient }: { patient: Patient }) {
                     ))}
                   </Select>
                   <button
+                    aria-label={`Remover ${t.procedure}`}
                     onClick={async () => {
                       if (await confirmDialog({ title: "Remover procedimento?", description: t.procedure, danger: true, confirmLabel: "Remover" }))
                         updatePatient(patient.id, (p) => ({ treatments: p.treatments.filter((x) => x.id !== t.id) }));
                     }}
-                    className="rounded-lg p-2 text-ink-3 opacity-0 transition hover:bg-rose-50 hover:text-rose-600 group-hover:opacity-100 dark:hover:bg-rose-950/40"
+                    className="rounded-lg p-2 text-ink-3 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>

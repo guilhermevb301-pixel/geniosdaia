@@ -2,10 +2,25 @@ import assert from "node:assert/strict";
 import { build } from "esbuild";
 
 // Bundle the actual TypeScript helpers; no browser, real patient, or cloud writes.
-const result = await build({ stdin: { contents: 'export * from "./src/lib/finance"; export * from "./src/lib/reminders"; export { treatmentTotals } from "./src/lib/derive";', resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm" });
-const { splitInstallments, installmentBalance, reminderAttention, treatmentTotals } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
+const result = await build({ stdin: { contents: 'export * from "./src/lib/finance"; export * from "./src/lib/reminders"; export { treatmentTotals } from "./src/lib/derive"; export { parseMoney } from "./src/lib/utils"; export { DEFAULT_SETTINGS, STAGES } from "./src/lib/constants";', resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm" });
+const { splitInstallments, installmentBalance, reminderAttention, treatmentTotals, parseMoney, DEFAULT_SETTINGS, STAGES } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
 let checks = 0;
 function check(name, fn) { fn(); checks++; console.log(`✓ ${name}`); }
+
+check("Perfil especializado sem preços inventados e etapas compatíveis com dados anteriores", () => {
+  assert.equal(DEFAULT_SETTINGS.doctorName, "Mizael Magalhães Cardoso");
+  assert.equal(new Set(DEFAULT_SETTINGS.procedures.map(p => p.id)).size, DEFAULT_SETTINGS.procedures.length);
+  assert.ok(DEFAULT_SETTINGS.procedures.every(p => p.pricePending && p.price === 0));
+  assert.equal(STAGES.find(s => s.id === "manutencao").label, "Em acompanhamento");
+});
+
+check("Valores brasileiros com ponto de milhar não viram um real", () => {
+  for (const [input, expected] of [["1.000", 1000], ["1.250,50", 1250.5], ["R$ 2.500,00", 2500], ["150.50", 150.5], ["200,00", 200], ["0", 0]]) assert.equal(parseMoney(input), expected);
+});
+
+check("Texto inválido nunca vira cortesia ou apaga um valor", () => {
+  for (const input of ["", "abc", "1,2,3", "R$", "2 reais", "1..000"]) assert.ok(Number.isNaN(parseMoney(input)), input);
+});
 
 check("Parcelas distribuem todos os centavos", () => {
   assert.deepEqual(splitInstallments(100, 3, "2026-01-31").map(i => i.amount), [33.34, 33.33, 33.33]);

@@ -136,19 +136,18 @@ export function PatientRecord() {
 
       {/* Cabeçalho */}
       <section className="card relative overflow-hidden">
-        <div className="absolute inset-x-0 top-0 h-24 opacity-90" style={{ background: `linear-gradient(120deg, ${patient.color}33, transparent 70%)` }} />
-        <div className="relative flex flex-col gap-5 p-5 sm:p-6 lg:flex-row lg:items-center">
-          <div className="flex min-w-0 flex-1 items-center gap-4 sm:gap-5">
-            <div className="relative">
+        <div className="relative flex flex-col gap-5 p-5 sm:p-6 xl:flex-row xl:items-start" style={{ background: `linear-gradient(120deg, ${patient.color}18, transparent 70%)` }}>
+          <div className="flex min-w-0 flex-1 items-start gap-4 sm:gap-5">
+            <div className="relative shrink-0">
               <Avatar patient={patient} size={84} ring />
               {bday && <span className="absolute -right-1 -top-1 text-2xl" title="Aniversário hoje!">🎂</span>}
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h1 className="truncate font-display text-2xl font-semibold text-ink sm:text-3xl" data-sensitive>
+                <h1 className="break-words font-display text-2xl font-semibold leading-tight text-ink sm:text-3xl" data-sensitive>
                   {patient.name}
                 </h1>
-                <button onClick={() => toggleFavorite(patient.id)} className={patient.favorite ? "text-amber-400" : "text-ink-3 hover:text-amber-400"} title="Favorito">
+                <button onClick={() => toggleFavorite(patient.id)} className={cn("shrink-0 p-1", patient.favorite ? "text-amber-400" : "text-ink-3 hover:text-amber-400")} title="Favorito">
                   <Star className="h-5 w-5" fill={patient.favorite ? "currentColor" : "none"} />
                 </button>
               </div>
@@ -157,7 +156,7 @@ export function PatientRecord() {
                   .filter(Boolean)
                   .join(" · ")}
               </p>
-              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <div className="mt-3 flex flex-wrap items-center gap-2">
                 <span className="chip" style={{ background: `${stage.color}1f`, color: stage.color }}>
                   <span className="h-1.5 w-1.5 rounded-full" style={{ background: stage.color }} />
                   {stage.label}
@@ -170,7 +169,7 @@ export function PatientRecord() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex shrink-0 flex-wrap items-center gap-2 xl:max-w-[360px] xl:justify-end">
             {patient.phone && (
               <a href={`tel:${patient.phone}`} className="hidden sm:block">
                 <Button variant="secondary" icon={<Phone className="h-4 w-4" />}>
@@ -190,7 +189,7 @@ export function PatientRecord() {
             </Button>
             <Menu
               trigger={() => (
-                <Button variant="secondary" size="icon">
+                <Button variant="secondary" size="icon" aria-label="Mais opções do paciente">
                   <MoreHorizontal className="h-5 w-5" />
                 </Button>
               )}
@@ -214,7 +213,7 @@ export function PatientRecord() {
         </div>
 
         {alerts.length > 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative mx-5 mb-5 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-3.5 dark:border-rose-900 dark:bg-rose-950/40 sm:mx-6">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative mx-5 my-5 flex items-start gap-3 rounded-2xl border border-rose-200 bg-surface p-3.5 dark:border-rose-900 sm:mx-6">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-rose-500 text-white">
               <AlertTriangle className="h-5 w-5" />
             </div>
@@ -231,27 +230,30 @@ export function PatientRecord() {
           </motion.div>
         )}
 
-        <div className="relative grid grid-cols-2 border-t border-line sm:grid-cols-4">
+        <div className="relative grid grid-cols-2 border-t border-line xl:grid-cols-4">
           {[
-            { label: "Etapa", value: <Select value={patient.stage} onChange={(e) => updatePatient(patient.id, { stage: e.target.value as Stage })} className="-ml-3 max-w-[180px] [&_select]:h-8 [&_select]:border-transparent [&_select]:bg-transparent [&_select]:font-bold">{STAGES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}</Select> },
+            { label: "Etapa do paciente", value: <Select aria-label="Etapa do paciente" value={patient.stage} onChange={(e) => updatePatient(patient.id, { stage: e.target.value as Stage })} className="[&_select]:font-semibold">{STAGES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}</Select> },
             { label: "Plano de tratamento", value: totals.count ? `${totals.done}/${totals.count} concluídos` : "Sem plano" },
             { label: "Total contratado", value: money(totals.total) },
             { label: "Saldo a receber", value: <span className={totals.balance ? "text-amber-600" : "text-jade-600"}>{money(totals.balance)}</span> },
           ].map((s, i) => (
-            <div key={i} className={cn("px-5 py-3 sm:px-6", i > 0 && "sm:border-l", i % 2 === 1 && "border-l", i >= 2 && "max-sm:border-t", "border-line")}>
+            <div key={i} className={cn("min-w-0 px-5 py-3 sm:px-6 border-line", i < 2 && "max-xl:col-span-2", i > 0 && "xl:border-l max-xl:border-t", i === 3 && "max-xl:border-l")}>
               <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-3">{s.label}</p>
               <div className="mt-0.5 text-sm font-bold text-ink">{s.value}</div>
             </div>
           ))}
         </div>
+        <div className="border-t border-line bg-surface-2 px-5 py-3 text-sm leading-relaxed text-ink-2 sm:px-6"><b className="text-ink">{stage.label}:</b> {stage.hint} <span>A etapa organiza o acompanhamento; não altera pagamentos nem agenda retornos.</span></div>
       </section>
 
       {/* Abas */}
-      <div className="no-scrollbar sticky top-16 z-20 -mx-4 mt-6 overflow-x-auto bg-bg/85 px-4 py-2 backdrop-blur-xl lg:-mx-8 lg:px-8">
-        <div className="flex w-max gap-1 rounded-2xl border border-line bg-surface p-1 shadow-sm">
+      <div className="sm:sticky sm:top-16 z-20 mt-6 bg-bg/95 py-2 backdrop-blur-xl">
+        <div className="flex flex-wrap gap-1 rounded-2xl border border-line bg-surface p-1.5 shadow-sm" role="tablist" aria-label="Áreas do prontuário">
           {tabs.map((t) => (
             <button
               key={t.id}
+              role="tab"
+              aria-selected={tab === t.id}
               onClick={() => setTab(t.id)}
               className={cn(
                 "relative flex items-center gap-2 whitespace-nowrap rounded-xl px-3.5 py-2 text-sm font-semibold transition-colors",

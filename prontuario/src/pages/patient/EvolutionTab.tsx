@@ -9,6 +9,10 @@ import { fmtDate, normalize, nowISO, todayKey, uid, toDate } from "@/lib/utils";
 import { useStore } from "@/store/store";
 
 const TEMPLATES: { label: string; title: string; text: string }[] = [
+  { label: "Avaliação bucomaxilofacial", title: "Avaliação bucomaxilofacial", text: "Queixa e história clínica:\nExame realizado e achados:\nExames avaliados / solicitados:\nHipótese diagnóstica e plano discutido:\nConduta e próximo retorno:" },
+  { label: "Planejamento cirúrgico", title: "Planejamento cirúrgico", text: "Procedimento proposto e região:\nIndicação e exames considerados:\nRiscos e alternativas discutidos com o paciente:\nLocal e equipe previstos:\nPendências antes do procedimento:\nData de reavaliação:" },
+  { label: "Registro de cirurgia", title: "Registro do procedimento cirúrgico", text: "Data, local e equipe:\nProcedimento realizado:\nRegião / dentes envolvidos:\nTécnica, materiais e anestesia utilizados:\nIntercorrências e conduta:\nOrientações fornecidas e documentos entregues:\nRetorno combinado:" },
+  { label: "Pós-operatório", title: "Reavaliação pós-operatória", text: "Procedimento e data de referência:\nQueixas relatadas:\nAchados da avaliação:\nConduta definida pelo profissional:\nOrientações ao paciente:\nPróximo contato / retorno:" },
   { label: "Limpeza", title: "Profilaxia", text: "Realizada profilaxia com pasta profilática e taça de borracha. Aplicação de flúor. Orientações de higiene oral." },
   { label: "Restauração", title: "Restauração em resina", text: "Anestesia infiltrativa. Isolamento absoluto. Remoção de tecido cariado. Condicionamento ácido, sistema adesivo e restauração em resina composta pela técnica incremental. Ajuste oclusal e polimento." },
   { label: "Canal", title: "Tratamento endodôntico", text: "Anestesia. Isolamento absoluto. Abertura coronária, odontometria, preparo químico-mecânico. Medicação intracanal. Selamento provisório." },

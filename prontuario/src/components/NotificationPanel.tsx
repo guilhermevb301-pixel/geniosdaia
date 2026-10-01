@@ -38,7 +38,7 @@ export function NotificationList({ items, onNavigate }: { items: AppNotification
   return (
     <ul className="space-y-2">
       {items.map((n) => (
-        <li key={n.id} className={`group flex items-center gap-3 rounded-2xl border p-3 transition hover:shadow-card ${n.severity === "danger" ? "border-rose-300 bg-rose-50 dark:bg-rose-950/30" : "border-line bg-surface"}`}>
+        <li key={n.id} className="group flex items-center gap-3 rounded-2xl border border-line bg-surface p-3 transition hover:shadow-card">
           <button
             className="flex min-w-0 flex-1 items-center gap-3 text-left"
             onClick={() => {
@@ -48,8 +48,8 @@ export function NotificationList({ items, onNavigate }: { items: AppNotification
           >
             <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${tone[n.severity]}`}>{icons[n.kind]}</span>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-semibold text-ink">{n.title}</span>
-              <span className="block truncate text-xs text-ink-3" data-sensitive>
+              <span className="block break-words text-sm font-semibold text-ink">{n.title}</span>
+              <span className="block break-words text-sm text-ink-3" data-sensitive>
                 {n.subtitle}
                 {n.date && n.kind === "lembrete" ? ` · ${fmtDate(n.date, "dd/MM HH:mm")}` : ""}
               </span>

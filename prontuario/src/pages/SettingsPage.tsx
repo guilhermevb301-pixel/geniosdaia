@@ -26,11 +26,11 @@ import { Button } from "@/components/ui/Button";
 import { confirmDialog, toast } from "@/components/ui/feedback";
 import { Field, Segmented, Select, Switch, TagChip } from "@/components/ui/misc";
 import { Modal } from "@/components/ui/Modal";
-import { TAG_PALETTE } from "@/lib/constants";
+import { TAG_PALETTE, SPECIALTY_PROCEDURES } from "@/lib/constants";
 import { blobToDataURL, dataURLToBlob, getFile, putFile, resizeImage } from "@/lib/storage";
 import { supabase } from "@/lib/supabase";
 import type { AppData, Settings } from "@/lib/types";
-import { cn, downloadBlob, fmtDate, money, nowISO, parseMoney, sha256, uid } from "@/lib/utils";
+import { cn, downloadBlob, fmtDate, nowISO, parseMoney, sha256, uid } from "@/lib/utils";
 import { DATA_VERSION, useStore } from "@/store/store";
 import { eraseEverything, removeDemoPatients } from "@/store/sync";
 
@@ -181,7 +181,7 @@ export function SettingsPage() {
   return (
     <div className="mx-auto max-w-[1200px] px-4 py-6 lg:px-8">
       <h1 className="font-display text-3xl font-semibold text-ink">Configurações</h1>
-      <p className="mt-1 text-sm text-ink-3">Tudo é salvo automaticamente.</p>
+      <p className="mt-1 text-sm text-ink-3">{mode === "demo" ? "Demonstração: alterações são temporárias e não ficam salvas." : "Alterações são salvas automaticamente. Confira o aviso de salvamento no topo."}</p>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[240px_1fr]">
         <nav className="hidden space-y-1 self-start lg:sticky lg:top-24 lg:block">
@@ -285,27 +285,36 @@ export function SettingsPage() {
           </Section>
 
           <Section id="procedimentos" title="Procedimentos e preços" desc="Usados no plano de tratamento, orçamentos e agenda." icon={<Stethoscope className="h-5 w-5" />}>
+            <p className="mb-4 text-sm leading-relaxed text-ink-2">Os serviços são atalhos, não uma tabela de preços oficial. Preencha os valores praticados pelo doutor; campos vazios significam “a definir”. Digite 0 somente quando for cortesia.</p>
+            {SPECIALTY_PROCEDURES.some(p => !settings.procedures.some(x => x.id === p.id || x.name === p.name)) && <Button variant="secondary" className="mb-4" onClick={() => set({ procedures: [...SPECIALTY_PROCEDURES.filter(p => !settings.procedures.some(x => x.id === p.id || x.name === p.name)), ...settings.procedures] })}>Adicionar serviços bucomaxilofaciais</Button>}
             <div className="space-y-2">
               {settings.procedures.map((p) => (
-                <div key={p.id} className="group grid grid-cols-[1fr_130px_auto] items-center gap-2 sm:grid-cols-[1fr_170px_130px_auto]">
+                <div key={p.id} className="group grid grid-cols-[1fr_auto] items-center gap-2 rounded-xl border border-line p-3 sm:grid-cols-[minmax(0,1fr)_130px_auto]">
                   <input
                     className="input"
                     defaultValue={p.name}
+                    aria-label="Nome do procedimento"
+                    title={p.name}
                     onBlur={(e) => set({ procedures: settings.procedures.map((x) => (x.id === p.id ? { ...x, name: e.target.value } : x)) })}
                   />
                   <input
-                    className="input hidden sm:block"
+                    className="input col-start-1 row-start-2"
+                    aria-label={`Categoria de ${p.name}`}
                     defaultValue={p.category}
                     onBlur={(e) => set({ procedures: settings.procedures.map((x) => (x.id === p.id ? { ...x, category: e.target.value } : x)) })}
                   />
                   <input
-                    className="input text-right font-semibold"
-                    defaultValue={p.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                    onBlur={(e) => set({ procedures: settings.procedures.map((x) => (x.id === p.id ? { ...x, price: parseMoney(e.target.value) } : x)) })}
+                    className="input col-start-1 row-start-3 text-right font-semibold sm:col-start-2 sm:row-start-1"
+                    aria-label={`Preço de ${p.name}`}
+                    inputMode="decimal"
+                    placeholder="A definir"
+                    defaultValue={p.pricePending ? "" : p.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    onBlur={(e) => { const price = e.target.value.trim() ? parseMoney(e.target.value) : 0; if (!Number.isFinite(price) || price < 0) { e.target.value = p.pricePending ? "" : String(p.price); return toast.error("Informe um valor maior ou igual a zero."); } set({ procedures: settings.procedures.map((x) => (x.id === p.id ? { ...x, price, pricePending: !e.target.value.trim() } : x)) }); }}
                   />
                   <button
+                    aria-label={`Remover ${p.name} da tabela`}
                     onClick={() => set({ procedures: settings.procedures.filter((x) => x.id !== p.id) })}
-                    className="rounded-lg p-2 text-ink-3 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40"
+                    className="col-start-2 row-start-1 rounded-lg p-2 text-ink-3 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40 sm:col-start-3"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -317,12 +326,12 @@ export function SettingsPage() {
               size="sm"
               className="mt-3"
               icon={<Plus className="h-4 w-4" />}
-              onClick={() => set({ procedures: [...settings.procedures, { id: uid("p_"), name: "Novo procedimento", price: 0, category: "Outros" }] })}
+              onClick={() => set({ procedures: [...settings.procedures, { id: uid("p_"), name: "Novo procedimento", price: 0, pricePending: true, category: "Outros" }] })}
             >
               Adicionar procedimento
             </Button>
             <p className="mt-2 text-xs text-ink-3">
-              Valor médio: {money(settings.procedures.reduce((s, p) => s + p.price, 0) / Math.max(1, settings.procedures.length))}
+              {settings.procedures.filter(p => p.pricePending).length} serviço(s) com valor a definir. Valores já personalizados são preservados.
             </p>
           </Section>
 
@@ -438,7 +447,7 @@ export function SettingsPage() {
             />
           </Section>
 
-          <Section id="backup" title="Backup e dados" desc="Seus dados ficam salvos na nuvem. O backup é uma cópia extra de segurança." icon={<HardDriveDownload className="h-5 w-5" />}>
+          <Section id="backup" title="Backup e dados" desc={mode === "demo" ? "Nesta demonstração, os dados são fictícios. Na sua conta, mantenha uma cópia extra de segurança." : "O backup é uma cópia extra de segurança dos dados da sua conta. Guarde em local protegido."} icon={<HardDriveDownload className="h-5 w-5" />}>
             <div className="grid gap-3 sm:grid-cols-2">
               <button onClick={exportBackup} disabled={!!busy} className="flex items-center gap-4 rounded-2xl border border-line p-4 text-left transition hover:border-jade-400 hover:bg-brand-soft/30">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-jade-600 text-white">

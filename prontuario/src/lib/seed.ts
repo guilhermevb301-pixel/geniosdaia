@@ -18,7 +18,7 @@ import { panoramicSVG, periapicalSVG } from "./xray";
 
 /* Pacientes fictícios para demonstração — todos os nomes e dados são inventados. */
 
-const AUTHOR = "Dr. Mizael Cardoso";
+const AUTHOR = "Dr. Mizael Magalhães Cardoso";
 
 function rng(seed: number) {
   let s = seed;
@@ -227,7 +227,7 @@ export async function buildDemoData(): Promise<{ patients: Patient[]; appointmen
     ],
     evolutions: [ev(5, "Avaliação estética", "Planejamento digital do sorriso. Fotos e moldagem realizadas. Orçamento de 4 facetas + clareamento será apresentado.")],
     reminders: [rem("Enviar orçamento das facetas", 0, "pagamento", "18:00")],
-    notes: [note("Alérgica a PENICILINA — usar clindamicina se necessário.", "rose")],
+    notes: [note("Alergia a penicilina — revisar medicamentos e conduta antes de prescrever.", "rose")],
     planDiscount: 5,
   });
 

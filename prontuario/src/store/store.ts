@@ -32,6 +32,8 @@ export function withDefaults(settings?: Partial<Settings> | null): Settings {
   return {
     ...DEFAULT_SETTINGS,
     ...(settings ?? {}),
+    doctorName: !settings?.doctorName || settings.doctorName === "Mizael Cardoso" ? DEFAULT_SETTINGS.doctorName : settings.doctorName,
+    specialty: !settings?.specialty || settings.specialty === "Cirurgião-Dentista" ? DEFAULT_SETTINGS.specialty : settings.specialty,
     messages: { ...DEFAULT_SETTINGS.messages, ...(settings?.messages ?? {}) },
   };
 }

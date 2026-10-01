@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import schemaSQL from "../../supabase/schema.sql?raw";
 import { SQL_EDITOR_URL, signupsEnabled, supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
+import { DEFAULT_SETTINGS } from "@/lib/constants";
 import { useStore } from "@/store/store";
 import { retryStart, signOut, startDemo } from "@/store/sync";
 import { Logo, ToothPattern } from "./Logo";
@@ -33,8 +34,8 @@ function Shell({ children }: { children: ReactNode }) {
         <div className="relative flex items-center gap-3">
           <Logo size={48} />
           <div>
-            <p className="font-display text-xl font-semibold text-white">Dr. Mizael Cardoso</p>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-jade-300/80">Odontologia</p>
+            <p className="font-display text-xl font-semibold text-white">Dr. {DEFAULT_SETTINGS.doctorName}</p>
+            <p className="mt-1 text-sm text-jade-300/80">{DEFAULT_SETTINGS.specialty}</p>
           </div>
         </div>
         <div className="relative max-w-lg">
@@ -128,7 +129,7 @@ export function LoginScreen() {
         <div className="mb-8 flex items-center gap-3 lg:hidden">
           <Logo size={44} />
           <div>
-            <p className="font-display text-lg font-semibold text-ink">Dr. Mizael Cardoso</p>
+            <p className="font-display text-lg font-semibold text-ink">Dr. {DEFAULT_SETTINGS.doctorName}</p>
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-3">Prontuário digital</p>
           </div>
         </div>

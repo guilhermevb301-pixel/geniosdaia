@@ -50,6 +50,7 @@ function ToothPanel({ patient, n, onClose }: { patient: Patient; n: number; onCl
 
   const addToPlan = () => {
     const def = procedures.find((p) => p.name === proc);
+    if (!def || def.pricePending) return toast.error("Defina o valor em Configurações → Procedimentos ou adicione este item na aba Tratamentos com o valor combinado.");
     const faceTxt = faces.length ? ` (${faces.map(([f]) => faceLabel(f, n)[0]).join("")})` : "";
     updatePatient(patient.id, (p) => ({
       treatments: [...p.treatments, { id: uid("tr_"), procedure: proc, teeth: `${n}${faceTxt}`, price: def?.price ?? 0, status: "planejado", createdAt: nowISO() }],
@@ -105,7 +106,7 @@ function ToothPanel({ patient, n, onClose }: { patient: Patient; n: number; onCl
             <Select value={proc} onChange={(e) => setProc(e.target.value)} className="flex-1">
               {procedures.map((p) => (
                 <option key={p.id} value={p.name}>
-                  {p.name} — {money(p.price)}
+                  {p.name} — {p.pricePending ? "valor a definir" : money(p.price)}
                 </option>
               ))}
             </Select>

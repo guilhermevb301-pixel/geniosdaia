@@ -442,7 +442,7 @@ export function Patients() {
       </div>
 
       {view !== "quadro" && (
-        <div className="no-scrollbar -mx-4 mt-4 flex gap-2 overflow-x-auto px-4 lg:mx-0 lg:px-0">
+        <div className="mt-4 flex flex-wrap gap-2">
           <button
             onClick={() => setStageFilter(null)}
             className={cn("chip shrink-0 border px-3 py-1.5 text-xs", !stageFilter ? "border-jade-600 bg-jade-600 text-white" : "border-line bg-surface text-ink-2 hover:border-jade-300")}
@@ -452,6 +452,7 @@ export function Patients() {
           {STAGES.map((s) => (
             <button
               key={s.id}
+              title={s.hint}
               onClick={() => setStageFilter(stageFilter === s.id ? null : s.id)}
               className={cn("chip shrink-0 border px-3 py-1.5 text-xs", stageFilter === s.id ? "border-transparent text-white" : "border-line bg-surface text-ink-2 hover:border-jade-300")}
               style={stageFilter === s.id ? { background: s.color } : undefined}
@@ -462,6 +463,8 @@ export function Patients() {
           ))}
         </div>
       )}
+
+      {stageFilter && view !== "quadro" && <p className="mt-3 text-sm text-ink-2">{stageById(stageFilter).hint}</p>}
 
       {(quick || tags.length > 0) && (
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">

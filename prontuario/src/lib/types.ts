@@ -107,6 +107,9 @@ export type AttachmentCategory =
   | "extraoral"
   | "tomografia"
   | "documento"
+  | "encaminhamento"
+  | "relatorio"
+  | "consentimento"
   | "outro";
 
 export interface Attachment {
@@ -176,6 +179,7 @@ export interface ProcedureDef {
   id: ID;
   name: string;
   price: number;
+  pricePending?: boolean;
   category: string;
 }
 

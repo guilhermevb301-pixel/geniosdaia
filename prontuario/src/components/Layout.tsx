@@ -24,7 +24,7 @@ import {
   AlertCircle,
   LogOut,
 } from "lucide-react";
-import { useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { buildNotifications } from "@/lib/derive";
 import { cn } from "@/lib/utils";
@@ -237,7 +237,7 @@ function TopBar() {
         </button>
         <Menu
           trigger={() => (
-            <Button size="md" icon={<Plus className="h-4 w-4" />} className="max-sm:h-10 max-sm:w-10 max-sm:px-0">
+            <Button aria-label="Novo cadastro ou agendamento" size="md" icon={<Plus className="h-4 w-4" />} className="max-sm:h-10 max-sm:w-10 max-sm:px-0">
               <span className="max-sm:hidden">Novo</span>
             </Button>
           )}
@@ -263,6 +263,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const { mobileNav, setMobileNav } = useUI();
   const location = useLocation();
   const mode = useStore((s) => s.mode);
+  useEffect(() => { window.scrollTo({ top: 0, behavior: "instant" }); }, [location.pathname]);
   return (
     <div className="flex h-full">
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[268px] lg:block">

@@ -67,7 +67,7 @@ export function PatientBilling({ patient, onReceive }: { patient: Patient; onRec
       {schedule.map(item => {
         const balance = installmentBalance(item, patient.payments);
         const label = reminderAttention({ done: balance <= 0, dueAt: item.dueDate });
-        return <div key={item.id} className={`flex flex-wrap items-center gap-3 rounded-xl border p-3 ${label ? "border-rose-300 bg-rose-50 dark:bg-rose-950/30" : "border-line"}`}>
+        return <div key={item.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-line bg-surface p-3">
           <div className="flex-1"><p className="font-semibold">{item.label} · {money(item.amount)}</p><p className="text-sm text-ink-2">Vencimento: {fmtDate(item.dueDate)} · {balance === 0 ? "Pago" : `Pendente: ${money(balance)}`}</p>{label && <p className="text-sm font-bold text-rose-700 dark:text-rose-300">{label} · verificar pagamento / entrar em contato</p>}</div>
           {balance > 0 && <Button variant="secondary" onClick={() => onReceive(item)}>Registrar recebimento</Button>}
           {balance > 0 && <Field label="Alterar vencimento"><input type="date" className="input w-44" value={item.dueDate} onChange={e => { const dueDate = e.target.value; if (toDate(dueDate)) update(patient.id, p => ({ paymentSchedule: p.paymentSchedule?.map(i => i.id === item.id ? { ...i, dueDate } : i) })); }} /></Field>}

@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { BellPlus, BellRing, Check, RotateCcw, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { toast } from "@/components/ui/feedback";
+import { toast, confirmDialog } from "@/components/ui/feedback";
 import { Card, EmptyState, Field, Select } from "@/components/ui/misc";
 import { REMINDER_TYPES } from "@/lib/constants";
 import type { Patient, Reminder, ReminderType } from "@/lib/types";
@@ -15,41 +15,25 @@ import { whatsappLink } from "@/lib/utils";
 
 export function ReminderItem({ r, onToggle, onDelete, subtitle, patient }: { r: Reminder; onToggle: () => void; onDelete: () => void; subtitle?: React.ReactNode; patient?: Patient }) {
   useClock();
+  const settings = useStore(s => s.settings);
   const attention = reminderAttention(r);
   const due = toDate(r.dueAt)!;
-  const overdue = attention === "Atrasado";
-  const today = attention === "Hoje";
-  const type = REMINDER_TYPES[r.type];
+  const type = REMINDER_TYPES[r.type] ?? REMINDER_TYPES.outro;
   return (
-    <motion.div layout initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: 30 }} className={cn("group flex flex-wrap items-center gap-3 rounded-2xl border p-3", attention ? "border-rose-300 bg-rose-50 dark:bg-rose-950/30" : "border-line bg-surface", r.done && "opacity-60")}>
-      <button
-        onClick={onToggle}
-        className={cn(
-          "flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border-2 px-3 text-sm font-semibold transition",
-          r.done ? "border-jade-500 bg-jade-500 text-white" : "border-line hover:border-jade-500 hover:bg-jade-50 dark:hover:bg-jade-900/40",
-        )}
-        title={r.done ? "Reabrir" : "Marcar como feito"}
-      >
-        <Check className="h-4 w-4" /> {r.done ? "Reabrir" : "Concluir"}
-      </button>
+    <motion.div layout initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: 30 }} className={cn("group rounded-2xl border border-line bg-surface p-4 shadow-sm", r.done && "opacity-70")}>
+      <div className="flex items-start gap-3">
       <div className="min-w-0 flex-1">
-        <p className={cn("text-sm font-semibold text-ink", r.done && "line-through")}>{r.title}</p>
-        <p className="flex flex-wrap items-center gap-x-2 text-xs text-ink-3">
-          <span className="font-semibold" style={{ color: type.color }}>
-            {type.label}
-          </span>
-          <span className={cn(attention && "font-bold text-rose-600")}>
-            {overdue ? "Atrasado · " : today ? "Hoje · " : ""}
-            {fmtDate(due, "dd/MM/yyyy 'às' HH:mm")}
-          </span>
-          {subtitle}
-        </p>
-        {attention && <p className="mt-2 text-sm font-bold text-rose-700 dark:text-rose-300">⚠ {attention} · entrar em contato com o paciente</p>}
-        {!r.done && patient?.phone && whatsappLink(patient.phone) && <a className="inline-block mt-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm font-semibold text-brand" target="_blank" rel="noreferrer" href={whatsappLink(patient.phone, `Olá, ${patient.name.split(" ")[0]}! Aqui é do consultório do Dr. Mizael. Podemos conversar sobre seu acompanhamento?`) || undefined}>Entrar em contato pelo WhatsApp</a>}
+        <p className={cn("break-words font-semibold leading-relaxed text-ink", r.done && "line-through")}>{r.title}</p>
+        {subtitle && <div className="mt-1 text-sm">{subtitle}</div>}
+        <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-2"><span>{type.label}</span><span>{fmtDate(due, "dd/MM/yyyy 'às' HH:mm")}</span>{attention && <span className="font-semibold text-rose-600">{attention} · entrar em contato</span>}</p>
       </div>
-      <button aria-label="Excluir lembrete" onClick={onDelete} className="rounded-lg p-2 text-ink-2 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40">
-        <Trash2 className="h-4 w-4" />
-      </button>
+      <button aria-label="Excluir lembrete" onClick={async () => { if (await confirmDialog({ title: "Excluir este lembrete?", description: r.title, confirmLabel: "Excluir", danger: true })) onDelete(); }} className="shrink-0 rounded-lg p-2 text-ink-3 hover:bg-surface-2 hover:text-rose-600"><Trash2 className="h-4 w-4" /></button>
+      </div>
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        {!r.done && patient?.phone && whatsappLink(patient.phone) && <a className="inline-flex min-h-10 items-center rounded-xl border border-line px-3 py-2 text-sm font-semibold text-brand hover:bg-surface-2" target="_blank" rel="noreferrer" href={whatsappLink(patient.phone, `Olá, ${patient.name.split(" ")[0]}! Aqui é do consultório do ${settings.title} ${settings.doctorName}. Podemos conversar sobre seu acompanhamento?`) || undefined}>Entrar em contato pelo WhatsApp</a>}
+        {!r.done && patient && !whatsappLink(patient.phone) && <span className="text-sm text-ink-2">Cadastre o telefone em Visão geral → Editar para entrar em contato.</span>}
+        <button onClick={onToggle} className="flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-line px-3 text-sm font-semibold text-ink-2 hover:border-jade-500 hover:bg-surface-2" title={r.done ? "Reabrir" : "Marcar como feito"}><Check className="h-4 w-4" />{r.done ? "Reabrir" : "Concluir"}</button>
+      </div>
     </motion.div>
   );
 }
@@ -76,10 +60,12 @@ export function RemindersTab({ patient }: { patient: Patient }) {
   };
 
   const presets = [
-    { label: `Retorno em ${recallMonths} meses`, title: "Retorno para revisão e limpeza", type: "retorno" as const, dueAt: addMonths(new Date(), recallMonths) },
+    { label: `Retorno em ${recallMonths} meses`, title: "Entrar em contato para agendar revisão", type: "retorno" as const, dueAt: addMonths(new Date(), recallMonths) },
     { label: "Ligar amanhã", title: "Ligar para saber como está", type: "outro" as const, dueAt: addDays(new Date(), 1) },
     { label: "Cobrar em 7 dias", title: "Verificar pagamento pendente", type: "pagamento" as const, dueAt: addDays(new Date(), 7) },
-    { label: "Pós-operatório (3 dias)", title: "Checar pós-operatório", type: "retorno" as const, dueAt: addDays(new Date(), 3) },
+    { label: "Pós-operatório", title: "Entrar em contato para acompanhar o pós-operatório", type: "retorno" as const },
+    { label: "Solicitar exames", title: "Entrar em contato para solicitar os exames definidos pelo doutor", type: "outro" as const },
+    { label: "Confirmar cirurgia", title: "Confirmar data, horário e local da cirurgia", type: "confirmacao" as const },
   ];
 
   const pending = useMemo(() => patient.reminders.filter((r) => !r.done).sort((a, b) => a.dueAt.localeCompare(b.dueAt)), [patient.reminders]);
@@ -91,14 +77,16 @@ export function RemindersTab({ patient }: { patient: Patient }) {
     <div className="grid gap-6 xl:grid-cols-[400px_1fr]">
       <Card title="Novo lembrete" icon={<BellPlus className="h-5 w-5" />} className="xl:self-start">
         <div className="space-y-4 p-5 pt-3">
+          <p className="text-sm text-ink-2">Escolha um modelo ou escreva abaixo. Confira a data e clique em Criar lembrete.</p>
           <div className="flex flex-wrap gap-1.5">
             {presets.map((p) => (
               <button
                 key={p.label}
                 onClick={() => {
-                  const d = p.dueAt;
-                  d.setHours(9, 0, 0, 0);
-                  add({ title: p.title, type: p.type, dueAt: d.toISOString() });
+                  setTitle(p.title);
+                  setType(p.type);
+                  if (p.dueAt) setDate(format(p.dueAt, "yyyy-MM-dd"));
+                  setTime("09:00");
                 }}
                 className="chip border border-line bg-surface px-2.5 py-1 text-ink-2 transition hover:border-jade-400 hover:bg-brand-soft hover:text-brand-ink"
               >
@@ -109,8 +97,8 @@ export function RemindersTab({ patient }: { patient: Patient }) {
           <Field label="O que lembrar?">
             <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} placeholder="Ex.: Ligar para confirmar o retorno" />
           </Field>
-          <div className="grid grid-cols-3 gap-2">
-            <Field label="Tipo" className="col-span-3 sm:col-span-1">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Tipo" className="col-span-2">
               <Select value={type} onChange={(e) => setType(e.target.value as ReminderType)}>
                 {(Object.keys(REMINDER_TYPES) as ReminderType[]).map((t) => (
                   <option key={t} value={t}>
@@ -119,7 +107,7 @@ export function RemindersTab({ patient }: { patient: Patient }) {
                 ))}
               </Select>
             </Field>
-            <Field label="Data" className="col-span-2 sm:col-span-1">
+            <Field label="Data do contato">
               <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
             </Field>
             <Field label="Hora">

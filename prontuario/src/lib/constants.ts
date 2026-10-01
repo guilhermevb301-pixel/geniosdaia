@@ -14,11 +14,11 @@ import type {
 } from "./types";
 
 export const STAGES: { id: Stage; label: string; hint: string; color: string; dot: string }[] = [
-  { id: "avaliacao", label: "Avaliação", hint: "Primeira consulta e diagnóstico", color: "#0EA5E9", dot: "bg-sky-500" },
-  { id: "orcamento", label: "Orçamento", hint: "Plano enviado, aguardando aprovação", color: "#F59E0B", dot: "bg-amber-500" },
-  { id: "tratamento", label: "Em tratamento", hint: "Procedimentos em andamento", color: "#25A56F", dot: "bg-jade-500" },
-  { id: "manutencao", label: "Manutenção", hint: "Retornos periódicos", color: "#8B5CF6", dot: "bg-violet-500" },
-  { id: "concluido", label: "Alta", hint: "Tratamento concluído", color: "#64748B", dot: "bg-slate-500" },
+  { id: "avaliacao", label: "Avaliação", hint: "Primeira consulta e diagnóstico.", color: "#0EA5E9", dot: "bg-sky-500" },
+  { id: "orcamento", label: "Orçamento", hint: "Plano enviado, aguardando aprovação.", color: "#F59E0B", dot: "bg-amber-500" },
+  { id: "tratamento", label: "Em tratamento", hint: "Há procedimentos ou cirurgias aprovados para realizar ou finalizar.", color: "#25A56F", dot: "bg-jade-500" },
+  { id: "manutencao", label: "Em acompanhamento", hint: "Os procedimentos principais já terminaram. O paciente volta para revisão, pós-operatório ou manutenção.", color: "#8B5CF6", dot: "bg-violet-500" },
+  { id: "concluido", label: "Alta", hint: "Acompanhamento deste tratamento encerrado pelo profissional.", color: "#64748B", dot: "bg-slate-500" },
 ];
 
 export const stageById = (id: Stage) => STAGES.find((s) => s.id === id) ?? STAGES[0];
@@ -114,6 +114,9 @@ export const ATTACHMENT_CATEGORIES: Record<AttachmentCategory, { label: string; 
   extraoral: { label: "Foto do sorriso", color: "#F59E0B" },
   tomografia: { label: "Tomografia", color: "#8B5CF6" },
   documento: { label: "Documento", color: "#64748B" },
+  encaminhamento: { label: "Encaminhamento", color: "#0891B2" },
+  relatorio: { label: "Laudo / relatório", color: "#6366F1" },
+  consentimento: { label: "Documento assinado", color: "#178559" },
   outro: { label: "Outro", color: "#94A3B8" },
 };
 
@@ -191,38 +194,46 @@ export const DEFAULT_TAGS: TagDef[] = [
   { name: "Urgência", color: "#E5484D" },
 ];
 
-const proc = (id: string, name: string, price: number, category: string): ProcedureDef => ({ id, name, price, category });
+const proc = (id: string, name: string, category: string): ProcedureDef => ({ id, name, price: 0, pricePending: true, category });
+
+export const SPECIALTY_PROCEDURES: ProcedureDef[] = [
+  proc("bx01", "Consulta de cirurgia e traumatologia bucomaxilofacial", "Bucomaxilofacial"),
+  proc("bx02", "Cirurgia de osteoma, odontoma e outros tumores", "Bucomaxilofacial"),
+  proc("bx03", "Odontologia hospitalar para pacientes especiais", "Hospitalar"),
+  proc("bx04", "Reavaliação / pós-operatório", "Acompanhamento"),
+];
 
 export const DEFAULT_PROCEDURES: ProcedureDef[] = [
-  proc("p01", "Consulta / avaliação", 150, "Clínica geral"),
-  proc("p02", "Limpeza (profilaxia)", 220, "Prevenção"),
-  proc("p03", "Aplicação de flúor", 90, "Prevenção"),
-  proc("p04", "Selante", 120, "Prevenção"),
-  proc("p05", "Restauração em resina", 280, "Dentística"),
-  proc("p06", "Restauração provisória", 120, "Dentística"),
-  proc("p07", "Clareamento dental", 1200, "Estética"),
-  proc("p08", "Faceta em porcelana", 2200, "Estética"),
-  proc("p09", "Tratamento de canal", 950, "Endodontia"),
-  proc("p10", "Retratamento de canal", 1200, "Endodontia"),
-  proc("p11", "Extração simples", 300, "Cirurgia"),
-  proc("p12", "Extração de siso", 650, "Cirurgia"),
-  proc("p13", "Raspagem periodontal", 380, "Periodontia"),
-  proc("p14", "Implante dentário", 3800, "Implantodontia"),
-  proc("p15", "Coroa em porcelana", 1900, "Prótese"),
-  proc("p16", "Coroa provisória", 350, "Prótese"),
-  proc("p17", "Prótese total (dentadura)", 2600, "Prótese"),
-  proc("p18", "Ponte fixa (por elemento)", 1700, "Prótese"),
-  proc("p19", "Manutenção ortodôntica", 180, "Ortodontia"),
-  proc("p20", "Aparelho ortodôntico fixo", 2400, "Ortodontia"),
-  proc("p21", "Placa de bruxismo", 750, "Prótese"),
-  proc("p22", "Radiografia periapical", 60, "Diagnóstico"),
+  ...SPECIALTY_PROCEDURES,
+  proc("p01", "Consulta / avaliação", "Clínica geral"),
+  proc("p02", "Limpeza (profilaxia)", "Prevenção"),
+  proc("p03", "Aplicação de flúor", "Prevenção"),
+  proc("p04", "Selante", "Prevenção"),
+  proc("p05", "Restauração em resina", "Dentística"),
+  proc("p06", "Restauração provisória", "Dentística"),
+  proc("p07", "Clareamento dental", "Estética"),
+  proc("p08", "Faceta em porcelana", "Estética"),
+  proc("p09", "Tratamento de canal", "Endodontia"),
+  proc("p10", "Retratamento de canal", "Endodontia"),
+  proc("p11", "Extração simples", "Cirurgia"),
+  proc("p12", "Extração de siso", "Cirurgia"),
+  proc("p13", "Raspagem periodontal", "Periodontia"),
+  proc("p14", "Implante dentário", "Implantodontia"),
+  proc("p15", "Coroa em porcelana", "Prótese"),
+  proc("p16", "Coroa provisória", "Prótese"),
+  proc("p17", "Prótese total (dentadura)", "Prótese"),
+  proc("p18", "Ponte fixa (por elemento)", "Prótese"),
+  proc("p19", "Manutenção ortodôntica", "Ortodontia"),
+  proc("p20", "Aparelho ortodôntico fixo", "Ortodontia"),
+  proc("p21", "Placa de bruxismo", "Prótese"),
+  proc("p22", "Radiografia periapical", "Diagnóstico"),
 ];
 
 export const DEFAULT_SETTINGS: Settings = {
-  doctorName: "Mizael Cardoso",
+  doctorName: "Mizael Magalhães Cardoso",
   title: "Dr.",
   cro: "",
-  specialty: "Cirurgião-Dentista",
+  specialty: "Cirurgia e Traumatologia Bucomaxilofacial",
   clinicName: "Consultório Odontológico Dr. Mizael Cardoso",
   phone: "",
   email: "",
@@ -239,7 +250,7 @@ export const DEFAULT_SETTINGS: Settings = {
     birthday:
       "Olá, {nome}! 🎉 Hoje é um dia especial e o Dr. Mizael Cardoso e toda a equipe desejam um feliz aniversário, com muita saúde e muitos motivos para sorrir! 😁",
     recall:
-      "Olá, {nome}! Tudo bem? Aqui é do consultório do Dr. Mizael Cardoso 🦷\nJá faz um tempo desde a sua última consulta. Que tal agendarmos sua revisão e limpeza? Temos horários disponíveis esta semana!",
+      "Olá, {nome}! Tudo bem? Aqui é do consultório do Dr. Mizael Cardoso 🦷\nPodemos combinar seu retorno de acompanhamento? Fale conosco para consultar os horários disponíveis.",
   },
   theme: "light",
   autoLockMinutes: 0,
