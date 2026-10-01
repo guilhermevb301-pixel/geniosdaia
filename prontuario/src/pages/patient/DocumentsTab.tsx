@@ -123,6 +123,12 @@ export function DocumentsTab({ patient }: { patient: Patient }) {
         }
       >
         <div className="p-5 pt-3">
+          <div className="mb-5 rounded-xl border border-line bg-brand-soft/40 p-4 text-sm leading-relaxed text-ink-2">
+            <p className="font-bold text-ink">Como usar este documento</p>
+            <p>1. Confira os dados e o conteúdo. 2. Clique em Imprimir / PDF e escolha a impressora ou “Salvar como PDF”.</p>
+            <p className="mt-2">{doc === "anamnese" ? "O paciente ou responsável assina no papel. Depois, anexe uma foto ou digitalização em Imagens." : doc === "orcamento" ? "O orçamento tem espaço para assinatura do profissional e aceite do paciente no papel." : "O documento tem espaço para assinatura do profissional. Confira o nome e o CRO em Configurações."}</p>
+            <p className="mt-2">A foto da assinatura é apenas uma imagem, não uma assinatura com certificado digital. O PDF gerado não é anexado automaticamente. Abra Ajuda para o passo a passo.</p>
+          </div>
           {alerts.length > 0 && (doc === "receita" || doc === "atestado") && (
             <p className="mb-4 flex items-start gap-2 rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /> {alerts.join(" · ")}
@@ -136,7 +142,7 @@ export function DocumentsTab({ patient }: { patient: Patient }) {
                   <AlertTriangle className="h-6 w-6 shrink-0" />
                   <div>
                     <p className="font-bold">Atenção: paciente com alergia registrada a “{patient.anamnesis.allergies}”.</p>
-                    <p className="text-sm">A amoxicilina pertence ao grupo das penicilinas. Considere uma alternativa como a clindamicina.</p>
+                    <p className="text-sm">A amoxicilina pertence ao grupo das penicilinas. Revise a prescrição e a alergia registrada antes de emitir o documento.</p>
                   </div>
                 </div>
               )}

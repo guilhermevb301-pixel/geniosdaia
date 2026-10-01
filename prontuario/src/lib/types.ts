@@ -90,6 +90,14 @@ export interface Payment {
   method: PaymentMethod;
   description?: string;
   installments?: number;
+  installmentId?: string;
+}
+
+export interface Installment {
+  id: ID;
+  label: string;
+  dueDate: string;
+  amount: number;
 }
 
 export type AttachmentCategory =
@@ -148,6 +156,7 @@ export interface Patient {
   reminders: Reminder[];
   notes: StickyNote[];
   payments: Payment[];
+  paymentSchedule?: Installment[];
   attachments: Attachment[];
 }
 

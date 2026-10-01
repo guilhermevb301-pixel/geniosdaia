@@ -10,18 +10,20 @@ import type { Patient, Reminder } from "@/lib/types";
 import { toDate } from "@/lib/utils";
 import { useStore } from "@/store/store";
 import { ReminderItem } from "./patient/RemindersTab";
+import { useClock } from "@/lib/useClock";
 
 export function Reminders() {
+  const nowTick = useClock();
   const patients = useStore((s) => s.patients);
   const appointments = useStore((s) => s.appointments);
   const settings = useStore((s) => s.settings);
   const updatePatient = useStore((s) => s.updatePatient);
   const [tab, setTab] = useState<"pendentes" | "concluidos">("pendentes");
 
-  const auto = useMemo(() => buildNotifications(patients, appointments, settings).filter((n) => n.kind !== "lembrete"), [patients, appointments, settings]);
+  const auto = useMemo(() => buildNotifications(patients, appointments, settings).filter((n) => n.kind !== "lembrete"), [patients, appointments, settings, nowTick]);
 
   const groups = useMemo(() => {
-    const all: { r: Reminder; p: Patient }[] = patients.flatMap((p) => p.reminders.map((r) => ({ r, p })));
+    const all: { r: Reminder; p: Patient }[] = patients.filter(p => !p.archived).flatMap((p) => p.reminders.map((r) => ({ r, p })));
     const now = new Date();
     const sod = startOfDay(now);
     const eod = endOfDay(now);
@@ -34,7 +36,7 @@ export function Reminders() {
       depois: pending.filter((x) => toDate(x.r.dueAt)! > week),
       concluidos: all.filter((x) => x.r.done).sort((a, b) => b.r.dueAt.localeCompare(a.r.dueAt)),
     };
-  }, [patients]);
+  }, [patients, nowTick]);
 
   const toggle = (p: Patient, id: string) => updatePatient(p.id, (x) => ({ reminders: x.reminders.map((r) => (r.id === id ? { ...r, done: !r.done } : r)) }));
   const remove = (p: Patient, id: string) => updatePatient(p.id, (x) => ({ reminders: x.reminders.filter((r) => r.id !== id) }));
@@ -51,6 +53,7 @@ export function Reminders() {
               <ReminderItem
                 key={r.id}
                 r={r}
+                patient={p}
                 onToggle={() => toggle(p, r.id)}
                 onDelete={() => remove(p, r.id)}
                 subtitle={
@@ -94,7 +97,7 @@ export function Reminders() {
             ) : (
               <>
                 {section("Atrasados", groups.atrasados, "text-rose-600")}
-                {section("Hoje", groups.hoje, "text-amber-600")}
+                {section("Hoje", groups.hoje, "text-rose-600")}
                 {section("Próximos 7 dias", groups.semana, "text-brand")}
                 {section("Mais adiante", groups.depois, "text-ink-3")}
               </>
@@ -109,7 +112,7 @@ export function Reminders() {
         </div>
         <Card title="Avisos automáticos" icon={<Sparkles className="h-5 w-5" />} className="lg:self-start">
           <div className="p-4 pt-2">
-            <p className="mb-3 text-xs text-ink-3">Aniversários, consultas a confirmar e backup — gerados automaticamente.</p>
+            <p className="mb-3 text-sm text-ink-2">Parcelas próximas ou atrasadas, aniversários, consultas a confirmar e backup.</p>
             <NotificationList items={auto} />
           </div>
         </Card>

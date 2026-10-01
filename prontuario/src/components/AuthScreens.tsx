@@ -73,6 +73,8 @@ export function LoginScreen() {
   const [mode, setMode] = useState<"login" | "signup" | "reset">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
@@ -88,6 +90,7 @@ export function LoginScreen() {
     const mail = email.trim().toLowerCase();
     if (!mail) return setError("Informe seu e-mail.");
     if (mode !== "reset" && password.length < 6) return setError("A senha precisa ter pelo menos 6 caracteres.");
+    if (mode === "signup" && password !== passwordConfirmation) return setError("As senhas não conferem. Digite a mesma senha nos dois campos.");
     setBusy(true);
     try {
       if (mode === "login") {
@@ -158,7 +161,7 @@ export function LoginScreen() {
               <div className="relative">
                 <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3" />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   autoComplete={mode === "login" ? "current-password" : "new-password"}
                   className="input h-12 pl-10"
                   value={password}
@@ -168,6 +171,11 @@ export function LoginScreen() {
               </div>
             </Field>
           )}
+          {mode !== "reset" && <label className="flex items-center gap-2 text-sm text-ink-2"><input type="checkbox" checked={showPassword} onChange={e => setShowPassword(e.target.checked)} /> Mostrar senha</label>}
+          {mode === "signup" && <>
+            <Field label="Digite a senha novamente"><input className="input h-12" type={showPassword ? "text" : "password"} autoComplete="new-password" value={passwordConfirmation} onChange={e => setPasswordConfirmation(e.target.value)} /></Field>
+            <p className="text-sm text-ink-2">Use seu e-mail e crie uma senha com pelo menos 6 caracteres. Guarde os dois para entrar novamente. O perfil do Dr. Mizael já vem preenchido e pode ser ajustado em Configurações. Se pedirmos confirmação, abra o link recebido por e-mail.</p>
+          </>}
           {error && <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">{error}</p>}
           {info && <p className="rounded-xl bg-jade-50 px-3 py-2 text-sm font-medium text-jade-800 dark:bg-jade-900/40 dark:text-jade-200">{info}</p>}
           <Button type="submit" size="lg" className="w-full" disabled={busy} icon={busy ? <Loader2 className="h-5 w-5 animate-spin" /> : undefined}>

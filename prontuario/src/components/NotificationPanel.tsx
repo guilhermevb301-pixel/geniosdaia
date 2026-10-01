@@ -6,6 +6,7 @@ import { fmtDate } from "@/lib/utils";
 import { useStore } from "@/store/store";
 import { useUI } from "@/store/ui";
 import { Modal } from "./ui/Modal";
+import { useClock } from "@/lib/useClock";
 import { EmptyState } from "./ui/misc";
 
 const icons: Record<AppNotification["kind"], ReactNode> = {
@@ -37,7 +38,7 @@ export function NotificationList({ items, onNavigate }: { items: AppNotification
   return (
     <ul className="space-y-2">
       {items.map((n) => (
-        <li key={n.id} className="group flex items-center gap-3 rounded-2xl border border-line bg-surface p-3 transition hover:border-jade-300 hover:shadow-card">
+        <li key={n.id} className={`group flex items-center gap-3 rounded-2xl border p-3 transition hover:shadow-card ${n.severity === "danger" ? "border-rose-300 bg-rose-50 dark:bg-rose-950/30" : "border-line bg-surface"}`}>
           <button
             className="flex min-w-0 flex-1 items-center gap-3 text-left"
             onClick={() => {
@@ -70,20 +71,21 @@ export function NotificationList({ items, onNavigate }: { items: AppNotification
 }
 
 export function NotificationPanel() {
+  const now = useClock();
   const open = useUI((s) => s.notifications);
   const setOpen = useUI((s) => s.setNotifications);
   const patients = useStore((s) => s.patients);
   const appointments = useStore((s) => s.appointments);
   const settings = useStore((s) => s.settings);
   const navigate = useNavigate();
-  const items = useMemo(() => buildNotifications(patients, appointments, settings), [patients, appointments, settings]);
+  const items = useMemo(() => buildNotifications(patients, appointments, settings), [patients, appointments, settings, now]);
   return (
     <Modal
       open={open}
       onClose={() => setOpen(false)}
       side
       title="Notificações"
-      subtitle={items.length ? `${items.length} pendência${items.length > 1 ? "s" : ""} para hoje` : "Nada pendente"}
+      subtitle={items.length ? `${items.length} aviso${items.length > 1 ? "s" : ""} para acompanhar` : "Nada pendente"}
       icon={<Bell className="h-5 w-5" />}
       footer={
         <button

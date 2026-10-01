@@ -25,6 +25,7 @@ import { Button, WhatsAppIcon } from "@/components/ui/Button";
 import { Avatar, Card, EmptyState } from "@/components/ui/misc";
 import { APPOINTMENT_STATUS } from "@/lib/constants";
 import { birthdayIn, buildNotifications, lastVisit, patientAlerts, recallDue, treatmentTotals } from "@/lib/derive";
+import { useClock } from "@/lib/useClock";
 import { birthdayLink, confirmLink, openLink, recallLink } from "@/lib/messages";
 import type { Appointment, Patient } from "@/lib/types";
 import { ageLabel, cn, firstName, fmtDate, greeting, money, moneyShort, toDate } from "@/lib/utils";
@@ -128,6 +129,7 @@ function MonthBars({ data }: { data: { label: string; value: number; current: bo
 }
 
 export function Dashboard() {
+  const nowTick = useClock();
   const patients = useStore((s) => s.patients);
   const appointments = useStore((s) => s.appointments);
   const settings = useStore((s) => s.settings);
@@ -169,7 +171,7 @@ export function Dashboard() {
     }).length;
     return { byId, active, today, inTreatment, receivable, monthRevenue, birthdays, recalls, months, newThisMonth, notifications, recentPatients, nextDays };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [patients, appointments, settings, recent]);
+  }, [patients, appointments, settings, recent, nowTick]);
 
   const remaining = data.today.filter((a) => toDate(a.start)! > now && a.status !== "atendido").length;
   const summary = [

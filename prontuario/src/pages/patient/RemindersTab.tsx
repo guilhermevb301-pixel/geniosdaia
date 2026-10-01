@@ -9,24 +9,28 @@ import { REMINDER_TYPES } from "@/lib/constants";
 import type { Patient, Reminder, ReminderType } from "@/lib/types";
 import { cn, fmtDate, nowISO, toDate, uid } from "@/lib/utils";
 import { useStore } from "@/store/store";
+import { reminderAttention } from "@/lib/reminders";
+import { useClock } from "@/lib/useClock";
+import { whatsappLink } from "@/lib/utils";
 
-export function ReminderItem({ r, onToggle, onDelete, subtitle }: { r: Reminder; onToggle: () => void; onDelete: () => void; subtitle?: React.ReactNode }) {
+export function ReminderItem({ r, onToggle, onDelete, subtitle, patient }: { r: Reminder; onToggle: () => void; onDelete: () => void; subtitle?: React.ReactNode; patient?: Patient }) {
+  useClock();
+  const attention = reminderAttention(r);
   const due = toDate(r.dueAt)!;
-  const now = new Date();
-  const overdue = !r.done && due < now;
-  const today = !r.done && due.toDateString() === now.toDateString();
+  const overdue = attention === "Atrasado";
+  const today = attention === "Hoje";
   const type = REMINDER_TYPES[r.type];
   return (
-    <motion.div layout initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: 30 }} className={cn("group flex items-center gap-3 rounded-2xl border bg-surface p-3", overdue ? "border-rose-200 dark:border-rose-900" : "border-line", r.done && "opacity-60")}>
+    <motion.div layout initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: 30 }} className={cn("group flex flex-wrap items-center gap-3 rounded-2xl border p-3", attention ? "border-rose-300 bg-rose-50 dark:bg-rose-950/30" : "border-line bg-surface", r.done && "opacity-60")}>
       <button
         onClick={onToggle}
         className={cn(
-          "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition",
+          "flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border-2 px-3 text-sm font-semibold transition",
           r.done ? "border-jade-500 bg-jade-500 text-white" : "border-line hover:border-jade-500 hover:bg-jade-50 dark:hover:bg-jade-900/40",
         )}
         title={r.done ? "Reabrir" : "Marcar como feito"}
       >
-        {r.done ? <Check className="h-4 w-4" /> : null}
+        <Check className="h-4 w-4" /> {r.done ? "Reabrir" : "Concluir"}
       </button>
       <div className="min-w-0 flex-1">
         <p className={cn("text-sm font-semibold text-ink", r.done && "line-through")}>{r.title}</p>
@@ -34,14 +38,16 @@ export function ReminderItem({ r, onToggle, onDelete, subtitle }: { r: Reminder;
           <span className="font-semibold" style={{ color: type.color }}>
             {type.label}
           </span>
-          <span className={cn(overdue && "font-bold text-rose-600", today && "font-bold text-amber-600")}>
+          <span className={cn(attention && "font-bold text-rose-600")}>
             {overdue ? "Atrasado · " : today ? "Hoje · " : ""}
             {fmtDate(due, "dd/MM/yyyy 'às' HH:mm")}
           </span>
           {subtitle}
         </p>
+        {attention && <p className="mt-2 text-sm font-bold text-rose-700 dark:text-rose-300">⚠ {attention} · entrar em contato com o paciente</p>}
+        {!r.done && patient?.phone && whatsappLink(patient.phone) && <a className="inline-block mt-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm font-semibold text-brand" target="_blank" rel="noreferrer" href={whatsappLink(patient.phone, `Olá, ${patient.name.split(" ")[0]}! Aqui é do consultório do Dr. Mizael. Podemos conversar sobre seu acompanhamento?`) || undefined}>Entrar em contato pelo WhatsApp</a>}
       </div>
-      <button onClick={onDelete} className="rounded-lg p-1.5 text-ink-3 opacity-0 transition hover:bg-rose-50 hover:text-rose-600 group-hover:opacity-100 dark:hover:bg-rose-950/40">
+      <button aria-label="Excluir lembrete" onClick={onDelete} className="rounded-lg p-2 text-ink-2 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40">
         <Trash2 className="h-4 w-4" />
       </button>
     </motion.div>
@@ -59,7 +65,9 @@ export function RemindersTab({ patient }: { patient: Patient }) {
   const add = (r?: Partial<Reminder>) => {
     const t = r?.title ?? title.trim();
     if (!t) return toast.error("Escreva o lembrete");
-    const dueAt = r?.dueAt ?? new Date(`${date}T${time}:00`).toISOString();
+    const candidate = r?.dueAt ? new Date(r.dueAt) : new Date(`${date}T${time}:00`);
+    if (!Number.isFinite(candidate.getTime())) return toast.error("Informe uma data e hora válidas.");
+    const dueAt = candidate.toISOString();
     updatePatient(patient.id, (p) => ({
       reminders: [...p.reminders, { id: uid("rm_"), title: t, type: r?.type ?? type, dueAt, done: false, createdAt: nowISO() }],
     }));
@@ -99,7 +107,7 @@ export function RemindersTab({ patient }: { patient: Patient }) {
             ))}
           </div>
           <Field label="O que lembrar?">
-            <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} placeholder="Ex.: Tomar antibiótico 1h antes do procedimento" />
+            <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} placeholder="Ex.: Ligar para confirmar o retorno" />
           </Field>
           <div className="grid grid-cols-3 gap-2">
             <Field label="Tipo" className="col-span-3 sm:col-span-1">
@@ -121,7 +129,7 @@ export function RemindersTab({ patient }: { patient: Patient }) {
           <Button className="w-full" onClick={() => add()}>
             Criar lembrete
           </Button>
-          <p className="text-xs text-ink-3">Os lembretes aparecem no sino de notificações no dia marcado e na tela Início.</p>
+          <p className="text-sm text-ink-2">O aviso fica vermelho 3 dias antes, no dia e depois do vencimento, até você marcar como feito. Abra o sistema para acompanhar; o WhatsApp é enviado por você.</p>
         </div>
       </Card>
       <div className="space-y-6">
@@ -135,7 +143,7 @@ export function RemindersTab({ patient }: { patient: Patient }) {
             <div className="space-y-2">
               <AnimatePresence initial={false}>
                 {pending.map((r) => (
-                  <ReminderItem key={r.id} r={r} onToggle={() => toggle(r.id)} onDelete={() => remove(r.id)} />
+                  <ReminderItem key={r.id} r={r} patient={patient} onToggle={() => toggle(r.id)} onDelete={() => remove(r.id)} />
                 ))}
               </AnimatePresence>
             </div>

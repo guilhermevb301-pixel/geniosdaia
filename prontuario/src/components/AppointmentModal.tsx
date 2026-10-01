@@ -70,8 +70,11 @@ export function AppointmentModal() {
 
   const startDate = useMemo(() => {
     if (!date || !time) return null;
+    const day = toDate(date);
+    if (!day) return null;
     const [h, m] = time.split(":").map(Number);
-    return setMinutes(setHours(toDate(date)!, h), m);
+    if (!Number.isInteger(h) || !Number.isInteger(m) || h < 0 || h > 23 || m < 0 || m > 59) return null;
+    return setMinutes(setHours(day, h), m);
   }, [date, time]);
 
   const conflict = useMemo(() => {

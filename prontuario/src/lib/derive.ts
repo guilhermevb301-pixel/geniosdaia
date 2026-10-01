@@ -1,7 +1,9 @@
-import { addDays, addMonths, differenceInCalendarDays, endOfDay, isSameDay, startOfDay } from "date-fns";
+import { addDays, addMonths, differenceInCalendarDays, isSameDay, startOfDay } from "date-fns";
 import { ANAMNESIS_CONDITIONS } from "./constants";
 import type { Appointment, Patient, Settings } from "./types";
 import { toDate } from "./utils";
+import { reminderAttention } from "./reminders";
+import { installmentBalance } from "./finance";
 
 export function patientAlerts(p: Patient): string[] {
   const out: string[] = [];
@@ -116,7 +118,6 @@ export interface AppNotification {
 
 export function buildNotifications(patients: Patient[], appts: Appointment[], settings: Settings): AppNotification[] {
   const now = new Date();
-  const eod = endOfDay(now);
   const out: AppNotification[] = [];
   const byId = new Map(patients.map((p) => [p.id, p]));
 
@@ -125,19 +126,23 @@ export function buildNotifications(patients: Patient[], appts: Appointment[], se
     for (const r of p.reminders) {
       if (r.done) continue;
       const d = toDate(r.dueAt);
-      if (!d || d > eod) continue;
-      const overdue = d < startOfDay(now);
+      if (!d || !reminderAttention(r, now)) continue;
       out.push({
         id: `rem-${r.id}`,
         kind: "lembrete",
         title: r.title,
-        subtitle: `${p.name}${overdue ? " · atrasado" : ""}`,
+        subtitle: `${p.name} · ${reminderAttention(r, now)} · entrar em contato`,
         date: d,
         patientId: p.id,
         reminderId: r.id,
-        severity: overdue ? "danger" : "warn",
+        severity: "danger",
         href: `/pacientes/${p.id}?aba=lembretes`,
       });
+    }
+    for (const item of p.paymentSchedule ?? []) {
+      const balance = installmentBalance(item, p.payments);
+      const attention = reminderAttention({ done: balance <= 0, dueAt: item.dueDate }, now);
+      if (attention) out.push({ id: `installment-${item.id}`, kind: "alerta", title: `${item.label} · ${attention}`, subtitle: `${p.name} · R$ ${balance.toFixed(2).replace(".", ",")} a receber`, severity: "danger", patientId: p.id, date: toDate(item.dueDate)!, href: `/pacientes/${p.id}?aba=financeiro` });
     }
     if (isBirthdayToday(p)) {
       out.push({

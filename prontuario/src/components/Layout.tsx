@@ -35,6 +35,9 @@ import { confirmDialog, toast } from "./ui/feedback";
 import { Logo } from "./Logo";
 import { Button } from "./ui/Button";
 import { Menu } from "./ui/misc";
+import { HelpCenter } from "./HelpCenter";
+import { ContactAlerts } from "./ContactAlerts";
+import { useClock } from "@/lib/useClock";
 
 const NAV = [
   { to: "/", label: "Início", icon: LayoutDashboard, end: true },
@@ -46,10 +49,11 @@ const NAV = [
 ];
 
 function useNotificationCount() {
+  const now = useClock();
   const patients = useStore((s) => s.patients);
   const appointments = useStore((s) => s.appointments);
   const settings = useStore((s) => s.settings);
-  return useMemo(() => buildNotifications(patients, appointments, settings).length, [patients, appointments, settings]);
+  return useMemo(() => buildNotifications(patients, appointments, settings).length, [patients, appointments, settings, now]);
 }
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
@@ -204,6 +208,7 @@ function TopBar() {
         </button>
         <div className="flex-1 max-sm:hidden" />
         <SyncPill />
+        <HelpCenter />
         <button
           onClick={() => setPrivacy(!privacy)}
           title={privacy ? "Mostrar dados dos pacientes" : "Modo discreto: desfoca nomes e telefones"}
@@ -299,6 +304,7 @@ export function Layout({ children }: { children: ReactNode }) {
           </div>
         )}
         <TopBar />
+        <ContactAlerts />
         <main className="flex-1 pb-24 lg:pb-10">
           <motion.div
             key={location.pathname}

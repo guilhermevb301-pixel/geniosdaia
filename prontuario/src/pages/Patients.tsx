@@ -25,6 +25,7 @@ import type { Appointment, Patient, Stage } from "@/lib/types";
 import { ageLabel, cn, digits, fmtDate, formatPhone, money, normalize, toDate, whatsappLink } from "@/lib/utils";
 import { useStore } from "@/store/store";
 import { useUI } from "@/store/ui";
+import { PatientContactAlert } from "@/components/ContactAlerts";
 
 type SortKey = "nome" | "nome_desc" | "ultima" | "proxima" | "cadastro" | "saldo" | "idade";
 type View = "cards" | "lista" | "quadro";
@@ -109,6 +110,7 @@ function PatientCard({ r }: { r: Row }) {
           <span className="line-clamp-2">{r.alerts.join(" · ")}</span>
         </p>
       )}
+      <PatientContactAlert patient={r.p} />
       <div className="mt-auto grid grid-cols-2 gap-2 pt-4 text-xs">
         <div className="rounded-xl bg-surface-2 px-3 py-2">
           <p className="text-ink-3">Última visita</p>

@@ -10,7 +10,7 @@
     --line: 223 234 228;
     --ink: 12 31 24;
     --ink-2: 70 92 83;
-    --ink-3: 125 145 137;
+    --ink-3: 87 112 101;
     --brand: 23 133 89;
     --brand-soft: 214 245 227;
     --brand-ink: 17 69 52;
@@ -70,7 +70,7 @@
   }
 
   .input {
-    @apply h-10 w-full rounded-xl border border-line bg-surface px-3 text-sm text-ink placeholder:text-ink-3
+    @apply h-11 w-full rounded-xl border border-line bg-surface px-3 text-base text-ink placeholder:text-ink-3
       outline-none transition focus:border-jade-400 focus:shadow-glow disabled:opacity-60;
   }
 

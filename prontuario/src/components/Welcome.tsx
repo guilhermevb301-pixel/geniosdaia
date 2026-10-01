@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { BellRing, CalendarDays, FileText, Images, Loader2, Sparkles, Stethoscope, Users } from "lucide-react";
+import { BellRing, CalendarDays, FileText, Images, Loader2, Stethoscope, Users } from "lucide-react";
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { useStore } from "@/store/store";
@@ -20,7 +20,7 @@ export function Welcome() {
   const ready = useStore((s) => s.ready);
   const mode = useStore((s) => s.mode);
   const startWith = useStore((s) => s.startWith);
-  const [busy, setBusy] = useState<null | "demo" | "empty">(null);
+  const [busy, setBusy] = useState<null | "empty">(null);
   const open = ready && mode === "cloud" && !onboarded;
 
   return createPortal(
@@ -64,10 +64,9 @@ export function Welcome() {
               ))}
             </div>
             <div className="flex flex-col gap-3 border-t border-line bg-surface-2/50 p-6 sm:flex-row sm:items-center sm:justify-between sm:px-8">
-              <p className="text-xs text-ink-3">Os pacientes de exemplo são fictícios e podem ser removidos depois em Configurações.</p>
+              <p className="text-sm text-ink-2">Sua conta começa sem pacientes fictícios. Depois, confira seus dados em Configurações. O botão Ajuda acompanha você em todas as telas.</p>
               <div className="flex gap-2">
                 <Button
-                  variant="secondary"
                   disabled={!!busy}
                   onClick={async () => {
                     setBusy("empty");
@@ -75,17 +74,7 @@ export function Welcome() {
                   }}
                   icon={busy === "empty" ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
                 >
-                  Começar do zero
-                </Button>
-                <Button
-                  disabled={!!busy}
-                  onClick={async () => {
-                    setBusy("demo");
-                    await startWith(true);
-                  }}
-                  icon={busy === "demo" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                >
-                  Explorar com exemplos
+                  Começar meu consultório
                 </Button>
               </div>
             </div>

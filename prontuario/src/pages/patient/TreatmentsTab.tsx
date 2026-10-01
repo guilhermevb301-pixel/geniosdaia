@@ -23,6 +23,7 @@ export function TreatmentsTab({ patient }: { patient: Patient }) {
     if (!proc.trim()) return toast.error("Informe o procedimento");
     const def = procedures.find((p) => p.name === proc);
     const value = price ? parseMoney(price) : def?.price ?? 0;
+    if (!Number.isFinite(value) || value < 0) return toast.error("O valor do procedimento não pode ser negativo.");
     updatePatient(patient.id, (p) => ({
       treatments: [...p.treatments, { id: uid("tr_"), procedure: proc.trim(), teeth: teeth.trim() || undefined, price: value, status: "planejado", createdAt: nowISO() }],
     }));
@@ -31,8 +32,10 @@ export function TreatmentsTab({ patient }: { patient: Patient }) {
     setPrice("");
   };
 
-  const setItem = (id: string, patch: Partial<TreatmentItem>) =>
+  const setItem = (id: string, patch: Partial<TreatmentItem>) => {
+    if (patch.price !== undefined && (!Number.isFinite(patch.price) || patch.price < 0)) return toast.error("Informe um valor válido, maior ou igual a zero.");
     updatePatient(patient.id, (p) => ({ treatments: p.treatments.map((t) => (t.id === id ? { ...t, ...patch } : t)) }));
+  };
 
   const setStatus = (t: TreatmentItem, status: TreatmentStatus) => {
     if (status === "concluido" && t.status !== "concluido") {

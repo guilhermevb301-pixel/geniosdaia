@@ -8,8 +8,10 @@ import { treatmentTotals } from "@/lib/derive";
 import { openLink } from "@/lib/messages";
 import { printReceipt } from "@/lib/print";
 import type { Patient, PaymentMethod } from "@/lib/types";
-import { firstName, fmtDate, money, parseMoney, todayKey, uid, whatsappLink } from "@/lib/utils";
+import { firstName, fmtDate, money, parseMoney, todayKey, uid, whatsappLink, toDate } from "@/lib/utils";
 import { useStore } from "@/store/store";
+import { PatientBilling } from "@/components/PatientBilling";
+import { installmentBalance } from "@/lib/finance";
 
 export function FinanceTab({ patient }: { patient: Patient }) {
   const updatePatient = useStore((s) => s.updatePatient);
@@ -19,16 +21,20 @@ export function FinanceTab({ patient }: { patient: Patient }) {
   const [method, setMethod] = useState<PaymentMethod>("pix");
   const [date, setDate] = useState(todayKey());
   const [desc, setDesc] = useState("");
+  const [installmentId, setInstallmentId] = useState("");
 
   const add = () => {
-    const value = parseMoney(amount);
-    if (!value) return toast.error("Informe o valor recebido");
+    const value = Math.round(parseMoney(amount) * 100) / 100;
+    if (!Number.isFinite(value) || value <= 0 || !toDate(date)) return toast.error("Informe um valor positivo e a data do recebimento.");
+    const installment = patient.paymentSchedule?.find(i => i.id === installmentId);
+    if (installment && value > installmentBalance(installment, patient.payments) + 0.001) return toast.error("O valor ultrapassa o saldo desta parcela.");
     updatePatient(patient.id, (p) => ({
-      payments: [...p.payments, { id: uid("pg_"), amount: value, method, date, description: desc.trim() || undefined }],
+      payments: [...p.payments, { id: uid("pg_"), amount: value, method, date, description: desc.trim() || undefined, installmentId: installmentId || undefined }],
     }));
     toast.success("Pagamento registrado", money(value));
     setAmount("");
     setDesc("");
+    setInstallmentId("");
   };
 
   const payments = [...patient.payments].sort((a, b) => b.date.localeCompare(a.date));
@@ -68,9 +74,15 @@ export function FinanceTab({ patient }: { patient: Patient }) {
         </div>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[380px_1fr]">
-        <Card title="Registrar pagamento" icon={<Banknote className="h-5 w-5" />} className="xl:self-start">
+      <PatientBilling patient={patient} onReceive={item => {
+        setInstallmentId(item.id); setAmount(installmentBalance(item, patient.payments).toFixed(2).replace(".", ",")); setDesc(item.label); setDate(todayKey());
+        document.getElementById("recebimento")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }} />
+      <div id="recebimento" className="grid gap-6 xl:grid-cols-[380px_1fr] scroll-mt-24">
+        <Card title="3. Registrar dinheiro recebido" icon={<Banknote className="h-5 w-5" />} className="xl:self-start">
           <div className="space-y-4 p-5 pt-3">
+            <p className="text-sm text-ink-2">Preencha somente depois que o pagamento acontecer. Agendar uma parcela não registra recebimento.</p>
+            {!!patient.paymentSchedule?.length && <Field label="Vincular a uma parcela"><Select value={installmentId} onChange={e => { const item = patient.paymentSchedule?.find(i => i.id === e.target.value); setInstallmentId(e.target.value); if (item) { setAmount(installmentBalance(item, patient.payments).toFixed(2).replace(".", ",")); setDesc(item.label); } }}><option value="">Recebimento avulso (sem parcela)</option>{patient.paymentSchedule.filter(i => installmentBalance(i, patient.payments) > 0).map(i => <option key={i.id} value={i.id}>{i.label} · {fmtDate(i.dueDate)}</option>)}</Select></Field>}
             <div className="grid grid-cols-2 gap-3">
               <Field label="Valor (R$)">
                 <input className="input text-lg font-bold" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" />
@@ -91,7 +103,7 @@ export function FinanceTab({ patient }: { patient: Patient }) {
             <Field label="Referente a">
               <input className="input" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Ex.: Entrada do implante" />
             </Field>
-            {totals.balance > 0 && (
+            {totals.balance > 0 && !installmentId && (
               <button className="text-xs font-semibold text-brand hover:underline" onClick={() => setAmount(totals.balance.toFixed(2).replace(".", ","))}>
                 Preencher com o saldo total ({money(totals.balance)})
               </button>
@@ -122,12 +134,12 @@ export function FinanceTab({ patient }: { patient: Patient }) {
                     <Button size="sm" variant="secondary" icon={<Printer className="h-3.5 w-3.5" />} onClick={() => printReceipt(patient, settings, p)}>
                       Recibo
                     </Button>
-                    <button
+                    <button aria-label="Excluir pagamento"
                       onClick={async () => {
                         if (await confirmDialog({ title: "Excluir este pagamento?", description: money(p.amount), danger: true, confirmLabel: "Excluir" }))
                           updatePatient(patient.id, (x) => ({ payments: x.payments.filter((y) => y.id !== p.id) }));
                       }}
-                      className="rounded-lg p-1.5 text-ink-3 opacity-0 transition hover:bg-rose-50 hover:text-rose-600 group-hover:opacity-100 dark:hover:bg-rose-950/40"
+                      className="rounded-lg p-2 text-ink-2 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>

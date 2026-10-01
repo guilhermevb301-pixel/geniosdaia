@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { confirmDialog, toast } from "@/components/ui/feedback";
 import { Card, EmptyState, Field } from "@/components/ui/misc";
 import type { Evolution, Patient } from "@/lib/types";
-import { fmtDate, normalize, nowISO, todayKey, uid } from "@/lib/utils";
+import { fmtDate, normalize, nowISO, todayKey, uid, toDate } from "@/lib/utils";
 import { useStore } from "@/store/store";
 
 const TEMPLATES: { label: string; title: string; text: string }[] = [
@@ -44,6 +44,7 @@ export function EvolutionTab({ patient }: { patient: Patient }) {
   };
 
   const save = () => {
+    if (!toDate(date)) return toast.error("Informe a data do atendimento.");
     if (!text.trim() && !title.trim()) return toast.error("Escreva o que foi feito na consulta");
     const entry: Evolution = {
       id: editing ?? uid("ev_"),
