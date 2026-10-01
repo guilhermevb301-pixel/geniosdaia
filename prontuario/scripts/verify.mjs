@@ -4,8 +4,8 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 // Bundle the actual TypeScript helpers; no browser, real patient, or cloud writes.
-const result = await build({ stdin: { contents: 'export * from "./src/lib/finance"; export * from "./src/lib/reminders"; export { treatmentTotals, financialSituation, automaticPatientStage, patientAgeGroup, applyClinicalTreatmentStatus, toggleToothSelection, treatmentPriceTotal, sameTreatmentScope } from "./src/lib/derive"; export { parseMoney } from "./src/lib/utils"; export { DEFAULT_SETTINGS, STAGES } from "./src/lib/constants";', resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm" });
-const { splitInstallments, buildPaymentAgreement, installmentBalance, buildPaymentRecord, reminderAttention, installmentAttention, treatmentTotals, financialSituation, automaticPatientStage, patientAgeGroup, applyClinicalTreatmentStatus, toggleToothSelection, treatmentPriceTotal, sameTreatmentScope, parseMoney, DEFAULT_SETTINGS, STAGES } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
+const result = await build({ stdin: { contents: 'export * from "./src/lib/finance"; export * from "./src/lib/reminders"; export * from "./src/lib/derive"; export { parseMoney } from "./src/lib/utils"; export { DEFAULT_SETTINGS, STAGES } from "./src/lib/constants";', resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm" });
+const { splitInstallments, buildPaymentAgreement, installmentBalance, buildPaymentRecord, reminderAttention, installmentAttention, treatmentTotals, financialSituation, automaticPatientStage, patientAgeGroup, applyClinicalTreatmentStatus, toggleToothSelection, treatmentPriceTotal, sameTreatmentScope, patientCareSummary, patientContactAction, normalizePatientsView, parseMoney, DEFAULT_SETTINGS, STAGES } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
 let checks = 0;
 function check(name, fn) { fn(); checks++; console.log(`✓ ${name}`); }
 
@@ -16,6 +16,43 @@ check("O login apresenta o retrato e a identidade profissional do Dr. Mizael", (
   const html = renderToStaticMarkup(createElement(DoctorLoginIdentity));
   assert.match(html, /<img[^>]+src="\/dr-mizael\.png"[^>]+alt="Dr\. Mizael Magalhães Cardoso"/);
   assert.match(html, /Cirurgia e Traumatologia Bucomaxilofacial/);
+});
+
+check("A lista antiga de cartões migra para o quadro sem deixar uma visualização inválida", () => {
+  assert.equal(normalizePatientsView?.("cards"), "quadro");
+  assert.equal(normalizePatientsView?.("lista"), "lista");
+  assert.equal(normalizePatientsView?.("quadro"), "quadro");
+  assert.equal(normalizePatientsView?.("desconhecida"), "quadro");
+});
+
+check("O resumo separa o tratamento ativo do motivo real do acompanhamento", () => {
+  const patient = {
+    treatments: [
+      { id: "feito", procedure: "Implante dentário", teeth: "46", status: "concluido", createdAt: "2026-08-01", completedAt: "2026-09-01" },
+      { id: "ativo", procedure: "Extração de terceiro molar", teeth: "38", status: "andamento", createdAt: "2026-09-20" },
+    ],
+    reminders: [{ id: "ret", title: "Revisão do implante 46", dueAt: "2026-10-03", type: "retorno", done: false, createdAt: "2026-09-01" }],
+  };
+  assert.deepEqual(patientCareSummary?.(patient), {
+    active: "Extração de terceiro molar · dente 38",
+    followUp: "Revisão do implante 46",
+  });
+});
+
+check("Sem retorno explícito, o acompanhamento informa o último procedimento concluído", () => {
+  const patient = {
+    treatments: [{ id: "feito", procedure: "Cirurgia de odontoma", status: "concluido", createdAt: "2026-08-01", completedAt: "2026-09-10" }],
+    reminders: [],
+  };
+  assert.deepEqual(patientCareSummary?.(patient), { active: null, followUp: "Após Cirurgia de odontoma" });
+});
+
+check("O contato prioriza lembrete urgente, depois cobrança e depois consulta", () => {
+  const now = new Date("2026-10-01T12:00:00");
+  const base = { name: "Ana Beatriz", treatments: [], reminders: [], paymentSchedule: [], payments: [] };
+  assert.deepEqual(patientContactAction?.({ ...base, reminders: [{ title: "Enviar laudo", dueAt: "2026-10-01", done: false }] }, null, now), { label: "Resolver lembrete", reason: "o lembrete: Enviar laudo" });
+  assert.deepEqual(patientContactAction?.({ ...base, paymentSchedule: [{ id: "p1", label: "Parcela 1/2", amount: 500, dueDate: "2026-10-01" }] }, null, now), { label: "Cobrar pagamento", reason: "o pagamento da Parcela 1/2, que vence hoje" });
+  assert.deepEqual(patientContactAction?.(base, { start: "2026-10-02T09:00:00", procedure: "Retorno" }, now), { label: "Confirmar consulta", reason: "a consulta de Retorno em 02/10 às 09:00" });
 });
 
 check("Perfil especializado sem preços inventados e etapas compatíveis com dados anteriores", () => {

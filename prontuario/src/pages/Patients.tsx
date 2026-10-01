@@ -6,7 +6,6 @@ import {
   Cake,
   Columns3,
   Filter,
-  LayoutGrid,
   List,
   Phone,
   Search,
@@ -18,17 +17,17 @@ import {
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button, WhatsAppIcon } from "@/components/ui/Button";
-import { Avatar, EmptyState, Menu, ProgressRing, Segmented } from "@/components/ui/misc";
+import { Avatar, EmptyState, Menu, Segmented } from "@/components/ui/misc";
 import { STAGES, stageById } from "@/lib/constants";
-import { birthdayIn, financialSituation, lastVisit, nextAppointment, patientAgeGroup, patientAlerts, recallDue, treatmentTotals } from "@/lib/derive";
+import { birthdayIn, financialSituation, lastVisit, nextAppointment, normalizePatientsView, patientAgeGroup, patientAlerts, patientCareSummary, patientContactAction, recallDue, treatmentTotals, type PatientsView } from "@/lib/derive";
+import { reminderAttention } from "@/lib/reminders";
 import type { Appointment, Patient, Stage } from "@/lib/types";
 import { ageLabel, cn, digits, fmtDate, formatPhone, money, normalize, toDate, whatsappLink } from "@/lib/utils";
 import { useStore } from "@/store/store";
 import { useUI } from "@/store/ui";
-import { PatientContactAlert } from "@/components/ContactAlerts";
 
 type SortKey = "nome" | "nome_desc" | "ultima" | "proxima" | "cadastro" | "saldo" | "idade";
-type View = "cards" | "lista" | "quadro";
+type View = PatientsView;
 
 const SORTS: { id: SortKey; label: string }[] = [
   { id: "nome", label: "Nome (A–Z)" },
@@ -73,70 +72,76 @@ function lsSet(key: string, v: string) {
   }
 }
 
-function PatientCard({ r }: { r: Row }) {
-  const toggleFavorite = useStore((s) => s.toggleFavorite);
-  const stage = stageById(r.p.stage);
-  const wa = whatsappLink(r.p.phone);
-  const finance = financialSituation(r.p);
+function urgentReminder(patient: Patient) {
+  return patient.reminders
+    .filter((item) => reminderAttention(item))
+    .sort((a, b) => a.dueAt.localeCompare(b.dueAt))[0] ?? null;
+}
+
+function CareSummary({ patient }: { patient: Patient }) {
+  const care = patientCareSummary(patient);
+  if (!care.active && !care.followUp) {
+    return <p className="text-xs text-ink-3">{patient.stage === "manutencao" ? "Aguardando definir o próximo retorno" : "Tratamento ainda não definido"}</p>;
+  }
   return (
-    <motion.div layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="card group relative flex flex-col p-4 transition hover:-translate-y-0.5 hover:border-jade-300 hover:shadow-lift">
-      <button
-        onClick={() => toggleFavorite(r.p.id)}
-        className={cn("absolute right-3 top-3 rounded-lg p-1.5 transition", r.p.favorite ? "text-amber-400" : "text-ink-3 opacity-0 hover:text-amber-400 group-hover:opacity-100")}
-        title={r.p.favorite ? "Remover dos favoritos" : "Favoritar"}
-      >
-        <Star className="h-4 w-4" fill={r.p.favorite ? "currentColor" : "none"} />
-      </button>
-      <Link to={`/pacientes/${r.p.id}`} className="flex items-center gap-3 pr-6">
-        <Avatar patient={r.p} size={48} />
-        <div className="min-w-0">
-          <p className="truncate font-bold text-ink" data-sensitive>
-            {r.p.name}
-          </p>
-          <p className="text-xs text-ink-3">{[ageLabel(r.p.birthDate), r.p.insurance].filter(Boolean).join(" · ") || "—"}</p>
-        </div>
-      </Link>
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        <span className="chip" style={{ background: `${stage.color}18`, color: stage.color }}>
-          <span className="h-1.5 w-1.5 rounded-full" style={{ background: stage.color }} />
-          {stage.label}
-        </span>
-        {patientAgeGroup(r.p) && <span className="chip bg-surface-2 text-ink-2">{patientAgeGroup(r.p)}</span>}
-      </div>
-      {r.alerts.length > 0 && (
-        <p className="mt-3 flex items-start gap-1.5 rounded-lg bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">
-          <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
-          <span className="line-clamp-2">{r.alerts.join(" · ")}</span>
-        </p>
-      )}
-      <PatientContactAlert patient={r.p} />
-      <div className="mt-auto grid grid-cols-2 gap-2 pt-4 text-xs">
-        <div className="rounded-xl bg-surface-2 px-3 py-2">
-          <p className="text-ink-3">Última visita</p>
-          <p className="font-bold text-ink">{r.last ? fmtDate(r.last, "dd/MM/yy") : "—"}</p>
-        </div>
-        <div className="rounded-xl bg-surface-2 px-3 py-2">
-          <p className="text-ink-3">Próxima</p>
-          <p className={cn("font-bold", r.next ? "text-brand" : "text-ink")}>{r.next ? fmtDate(r.next.start, "dd/MM HH:mm") : "—"}</p>
-        </div>
-      </div>
-      <div className="mt-3 flex items-center gap-2">
-        {r.p.treatments.length > 0 && (
-          <div className="flex items-center gap-2 text-xs text-ink-3">
-            <ProgressRing value={r.progress} size={30} stroke={4} />
-            <span>{Math.round(r.progress * 100)}% do plano</span>
-          </div>
-        )}
-        <div className="ml-auto flex gap-1">
-          <span className={cn("chip", finance.id === "paid" ? "bg-jade-100 text-jade-800" : finance.id === "receivable" || finance.id === "mixed" ? "bg-amber-100 text-amber-800" : finance.id === "proposal" ? "bg-sky-100 text-sky-800" : "bg-surface-2 text-ink-3")}>{finance.label}{finance.amount > 0 ? ` · ${money(finance.amount)}` : ""}{finance.id === "mixed" ? ` + ${money(finance.proposal)} ainda não aceitos` : ""}</span>
-          {wa && (
-            <a href={wa} target="_blank" rel="noreferrer" className="rounded-lg p-1.5 text-[#25D366] transition hover:bg-[#25D366]/10" title="WhatsApp">
-              <WhatsAppIcon className="h-4 w-4" />
-            </a>
-          )}
-        </div>
-      </div>
-    </motion.div>
+    <div className="space-y-2 text-xs">
+      {care.active && <p><span className="font-bold text-ink-3">Tratando agora</span><span className="mt-0.5 block break-words font-semibold text-ink">{care.active}</span></p>}
+      {care.followUp && <p><span className="font-bold text-violet-600">Acompanhamento</span><span className="mt-0.5 block break-words text-ink-2">{care.followUp}</span></p>}
+    </div>
+  );
+}
+
+function PlanProgress({ row }: { row: Row }) {
+  if (!row.p.treatments.length) return <span className="text-xs text-ink-3">Sem plano</span>;
+  const done = row.p.treatments.filter((item) => item.status === "concluido").length;
+  return (
+    <div className="min-w-24">
+      <div className="flex items-center justify-between gap-2 text-xs"><b className="text-ink">{Math.round(row.progress * 100)}%</b><span className="text-ink-3">{done} de {row.p.treatments.length}</span></div>
+      <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-line"><div className="h-full rounded-full bg-jade-500" style={{ width: `${row.progress * 100}%` }} /></div>
+    </div>
+  );
+}
+
+function FinanceSummary({ patient }: { patient: Patient }) {
+  const finance = financialSituation(patient);
+  const mainLabel = finance.id === "mixed" ? "A receber" : finance.id === "proposal" ? "Proposta ainda não aceita" : finance.label;
+  return (
+    <div className="text-xs">
+      <p className={cn("font-bold", finance.id === "paid" ? "text-jade-600" : finance.id === "receivable" || finance.id === "mixed" ? "text-amber-700" : finance.id === "proposal" ? "text-sky-700" : "text-ink-3")}>{mainLabel}{finance.amount > 0 ? ` · ${money(finance.amount)}` : ""}</p>
+      {finance.id === "mixed" && <p className="mt-0.5 text-ink-3">Proposta ainda não aceita · {money(finance.proposal)}</p>}
+    </div>
+  );
+}
+
+function ContactButton({ row, compact = false }: { row: Row; compact?: boolean }) {
+  const settings = useStore((s) => s.settings);
+  const href = whatsappLink(row.p.phone);
+  if (!href) return <span className="text-xs text-ink-3">Sem telefone</span>;
+  const action = patientContactAction(row.p, row.next);
+  const firstName = row.p.name.split(" ")[0];
+  const message = `Olá, ${firstName}! Aqui é do consultório do ${settings.title} ${settings.doctorName}. Entramos em contato sobre ${action.reason}. Podemos conversar?`;
+  return (
+    <a
+      href={whatsappLink(row.p.phone, message) || href}
+      target="_blank"
+      rel="noreferrer"
+      onClick={(event) => event.stopPropagation()}
+      className={cn("inline-flex min-h-9 items-center justify-center gap-1.5 rounded-xl border border-[#25D366]/30 bg-[#25D366]/10 px-3 py-2 text-xs font-bold text-[#168a45] transition hover:-translate-y-0.5 hover:bg-[#25D366]/15", compact && "w-full")}
+      title={`WhatsApp: ${action.reason}`}
+    >
+      <WhatsAppIcon className="h-4 w-4" /> {action.label}
+    </a>
+  );
+}
+
+function PatientDetails({ row }: { row: Row }) {
+  const reminder = urgentReminder(row.p);
+  return (
+    <>
+      <CareSummary patient={row.p} />
+      {row.alerts.length > 0 && <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-rose-50 px-2 py-1.5 text-xs font-semibold text-rose-700 dark:bg-rose-950/40 dark:text-rose-300"><AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" /><span className="line-clamp-2">{row.alerts.join(" · ")}</span></p>}
+      {reminder && <Link onClick={(event) => event.stopPropagation()} to={`/pacientes/${row.p.id}?aba=lembretes`} className="mt-2 block rounded-lg border border-rose-100 bg-rose-50/60 px-2 py-1.5 text-xs hover:border-rose-300 dark:border-rose-900 dark:bg-rose-950/30"><b className="text-rose-600">{reminderAttention(reminder)}</b><span className="ml-1 text-ink-2">{reminder.title}</span></Link>}
+    </>
   );
 }
 
@@ -146,63 +151,41 @@ function ListView({ rows }: { rows: Row[] }) {
   return (
     <div className="card overflow-hidden">
       <div className="scrollbar-thin overflow-x-auto">
-        <table className="w-full min-w-[820px] text-sm">
-          <thead>
-            <tr className="border-b border-line bg-surface-2/70 text-left text-[11px] font-bold uppercase tracking-wider text-ink-3">
-              <th className="w-10 px-4 py-3" />
-              <th className="px-2 py-3">Paciente</th>
-              <th className="px-3 py-3">Telefone</th>
-              <th className="px-3 py-3">Etapa</th>
-              <th className="px-3 py-3">Última visita</th>
-              <th className="px-3 py-3">Próxima</th>
-              <th className="px-3 py-3 text-right">Situação financeira</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => {
-              const stage = stageById(r.p.stage);
-              const finance = financialSituation(r.p);
-              return (
-                <tr key={r.p.id} onClick={() => navigate(`/pacientes/${r.p.id}`)} className="cursor-pointer border-b border-line/60 transition last:border-0 hover:bg-brand-soft/30">
-                  <td className="px-4 py-2.5">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleFavorite(r.p.id);
-                      }}
-                      className={r.p.favorite ? "text-amber-400" : "text-line hover:text-amber-400"}
-                    >
-                      <Star className="h-4 w-4" fill={r.p.favorite ? "currentColor" : "none"} />
-                    </button>
-                  </td>
-                  <td className="px-2 py-2.5">
-                    <div className="flex items-center gap-3">
-                      <Avatar patient={r.p} size={34} />
-                      <div className="min-w-0">
-                        <p className="flex items-center gap-1.5 truncate font-semibold text-ink" data-sensitive>
-                          {r.p.name}
-                          {r.alerts.length > 0 && <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-rose-500" />}
-                        </p>
-                        <p className="text-xs text-ink-3">{ageLabel(r.p.birthDate) || "—"}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-3 py-2.5 text-ink-2" data-sensitive>
-                    {formatPhone(r.p.phone) || "—"}
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <span className="chip" style={{ background: `${stage.color}18`, color: stage.color }}>
-                      {stage.label}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2.5 text-ink-2">{r.last ? fmtDate(r.last) : "—"}</td>
-                  <td className="px-3 py-2.5 font-semibold text-brand">{r.next ? fmtDate(r.next.start, "dd/MM HH:mm") : <span className="font-normal text-ink-3">—</span>}</td>
-                  <td className={cn("px-3 py-2.5 text-right font-semibold", finance.id === "receivable" || finance.id === "mixed" ? "text-amber-600" : finance.id === "paid" ? "text-jade-600" : "text-ink-3")}>{finance.label}{finance.amount > 0 ? ` · ${money(finance.amount)}` : ""}{finance.id === "mixed" ? ` + ${money(finance.proposal)} ainda não aceitos` : ""}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <div className="min-w-[1240px]" role="table" aria-label="Lista operacional de pacientes">
+          <div role="row" className="grid grid-cols-[240px_minmax(280px,1fr)_170px_120px_190px_190px] gap-4 border-b border-line bg-surface-2/70 px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-ink-3">
+            <span role="columnheader">Paciente</span><span role="columnheader">Tratamento e acompanhamento</span><span role="columnheader">Consultas</span><span role="columnheader">Plano</span><span role="columnheader">Financeiro</span><span role="columnheader">Próxima ação</span>
+          </div>
+          {rows.map((r) => {
+            const stage = stageById(r.p.stage);
+            return (
+              <div
+                key={r.p.id}
+                role="row"
+                tabIndex={0}
+                aria-label={`Abrir prontuário de ${r.p.name}`}
+                onClick={() => navigate(`/pacientes/${r.p.id}`)}
+                onKeyDown={(event) => {
+                  if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
+                    event.preventDefault();
+                    navigate(`/pacientes/${r.p.id}`);
+                  }
+                }}
+                className="grid cursor-pointer grid-cols-[240px_minmax(280px,1fr)_170px_120px_190px_190px] items-center gap-4 border-b border-line/60 px-4 py-4 transition last:border-0 hover:bg-brand-soft/30 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-jade-500"
+              >
+                <div role="cell" className="flex min-w-0 items-start gap-3">
+                  <button onClick={(e) => { e.stopPropagation(); toggleFavorite(r.p.id); }} className={cn("mt-2 shrink-0", r.p.favorite ? "text-amber-400" : "text-line hover:text-amber-400")} title="Favoritar"><Star className="h-4 w-4" fill={r.p.favorite ? "currentColor" : "none"} /></button>
+                  <Avatar patient={r.p} size={38} />
+                  <div className="min-w-0"><p className="truncate font-semibold text-ink" data-sensitive>{r.p.name}</p><p className="mt-0.5 text-xs text-ink-3">{[ageLabel(r.p.birthDate), formatPhone(r.p.phone)].filter(Boolean).join(" · ") || "—"}</p><span className="mt-1.5 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold" style={{ background: `${stage.color}18`, color: stage.color }}>{stage.label}</span></div>
+                </div>
+                <div role="cell"><PatientDetails row={r} /></div>
+                <div role="cell" className="space-y-2 text-xs"><p><span className="block text-ink-3">Última visita</span><b className="text-ink">{r.last ? fmtDate(r.last) : "—"}</b></p><p><span className="block text-ink-3">Próxima consulta</span><b className={r.next ? "text-brand" : "text-ink-3"}>{r.next ? fmtDate(r.next.start, "dd/MM HH:mm") : "Não agendada"}</b></p></div>
+                <div role="cell"><PlanProgress row={r} /></div>
+                <div role="cell"><FinanceSummary patient={r.p} /></div>
+                <div role="cell"><ContactButton row={r} compact /></div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -215,7 +198,7 @@ function BoardView({ rows }: { rows: Row[] }) {
         {STAGES.map((st) => {
           const items = rows.filter((r) => r.p.stage === st.id);
           return (
-            <div key={st.id} className="flex w-[280px] flex-col rounded-2xl border border-line bg-surface-2/60 p-3">
+            <div key={st.id} className="flex w-[330px] flex-col rounded-2xl border border-line bg-surface-2/60 p-3">
               <div className="mb-3 flex items-center gap-2 px-1">
                 <span className="h-2.5 w-2.5 rounded-full" style={{ background: st.color }} />
                 <p className="flex-1 text-sm font-bold text-ink">{st.label}</p>
@@ -232,32 +215,28 @@ function BoardView({ rows }: { rows: Row[] }) {
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.96 }}
                     >
-                      <Link
-                        to={`/pacientes/${r.p.id}`}
-                        className="block rounded-xl border border-line bg-surface p-3 shadow-sm transition hover:border-jade-300 hover:shadow-card"
-                      >
+                      <article className="rounded-xl border border-line bg-surface p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-jade-300 hover:shadow-card">
+                        <Link to={`/pacientes/${r.p.id}`} className="block">
                         <div className="flex items-center gap-2.5">
                           <Avatar patient={r.p} size={32} />
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-semibold text-ink" data-sensitive>
                               {r.p.name}
                             </p>
-                            <p className="truncate text-[11px] text-ink-3">{r.next ? `Próx.: ${fmtDate(r.next.start, "dd/MM HH:mm")}` : ageLabel(r.p.birthDate) || "—"}</p>
+                            <p className="truncate text-[11px] text-ink-3">{[ageLabel(r.p.birthDate), patientAgeGroup(r.p)].filter(Boolean).join(" · ") || "—"}</p>
                           </div>
                           {r.alerts.length > 0 && <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-rose-500" />}
                           {r.p.favorite && <Star className="h-3.5 w-3.5 shrink-0 text-amber-400" fill="currentColor" />}
                         </div>
-                        {(patientAgeGroup(r.p) || r.p.treatments.length > 0) && (
-                          <div className="mt-2 flex flex-wrap items-center gap-1">
-                            {patientAgeGroup(r.p) && <span className="chip bg-surface-2 text-ink-2">{patientAgeGroup(r.p)}</span>}
-                            {r.p.treatments.length > 0 && (
-                              <div className="ml-auto h-1.5 w-16 overflow-hidden rounded-full bg-line">
-                                <div className="h-full rounded-full bg-jade-500" style={{ width: `${r.progress * 100}%` }} />
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </Link>
+                        </Link>
+                        <div className="mt-3 border-t border-line pt-3"><PatientDetails row={r} /></div>
+                        <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-surface-2 p-2 text-xs">
+                          <p><span className="block text-ink-3">Última visita</span><b className="text-ink">{r.last ? fmtDate(r.last, "dd/MM/yy") : "—"}</b></p>
+                          <p><span className="block text-ink-3">Próxima consulta</span><b className={r.next ? "text-brand" : "text-ink-3"}>{r.next ? fmtDate(r.next.start, "dd/MM HH:mm") : "Não agendada"}</b></p>
+                        </div>
+                        <div className="mt-3 grid grid-cols-2 items-end gap-3"><PlanProgress row={r} /><FinanceSummary patient={r.p} /></div>
+                        <div className="mt-3 flex items-center gap-2"><Link to={`/pacientes/${r.p.id}`} className="flex min-h-9 flex-1 items-center justify-center rounded-xl border border-line px-3 py-2 text-xs font-bold text-ink-2 hover:bg-surface-2">Abrir prontuário</Link><ContactButton row={r} /></div>
+                      </article>
                     </motion.div>
                   ))}
                 </AnimatePresence>
@@ -280,7 +259,7 @@ export function Patients() {
   const openPatientModal = useUI((s) => s.openPatientModal);
   const [params, setParams] = useSearchParams();
   const [q, setQ] = useState("");
-  const [view, setViewState] = useState<View>(() => lsGet("pront:view", "cards") as View);
+  const [view, setViewState] = useState<View>(() => normalizePatientsView(lsGet("pront:view", "quadro")));
   const [sort, setSortState] = useState<SortKey>(() => lsGet("pront:sort", "nome") as SortKey);
   const stageFilter = (params.get("etapa") as Stage | null) ?? null;
   const [quick, setQuick] = useState<Quick | null>(null);
@@ -358,9 +337,8 @@ export function Patients() {
             value={view}
             onChange={setView}
             options={[
-              { value: "cards", label: <span className="max-sm:hidden">Cartões</span>, icon: <LayoutGrid className="h-4 w-4" /> },
-              { value: "lista", label: <span className="max-sm:hidden">Lista</span>, icon: <List className="h-4 w-4" /> },
               { value: "quadro", label: <span className="max-sm:hidden">Quadro</span>, icon: <Columns3 className="h-4 w-4" /> },
+              { value: "lista", label: <span className="max-sm:hidden">Lista</span>, icon: <List className="h-4 w-4" /> },
             ]}
           />
           <Button onClick={() => openPatientModal()} icon={<UserPlus className="h-4 w-4" />}>
@@ -465,14 +443,6 @@ export function Patients() {
               }
             />
           </div>
-        ) : view === "cards" ? (
-          <motion.div layout className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-            <AnimatePresence>
-              {rows.map((r) => (
-                <PatientCard key={r.p.id} r={r} />
-              ))}
-            </AnimatePresence>
-          </motion.div>
         ) : view === "lista" ? (
           <ListView rows={rows} />
         ) : (
