@@ -60,6 +60,9 @@ export interface Evolution {
   teeth?: string;
   author: string;
   createdAt: string;
+  /** Vínculo usado para manter o histórico automático alinhado ao procedimento. */
+  treatmentId?: ID;
+  automatic?: boolean;
 }
 
 export type ReminderType = "retorno" | "confirmacao" | "medicacao" | "pagamento" | "outro";

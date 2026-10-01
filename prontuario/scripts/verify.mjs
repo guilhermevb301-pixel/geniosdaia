@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { build } from "esbuild";
 
 // Bundle the actual TypeScript helpers; no browser, real patient, or cloud writes.
-const result = await build({ stdin: { contents: 'export * from "./src/lib/finance"; export * from "./src/lib/reminders"; export { treatmentTotals, financialSituation, automaticPatientStage, patientAgeGroup } from "./src/lib/derive"; export { parseMoney } from "./src/lib/utils"; export { DEFAULT_SETTINGS, STAGES } from "./src/lib/constants";', resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm" });
-const { splitInstallments, buildPaymentAgreement, installmentBalance, reminderAttention, installmentAttention, treatmentTotals, financialSituation, automaticPatientStage, patientAgeGroup, parseMoney, DEFAULT_SETTINGS, STAGES } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
+const result = await build({ stdin: { contents: 'export * from "./src/lib/finance"; export * from "./src/lib/reminders"; export { treatmentTotals, financialSituation, automaticPatientStage, patientAgeGroup, applyClinicalTreatmentStatus } from "./src/lib/derive"; export { parseMoney } from "./src/lib/utils"; export { DEFAULT_SETTINGS, STAGES } from "./src/lib/constants";', resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm" });
+const { splitInstallments, buildPaymentAgreement, installmentBalance, reminderAttention, installmentAttention, treatmentTotals, financialSituation, automaticPatientStage, patientAgeGroup, applyClinicalTreatmentStatus, parseMoney, DEFAULT_SETTINGS, STAGES } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
 let checks = 0;
 function check(name, fn) { fn(); checks++; console.log(`✓ ${name}`); }
 
@@ -116,5 +116,43 @@ check("Faixa etária é calculada pela data de nascimento e não por etiqueta ma
   assert.equal(patientAgeGroup({ birthDate: "1966-10-01" }, today), "Idoso");
   assert.equal(patientAgeGroup({}, today), null);
   assert.equal(patientAgeGroup({ birthDate: "inválida" }, today), null);
+});
+
+check("Marcar um procedimento como realizado cria um único registro clínico vinculado", () => {
+  const patient = {
+    treatments: [{ id: "tr_1", procedure: "Implante dentário", teeth: "36", price: 2500, status: "andamento" }],
+    evolutions: [],
+  };
+  const first = applyClinicalTreatmentStatus?.(patient, "tr_1", "concluido", {
+    author: "Dr. Mizael",
+    date: "2026-10-01",
+    createdAt: "2026-10-01T12:00:00.000Z",
+  });
+  const repeated = applyClinicalTreatmentStatus?.({ ...patient, ...first }, "tr_1", "concluido", {
+    author: "Dr. Mizael",
+    date: "2026-10-01",
+    createdAt: "2026-10-01T12:05:00.000Z",
+  }) ?? { evolutions: [] };
+  assert.equal(repeated.evolutions.length, 1);
+  assert.equal(repeated.evolutions[0].treatmentId, "tr_1");
+  assert.equal(repeated.evolutions[0].automatic, true);
+});
+
+check("Desfazer a realização remove apenas o registro clínico automático daquele procedimento", () => {
+  const patient = {
+    treatments: [{ id: "tr_1", procedure: "Implante dentário", price: 2500, status: "concluido" }],
+    evolutions: [
+      { id: "ev_auto", treatmentId: "tr_1", automatic: true, title: "Implante dentário realizado" },
+      { id: "ev_manual", treatmentId: "tr_1", title: "Observação complementar" },
+      { id: "ev_other", treatmentId: "tr_2", automatic: true, title: "Outro procedimento realizado" },
+    ],
+  };
+  const result = applyClinicalTreatmentStatus?.(patient, "tr_1", "andamento", {
+    author: "Dr. Mizael",
+    date: "2026-10-01",
+    createdAt: "2026-10-01T12:00:00.000Z",
+  }) ?? { treatments: [], evolutions: [] };
+  assert.equal(result.treatments[0].status, "andamento");
+  assert.deepEqual(result.evolutions.map((item) => item.id), ["ev_manual", "ev_other"]);
 });
 console.log(`${checks} grupos de testes passaram.`);

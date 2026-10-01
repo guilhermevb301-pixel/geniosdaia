@@ -5,7 +5,7 @@ import { PaymentAgreementModal } from "@/components/PaymentAgreementModal";
 import { confirmDialog, toast } from "@/components/ui/feedback";
 import { Card, EmptyState, Field, ProgressRing, Select } from "@/components/ui/misc";
 import { TREATMENT_STATUS } from "@/lib/constants";
-import { treatmentTotals } from "@/lib/derive";
+import { applyClinicalTreatmentStatus, treatmentTotals } from "@/lib/derive";
 import { printBudget } from "@/lib/print";
 import type { Patient, TreatmentItem, TreatmentStatus } from "@/lib/types";
 import { cn, money, nowISO, parseMoney, todayKey, uid } from "@/lib/utils";
@@ -46,24 +46,19 @@ export function TreatmentsTab({ patient }: { patient: Patient }) {
       else setItem(t.id, { status: "aprovado" });
       return;
     }
-    if (status === "concluido" && t.status !== "concluido") {
-      updatePatient(patient.id, (p) => ({
-        treatments: p.treatments.map((x) => (x.id === t.id ? { ...x, status, completedAt: nowISO() } : x)),
-        evolutions: [
-          {
-            id: uid("ev_"),
-            date: todayKey(),
-            title: `${t.procedure} realizado`,
-            description: `Procedimento “${t.procedure}”${t.teeth ? ` no dente ${t.teeth}` : ""} finalizado.`,
-            teeth: t.teeth,
-            author: `${settings.title} ${settings.doctorName}`,
-            createdAt: nowISO(),
-          },
-          ...p.evolutions,
-        ],
+    if (status !== t.status) {
+      const createdAt = nowISO();
+      updatePatient(patient.id, (p) => applyClinicalTreatmentStatus(p, t.id, status, {
+        author: `${settings.title} ${settings.doctorName}`,
+        date: todayKey(),
+        createdAt,
       }));
+    }
+    if (status === "concluido" && t.status !== "concluido") {
       toast.success("Procedimento realizado", "Isso registra a execução clínica. O pagamento continua separado no Financeiro.");
-    } else setItem(t.id, { status, completedAt: status === "concluido" ? t.completedAt : undefined });
+    } else if (t.status === "concluido" && status !== "concluido") {
+      toast.success("Realização desfeita", "O registro clínico automático foi removido; anotações feitas manualmente foram preservadas.");
+    }
   };
 
   const approveAll = () => {

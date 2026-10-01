@@ -1,7 +1,7 @@
 import { addDays, addMonths, differenceInCalendarDays, isSameDay, startOfDay } from "date-fns";
 import { ANAMNESIS_CONDITIONS } from "./constants";
-import type { Appointment, Patient, Settings, Stage } from "./types";
-import { toDate } from "./utils";
+import type { Appointment, Patient, Settings, Stage, TreatmentStatus } from "./types";
+import { toDate, uid } from "./utils";
 import { installmentAttention, reminderAttention } from "./reminders";
 import { installmentBalance } from "./finance";
 
@@ -94,6 +94,49 @@ export function automaticPatientStage(p: Pick<Patient, "stage" | "treatments">):
     return p.stage === "concluido" ? "concluido" : "manutencao";
   }
   return "avaliacao";
+}
+
+export function applyClinicalTreatmentStatus(
+  patient: Pick<Patient, "treatments" | "evolutions">,
+  treatmentId: string,
+  status: TreatmentStatus,
+  meta: { author: string; date: string; createdAt: string },
+) {
+  const treatment = patient.treatments.find((item) => item.id === treatmentId);
+  if (!treatment) return { treatments: patient.treatments, evolutions: patient.evolutions };
+
+  const treatments = patient.treatments.map((item) =>
+    item.id === treatmentId
+      ? { ...item, status, completedAt: status === "concluido" ? item.completedAt ?? meta.createdAt : undefined }
+      : item,
+  );
+  const automaticEvolution = patient.evolutions.some((item) => item.treatmentId === treatmentId && item.automatic);
+
+  if (status === "concluido") {
+    if (automaticEvolution) return { treatments, evolutions: patient.evolutions };
+    return {
+      treatments,
+      evolutions: [
+        {
+          id: uid("ev_"),
+          date: meta.date,
+          title: `${treatment.procedure} realizado`,
+          description: `Procedimento “${treatment.procedure}”${treatment.teeth ? ` no dente ${treatment.teeth}` : ""} finalizado.`,
+          teeth: treatment.teeth,
+          author: meta.author,
+          createdAt: meta.createdAt,
+          treatmentId,
+          automatic: true,
+        },
+        ...patient.evolutions,
+      ],
+    };
+  }
+
+  return {
+    treatments,
+    evolutions: patient.evolutions.filter((item) => !(item.treatmentId === treatmentId && item.automatic)),
+  };
 }
 
 export type PatientAgeGroup = "Criança" | "Adulto" | "Idoso";
