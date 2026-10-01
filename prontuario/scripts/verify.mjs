@@ -3,7 +3,7 @@ import { build } from "esbuild";
 
 // Bundle the actual TypeScript helpers; no browser, real patient, or cloud writes.
 const result = await build({ stdin: { contents: 'export * from "./src/lib/finance"; export * from "./src/lib/reminders"; export { treatmentTotals, financialSituation, automaticPatientStage, patientAgeGroup } from "./src/lib/derive"; export { parseMoney } from "./src/lib/utils"; export { DEFAULT_SETTINGS, STAGES } from "./src/lib/constants";', resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm" });
-const { splitInstallments, installmentBalance, reminderAttention, treatmentTotals, financialSituation, automaticPatientStage, patientAgeGroup, parseMoney, DEFAULT_SETTINGS, STAGES } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
+const { splitInstallments, buildPaymentAgreement, installmentBalance, reminderAttention, installmentAttention, treatmentTotals, financialSituation, automaticPatientStage, patientAgeGroup, parseMoney, DEFAULT_SETTINGS, STAGES } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
 let checks = 0;
 function check(name, fn) { fn(); checks++; console.log(`✓ ${name}`); }
 
@@ -44,12 +44,36 @@ check("Pagamento parcial, quitação e exclusão recalculam a parcela", () => {
   assert.equal(installmentBalance(item, []), 100);
   assert.equal(installmentBalance(item, [{ installmentId: "a", amount: 101 }]), 0);
 });
+check("Acordo à vista ou parcelado cria somente vencimentos, nunca pagamentos", () => {
+  assert.deepEqual(buildPaymentAgreement({ amount: 1000, mode: "avista", firstDueDate: "2026-10-10", today: "2026-10-01" }), [
+    { label: "Pagamento à vista", amount: 1000, dueDate: "2026-10-10" },
+  ]);
+  assert.deepEqual(buildPaymentAgreement({ amount: 1000, mode: "parcelado", entry: 100, installments: 3, firstDueDate: "2026-11-10", today: "2026-10-01" }).map(i => [i.label, i.amount, i.dueDate]), [
+    ["Entrada", 100, "2026-10-01"],
+    ["Parcela 1/3", 300, "2026-11-10"],
+    ["Parcela 2/3", 300, "2026-12-10"],
+    ["Parcela 3/3", 300, "2027-01-10"],
+  ]);
+  assert.deepEqual(buildPaymentAgreement({ amount: 1000, mode: "depois", firstDueDate: "2026-10-10", today: "2026-10-01" }), []);
+});
+check("Acordo rejeita entrada maior que o valor e parcelamento sem saldo", () => {
+  assert.throws(() => buildPaymentAgreement({ amount: 100, mode: "parcelado", entry: 101, installments: 1, firstDueDate: "2026-10-10", today: "2026-10-01" }));
+  assert.throws(() => buildPaymentAgreement({ amount: 100, mode: "parcelado", entry: 100, installments: 1, firstDueDate: "2026-10-10", today: "2026-10-01" }));
+});
 check("Alertas: atrasado, hoje, amanhã, 3 dias; nunca concluídos ou além de 3 dias", () => {
   const now = new Date("2026-10-01T12:00:00");
   for (const [dueAt, expected] of [["2026-09-30", "Atrasado"], ["2026-10-01", "Hoje"], ["2026-10-02", "Amanhã"], ["2026-10-04", "Em 3 dias"], ["2026-10-05", null], ["invalid", null]]) {
     assert.equal(reminderAttention({ dueAt, done: false }, now), expected);
     assert.equal(reminderAttention({ dueAt, done: true }, now), null);
   }
+});
+check("Cobrança automática aparece um dia antes, no dia e depois do vencimento", () => {
+  const installment = { id: "par_1", amount: 300, dueDate: "2026-10-02" };
+  assert.deepEqual(installmentAttention(installment, [], new Date("2026-10-01T12:00:00")), { label: "Cobrar amanhã", severity: "warn" });
+  assert.deepEqual(installmentAttention(installment, [], new Date("2026-10-02T12:00:00")), { label: "Vence hoje — cobrar", severity: "danger" });
+  assert.deepEqual(installmentAttention(installment, [], new Date("2026-10-03T12:00:00")), { label: "Pagamento atrasado — cobrar", severity: "danger" });
+  assert.equal(installmentAttention(installment, [], new Date("2026-09-30T12:00:00")), null);
+  assert.equal(installmentAttention(installment, [{ installmentId: "par_1", amount: 300 }], new Date("2026-10-01T12:00:00")), null);
 });
 check("Criar parcelas não equivale a receber dinheiro; orçamento não aprovado não é cobrado", () => {
   const patient = { treatments: [{ status: "aprovado", price: 1000 }, { status: "planejado", price: 500 }], planDiscount: 10, payments: [], paymentSchedule: splitInstallments(900, 3, "2026-10-01") };
@@ -63,7 +87,7 @@ check("Criar parcelas não equivale a receber dinheiro; orçamento não aprovado
 check("Situação financeira nunca presume pagamento", () => {
   const base = { treatments: [], payments: [], planDiscount: 0 };
   assert.deepEqual(financialSituation(base), { id: "none", label: "Sem cobrança", amount: 0 });
-  assert.deepEqual(financialSituation({ ...base, treatments: [{ status: "planejado", price: 500 }] }), { id: "proposal", label: "Proposta não aprovada", amount: 500 });
+  assert.deepEqual(financialSituation({ ...base, treatments: [{ status: "planejado", price: 500 }] }), { id: "proposal", label: "Ainda não aceito", amount: 500 });
   assert.deepEqual(financialSituation({ ...base, treatments: [{ status: "aprovado", price: 500 }] }), { id: "receivable", label: "A receber", amount: 500 });
   assert.deepEqual(financialSituation({ ...base, treatments: [{ status: "aprovado", price: 500 }, { status: "planejado", price: 900 }] }), { id: "mixed", label: "A receber + proposta", amount: 500, proposal: 900 });
   assert.deepEqual(financialSituation({ ...base, treatments: [{ status: "aprovado", price: 500 }], payments: [{ amount: 500 }] }), { id: "paid", label: "Pago", amount: 500 });

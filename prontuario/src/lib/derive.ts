@@ -2,7 +2,7 @@ import { addDays, addMonths, differenceInCalendarDays, isSameDay, startOfDay } f
 import { ANAMNESIS_CONDITIONS } from "./constants";
 import type { Appointment, Patient, Settings, Stage } from "./types";
 import { toDate } from "./utils";
-import { reminderAttention } from "./reminders";
+import { installmentAttention, reminderAttention } from "./reminders";
 import { installmentBalance } from "./finance";
 
 export function patientAlerts(p: Patient): string[] {
@@ -16,6 +16,9 @@ export function patientAlerts(p: Patient): string[] {
     const label = `Alergia: ${a}`;
     if (idx >= 0) out[idx] = label;
     else out.unshift(label);
+  }
+  for (const custom of p.anamnesis.customConditions ?? []) {
+    if (custom.alert && p.anamnesis.conditions[custom.id]) out.push(custom.label);
   }
   return out;
 }
@@ -79,7 +82,7 @@ export function financialSituation(p: Pick<Patient, "treatments" | "payments" | 
   if (totals.total > 0 && totals.balance <= 0) return { id: "paid" as const, label: "Pago", amount: totals.paid };
   if (totals.balance > 0 && totals.planned > 0) return { id: "mixed" as const, label: "A receber + proposta", amount: totals.balance, proposal: totals.planned };
   if (totals.balance > 0) return { id: "receivable" as const, label: "A receber", amount: totals.balance };
-  if (totals.planned > 0) return { id: "proposal" as const, label: "Proposta não aprovada", amount: totals.planned };
+  if (totals.planned > 0) return { id: "proposal" as const, label: "Ainda não aceito", amount: totals.planned };
   return { id: "none" as const, label: "Sem cobrança", amount: 0 };
 }
 
@@ -173,8 +176,8 @@ export function buildNotifications(patients: Patient[], appts: Appointment[], se
     }
     for (const item of p.paymentSchedule ?? []) {
       const balance = installmentBalance(item, p.payments);
-      const attention = reminderAttention({ done: balance <= 0, dueAt: item.dueDate }, now);
-      if (attention) out.push({ id: `installment-${item.id}`, kind: "alerta", title: `${item.label} · ${attention}`, subtitle: `${p.name} · R$ ${balance.toFixed(2).replace(".", ",")} a receber`, severity: "danger", patientId: p.id, date: toDate(item.dueDate)!, href: `/pacientes/${p.id}?aba=financeiro` });
+      const attention = installmentAttention(item, p.payments, now);
+      if (attention) out.push({ id: `installment-${item.id}`, kind: "alerta", title: `${item.label} · ${attention.label}`, subtitle: `${p.name} · R$ ${balance.toFixed(2).replace(".", ",")} a receber · entrar em contato`, severity: attention.severity, patientId: p.id, date: toDate(item.dueDate)!, href: `/pacientes/${p.id}?aba=financeiro` });
     }
     if (isBirthdayToday(p)) {
       out.push({

@@ -128,7 +128,7 @@ function PatientCard({ r }: { r: Row }) {
           </div>
         )}
         <div className="ml-auto flex gap-1">
-          <span className={cn("chip", finance.id === "paid" ? "bg-jade-100 text-jade-800" : finance.id === "receivable" || finance.id === "mixed" ? "bg-amber-100 text-amber-800" : finance.id === "proposal" ? "bg-sky-100 text-sky-800" : "bg-surface-2 text-ink-3")}>{finance.label}{finance.amount > 0 ? ` · ${money(finance.amount)}` : ""}{finance.id === "mixed" ? ` + ${money(finance.proposal)} não aprovados` : ""}</span>
+          <span className={cn("chip", finance.id === "paid" ? "bg-jade-100 text-jade-800" : finance.id === "receivable" || finance.id === "mixed" ? "bg-amber-100 text-amber-800" : finance.id === "proposal" ? "bg-sky-100 text-sky-800" : "bg-surface-2 text-ink-3")}>{finance.label}{finance.amount > 0 ? ` · ${money(finance.amount)}` : ""}{finance.id === "mixed" ? ` + ${money(finance.proposal)} ainda não aceitos` : ""}</span>
           {wa && (
             <a href={wa} target="_blank" rel="noreferrer" className="rounded-lg p-1.5 text-[#25D366] transition hover:bg-[#25D366]/10" title="WhatsApp">
               <WhatsAppIcon className="h-4 w-4" />
@@ -197,7 +197,7 @@ function ListView({ rows }: { rows: Row[] }) {
                   </td>
                   <td className="px-3 py-2.5 text-ink-2">{r.last ? fmtDate(r.last) : "—"}</td>
                   <td className="px-3 py-2.5 font-semibold text-brand">{r.next ? fmtDate(r.next.start, "dd/MM HH:mm") : <span className="font-normal text-ink-3">—</span>}</td>
-                  <td className={cn("px-3 py-2.5 text-right font-semibold", finance.id === "receivable" || finance.id === "mixed" ? "text-amber-600" : finance.id === "paid" ? "text-jade-600" : "text-ink-3")}>{finance.label}{finance.amount > 0 ? ` · ${money(finance.amount)}` : ""}{finance.id === "mixed" ? ` + ${money(finance.proposal)} não aprovados` : ""}</td>
+                  <td className={cn("px-3 py-2.5 text-right font-semibold", finance.id === "receivable" || finance.id === "mixed" ? "text-amber-600" : finance.id === "paid" ? "text-jade-600" : "text-ink-3")}>{finance.label}{finance.amount > 0 ? ` · ${money(finance.amount)}` : ""}{finance.id === "mixed" ? ` + ${money(finance.proposal)} ainda não aceitos` : ""}</td>
                 </tr>
               );
             })}

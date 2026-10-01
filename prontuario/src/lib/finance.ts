@@ -1,6 +1,32 @@
 import { addMonths, format, parseISO, isValid } from "date-fns";
 import type { Installment, Payment } from "./types";
 
+export type PaymentAgreementMode = "avista" | "parcelado" | "depois";
+
+export function buildPaymentAgreement(input: {
+  amount: number;
+  mode: PaymentAgreementMode;
+  entry?: number;
+  installments?: number;
+  firstDueDate: string;
+  today: string;
+}): Omit<Installment, "id">[] {
+  const amount = Math.round(input.amount * 100) / 100;
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error("O valor do acordo precisa ser maior que zero.");
+  if (input.mode === "depois") return [];
+  if (input.mode === "avista") {
+    const due = parseISO(input.firstDueDate);
+    if (!isValid(due)) throw new Error("Informe a data combinada para o pagamento.");
+    return [{ label: "Pagamento à vista", amount, dueDate: input.firstDueDate }];
+  }
+  const entry = Math.round((input.entry ?? 0) * 100) / 100;
+  if (!Number.isFinite(entry) || entry < 0 || entry >= amount) throw new Error("A entrada deve ser menor que o valor total.");
+  const count = input.installments ?? 1;
+  const rest = Math.round((amount - entry) * 100) / 100;
+  const installments = splitInstallments(rest, count, input.firstDueDate);
+  return [...(entry > 0 ? [{ label: "Entrada", amount: entry, dueDate: input.today }] : []), ...installments];
+}
+
 /** Split integer cents, including the remainder, without losing money. */
 export function splitInstallments(total: number, count: number, firstDate: string): Omit<Installment, "id">[] {
   const date = parseISO(firstDate);

@@ -10,7 +10,7 @@ import { printReceipt } from "@/lib/print";
 import type { Patient, PaymentMethod } from "@/lib/types";
 import { firstName, fmtDate, money, parseMoney, todayKey, uid, whatsappLink, toDate } from "@/lib/utils";
 import { useStore } from "@/store/store";
-import { PatientBilling } from "@/components/PatientBilling";
+import { PaymentPlan } from "@/components/PaymentPlan";
 import { installmentBalance } from "@/lib/finance";
 
 export function FinanceTab({ patient }: { patient: Patient }) {
@@ -18,7 +18,7 @@ export function FinanceTab({ patient }: { patient: Patient }) {
   const settings = useStore((s) => s.settings);
   const totals = treatmentTotals(patient);
   const [amount, setAmount] = useState("");
-  const [method, setMethod] = useState<PaymentMethod>("pix");
+  const [method, setMethod] = useState<PaymentMethod>(patient.paymentAgreement?.method ?? "pix");
   const [date, setDate] = useState(todayKey());
   const [desc, setDesc] = useState("");
   const [installmentId, setInstallmentId] = useState("");
@@ -44,12 +44,13 @@ export function FinanceTab({ patient }: { patient: Patient }) {
 
   return (
     <div className="space-y-6">
+      <div className="rounded-2xl border border-jade-200 bg-brand-soft px-4 py-3 text-sm text-brand-ink"><b>Aqui é somente dinheiro.</b> Vencimento é uma cobrança planejada; “pagamento recebido” significa que o dinheiro realmente entrou. A realização do procedimento fica em Tratamentos.</div>
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {[
           { label: "Total contratado", value: money(totals.total), cls: "text-ink" },
           { label: "Recebido", value: money(totals.paid), cls: "text-jade-600" },
           { label: "Saldo a receber", value: money(totals.balance), cls: totals.balance ? "text-amber-600" : "text-ink" },
-          { label: "Aguardando aprovação", value: money(totals.planned), cls: "text-ink-2" },
+          { label: "Ainda não aceito", value: money(totals.planned), cls: "text-ink-2" },
         ].map((k) => (
           <div key={k.label} className="card p-5">
             <p className="text-xs font-semibold text-ink-3">{k.label}</p>
@@ -74,14 +75,14 @@ export function FinanceTab({ patient }: { patient: Patient }) {
         </div>
       )}
 
-      <PatientBilling patient={patient} onReceive={item => {
+      <PaymentPlan patient={patient} onReceive={item => {
         setInstallmentId(item.id); setAmount(installmentBalance(item, patient.payments).toFixed(2).replace(".", ",")); setDesc(item.label); setDate(todayKey());
         document.getElementById("recebimento")?.scrollIntoView({ behavior: "smooth", block: "center" });
       }} />
       <div id="recebimento" className="grid gap-6 xl:grid-cols-[380px_1fr] scroll-mt-24">
-        <Card title="3. Registrar dinheiro recebido" icon={<Banknote className="h-5 w-5" />} className="xl:self-start">
+        <Card title="Registrar dinheiro que entrou" icon={<Banknote className="h-5 w-5" />} className="xl:self-start">
           <div className="space-y-4 p-5 pt-3">
-            <p className="text-sm text-ink-2">Preencha somente depois que o pagamento acontecer. Agendar uma parcela não registra recebimento.</p>
+            <p className="text-sm text-ink-2">Use somente depois que o paciente pagar. Criar um vencimento acima não registra dinheiro recebido.</p>
             {!!patient.paymentSchedule?.length && <Field label="Vincular a uma parcela"><Select value={installmentId} onChange={e => { const item = patient.paymentSchedule?.find(i => i.id === e.target.value); setInstallmentId(e.target.value); if (item) { setAmount(installmentBalance(item, patient.payments).toFixed(2).replace(".", ",")); setDesc(item.label); } }}><option value="">Recebimento avulso (sem parcela)</option>{patient.paymentSchedule.filter(i => installmentBalance(i, patient.payments) > 0).map(i => <option key={i.id} value={i.id}>{i.label} · {fmtDate(i.dueDate)}</option>)}</Select></Field>}
             <div className="grid grid-cols-2 gap-3">
               <Field label="Valor (R$)">
@@ -109,7 +110,7 @@ export function FinanceTab({ patient }: { patient: Patient }) {
               </button>
             )}
             <Button className="w-full" onClick={add} icon={<Plus className="h-4 w-4" />}>
-              Registrar
+                Confirmar dinheiro recebido
             </Button>
           </div>
         </Card>

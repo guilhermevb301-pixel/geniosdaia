@@ -35,6 +35,8 @@ export interface Anamnesis {
   bloodPressure?: string;
   lastDentalVisit?: string;
   notes?: string;
+  customConditions?: { id: ID; label: string; alert: boolean }[];
+  customHabits?: { id: ID; label: string }[];
 }
 
 export type TreatmentStatus = "planejado" | "aprovado" | "andamento" | "concluido";
@@ -100,6 +102,12 @@ export interface Installment {
   amount: number;
 }
 
+export interface PaymentAgreement {
+  mode: "avista" | "parcelado" | "depois";
+  method: PaymentMethod;
+  createdAt: string;
+}
+
 export type AttachmentCategory =
   | "radiografia"
   | "panoramica"
@@ -160,6 +168,7 @@ export interface Patient {
   notes: StickyNote[];
   payments: Payment[];
   paymentSchedule?: Installment[];
+  paymentAgreement?: PaymentAgreement;
   attachments: Attachment[];
 }
 

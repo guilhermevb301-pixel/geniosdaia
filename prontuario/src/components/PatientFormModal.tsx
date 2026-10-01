@@ -214,7 +214,7 @@ export function PatientFormModal() {
           </Field>
         </div>
 
-        {!patient && <p className="rounded-xl bg-brand-soft px-4 py-3 text-sm text-brand-ink"><b>Começa em Avaliação.</b> A etapa muda sozinha quando um procedimento é proposto, aprovado ou concluído.</p>}
+        {!patient && <p className="rounded-xl bg-brand-soft px-4 py-3 text-sm text-brand-ink"><b>Começa em Avaliação.</b> A etapa muda sozinha quando um procedimento é proposto, aceito ou realizado.</p>}
         <button type="submit" className="hidden" />
       </form>
     </Modal>

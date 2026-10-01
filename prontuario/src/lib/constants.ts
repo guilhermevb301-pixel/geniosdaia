@@ -41,10 +41,10 @@ export const TOOTH_CONDITIONS: Record<ToothCondition, { label: string; color: st
 };
 
 export const TREATMENT_STATUS: Record<TreatmentStatus, { label: string; cls: string; dot: string }> = {
-  planejado: { label: "Não aprovado", cls: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200", dot: "#94A3B8" },
-  aprovado: { label: "Aprovado", cls: "bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-200", dot: "#0EA5E9" },
-  andamento: { label: "Em andamento", cls: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200", dot: "#F59E0B" },
-  concluido: { label: "Concluído", cls: "bg-jade-100 text-jade-800 dark:bg-jade-900/60 dark:text-jade-200", dot: "#25A56F" },
+  planejado: { label: "Ainda não aceito", cls: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200", dot: "#94A3B8" },
+  aprovado: { label: "Aceito — não iniciado", cls: "bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-200", dot: "#0EA5E9" },
+  andamento: { label: "Procedimento em andamento", cls: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200", dot: "#F59E0B" },
+  concluido: { label: "Procedimento realizado", cls: "bg-jade-100 text-jade-800 dark:bg-jade-900/60 dark:text-jade-200", dot: "#25A56F" },
 };
 
 export const APPOINTMENT_STATUS: Record<

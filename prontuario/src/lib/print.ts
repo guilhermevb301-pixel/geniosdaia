@@ -180,7 +180,7 @@ export function printAnamnesis(p: Patient, s: Settings) {
     <h3 class="sec">Histórico de saúde</h3>
     <div class="cols2">${ANAMNESIS_CONDITIONS.map(
       (c) => `<div><span class="chk ${a.conditions[c.key] ? "on" : ""}">${a.conditions[c.key] ? "✓" : ""}</span>${esc(c.label)}</div>`,
-    ).join("")}</div>
+    ).join("")}${(a.customConditions ?? []).map((c) => `<div><span class="chk ${a.conditions[c.id] ? "on" : ""}">${a.conditions[c.id] ? "✓" : ""}</span>${esc(c.label)}</div>`).join("")}</div>
     <div class="box grid" style="grid-template-columns:1fr 1fr">
       <div><div class="k">Alergias</div><div class="v">${esc(a.allergies) || "Nenhuma informada"}</div></div>
       <div><div class="k">Medicamentos em uso</div><div class="v">${esc(a.medications) || "—"}</div></div>
@@ -188,7 +188,7 @@ export function printAnamnesis(p: Patient, s: Settings) {
       <div><div class="k">Pressão arterial</div><div class="v">${esc(a.bloodPressure) || "—"}</div></div>
     </div>
     <h3 class="sec">Hábitos</h3>
-    <div class="cols2">${ANAMNESIS_HABITS.map((h) => `<div><span class="chk ${a.habits[h.key] ? "on" : ""}">${a.habits[h.key] ? "✓" : ""}</span>${esc(h.label)}</div>`).join("")}</div>
+    <div class="cols2">${ANAMNESIS_HABITS.map((h) => `<div><span class="chk ${a.habits[h.key] ? "on" : ""}">${a.habits[h.key] ? "✓" : ""}</span>${esc(h.label)}</div>`).join("")}${(a.customHabits ?? []).map((h) => `<div><span class="chk ${a.habits[h.id] ? "on" : ""}">${a.habits[h.id] ? "✓" : ""}</span>${esc(h.label)}</div>`).join("")}</div>
     ${a.notes ? `<h3 class="sec">Observações</h3><p>${esc(a.notes)}</p>` : ""}
     <p style="margin-top:24px">Declaro que as informações acima são verdadeiras e que informarei qualquer alteração no meu estado de saúde.</p>
     <div class="sign"><div class="line">${esc(p.name)}</div><div class="muted">Assinatura do paciente ou responsável · ${fmtDate(new Date())}</div></div>`,
@@ -217,7 +217,7 @@ export function printPatientRecord(p: Patient, s: Settings, appts: Appointment[]
     ${alerts.length ? `<div class="alert">⚠ Alertas: ${alerts.map(esc).join(" · ")}</div>` : ""}
     <h3 class="sec">Anamnese</h3>
     <p><b>Queixa:</b> ${esc(p.anamnesis.complaint) || "—"}<br/>
-    <b>Condições:</b> ${ANAMNESIS_CONDITIONS.filter((c) => p.anamnesis.conditions[c.key]).map((c) => esc(c.label)).join(", ") || "Nenhuma"}<br/>
+    <b>Condições:</b> ${[...ANAMNESIS_CONDITIONS.filter((c) => p.anamnesis.conditions[c.key]).map((c) => esc(c.label)), ...(p.anamnesis.customConditions ?? []).filter((c) => p.anamnesis.conditions[c.id]).map((c) => esc(c.label))].join(", ") || "Nenhuma"}<br/>
     <b>Medicamentos:</b> ${esc(p.anamnesis.medications) || "—"} &nbsp; <b>Alergias:</b> ${esc(p.anamnesis.allergies) || "—"}</p>
     <h3 class="sec">Odontograma</h3>
     ${

@@ -235,7 +235,7 @@ export function PatientRecord() {
         <div className="relative grid grid-cols-2 border-t border-line xl:grid-cols-4">
           {[
             { label: "Etapa automática", value: <span className="inline-flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ background: stage.color }} />{stage.label}</span> },
-            { label: "Plano de tratamento", value: totals.count ? `${totals.done}/${totals.count} concluídos` : "Sem plano" },
+            { label: "Procedimentos", value: totals.count ? `${totals.done}/${totals.count} realizados` : "Sem plano" },
             { label: "Total contratado", value: money(totals.total) },
             { label: "Saldo a receber", value: <span className={totals.balance ? "text-amber-600" : "text-jade-600"}>{money(totals.balance)}</span> },
           ].map((s, i) => (
@@ -245,7 +245,7 @@ export function PatientRecord() {
             </div>
           ))}
         </div>
-        <div className="border-t border-line bg-surface-2 px-5 py-3 text-sm leading-relaxed text-ink-2 sm:px-6"><b className="text-ink">{stage.label}:</b> {stage.hint} <span>A etapa muda automaticamente pelo plano; aprovação e pagamento continuam sendo informações separadas.</span></div>
+        <div className="border-t border-line bg-surface-2 px-5 py-3 text-sm leading-relaxed text-ink-2 sm:px-6"><b className="text-ink">{stage.label}:</b> {stage.hint} <span>A etapa muda automaticamente pelo plano; aceite, realização clínica e pagamento são informações separadas.</span></div>
       </section>
 
       {/* Abas */}
