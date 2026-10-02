@@ -19,7 +19,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button, WhatsAppIcon } from "@/components/ui/Button";
 import { Avatar, EmptyState, Menu, Segmented } from "@/components/ui/misc";
 import { STAGES, stageById } from "@/lib/constants";
-import { birthdayIn, financialSituation, lastVisit, nextAppointment, normalizePatientsView, patientAgeGroup, patientAlerts, patientBoardMinimumWidth, patientCareSummary, patientContactAction, patientListMinimumWidth, recallDue, treatmentTotals, type PatientsView } from "@/lib/derive";
+import { appointmentToConfirm, birthdayIn, financialSituation, lastVisit, nextAppointment, normalizePatientsView, patientAgeGroup, patientAlerts, patientBoardMinimumWidth, patientCareSummary, patientContactAction, patientListMinimumWidth, recallDue, treatmentTotals, type PatientsView } from "@/lib/derive";
 import { reminderAttention } from "@/lib/reminders";
 import type { Appointment, Patient, Stage } from "@/lib/types";
 import { ageLabel, cn, digits, fmtDate, formatPhone, money, normalize, toDate, whatsappLink } from "@/lib/utils";
@@ -52,6 +52,7 @@ interface Row {
   p: Patient;
   last: Date | null;
   next: Appointment | null;
+  contactAppointment: Appointment | null;
   balance: number;
   progress: number;
   alerts: string[];
@@ -80,13 +81,23 @@ function urgentReminder(patient: Patient) {
 
 function CareSummary({ patient }: { patient: Patient }) {
   const care = patientCareSummary(patient);
-  if (!care.active && !care.followUp) {
-    return <p className="text-xs text-ink-3">{patient.stage === "manutencao" ? "Aguardando definir o próximo retorno" : "Tratamento ainda não definido"}</p>;
+  if (patient.stage === "concluido") {
+    return (
+      <div className="space-y-1 text-xs">
+        <p className="font-bold text-slate-600 dark:text-slate-300">Alta registrada</p>
+        {care.lastCompleted && <p className="break-words text-ink-2"><span className="text-ink-3">Último tratamento: </span>{care.lastCompleted}</p>}
+      </div>
+    );
   }
+
   return (
     <div className="space-y-2 text-xs">
       {care.active && <p><span className="font-bold text-ink-3">Tratando agora</span><span className="mt-0.5 block break-words font-semibold text-ink">{care.active}</span></p>}
-      {care.followUp && <p><span className="font-bold text-violet-600">Acompanhamento</span><span className="mt-0.5 block break-words text-ink-2">{care.followUp}</span></p>}
+      {care.proposed && <p><span className="font-bold text-amber-700">Proposta aguardando decisão</span><span className="mt-0.5 block break-words text-ink-2">{care.proposed}</span></p>}
+      {patient.stage === "manutencao" && care.lastCompleted && <p><span className="font-bold text-ink-3">Último tratamento</span><span className="mt-0.5 block break-words text-ink-2">{care.lastCompleted}</span></p>}
+      {care.followUp && <p><span className="font-bold text-violet-600">Retorno programado</span><span className="mt-0.5 block break-words text-ink-2">{care.followUp}</span></p>}
+      {patient.stage === "manutencao" && !care.followUp && <p className="text-ink-3">Retorno ainda não definido</p>}
+      {!care.active && !care.proposed && patient.stage !== "manutencao" && <p className="text-ink-3">Tratamento ainda não definido</p>}
     </div>
   );
 }
@@ -115,11 +126,12 @@ function FinanceSummary({ patient }: { patient: Patient }) {
 
 function ContactButton({ row, compact = false }: { row: Row; compact?: boolean }) {
   const settings = useStore((s) => s.settings);
+  const action = patientContactAction(row.p, row.contactAppointment);
+  if (!action) return null;
   const href = whatsappLink(row.p.phone);
   if (!href) return <span className="text-xs text-ink-3">Sem telefone</span>;
-  const action = patientContactAction(row.p, row.next);
   const firstName = row.p.name.split(" ")[0];
-  const message = `Olá, ${firstName}! Aqui é do consultório do ${settings.title} ${settings.doctorName}. Entramos em contato sobre ${action.reason}. Podemos conversar?`;
+  const message = `Olá, ${firstName}! Aqui é do consultório do ${settings.title} ${settings.doctorName}. ${action.message}`;
   return (
     <a
       href={whatsappLink(row.p.phone, message) || href}
@@ -153,7 +165,7 @@ function ListView({ rows }: { rows: Row[] }) {
       <div className="scrollbar-thin overflow-x-auto">
         <div style={{ minWidth: patientListMinimumWidth() }} role="table" aria-label="Lista operacional de pacientes">
           <div role="row" className="grid grid-cols-[156px_minmax(210px,1fr)_128px_82px_150px_150px] gap-3 border-b border-line bg-surface-2/70 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-ink-3">
-            <span role="columnheader">Paciente</span><span role="columnheader">Tratamento e acompanhamento</span><span role="columnheader">Consultas</span><span role="columnheader">Plano</span><span role="columnheader">Financeiro</span><span role="columnheader">Próxima ação</span>
+            <span role="columnheader">Paciente</span><span role="columnheader">Tratamento e retorno</span><span role="columnheader">Consultas</span><span role="columnheader">Plano</span><span role="columnheader">Financeiro</span><span role="columnheader">Próxima ação</span>
           </div>
           {rows.map((r) => {
             const stage = stageById(r.p.stage);
@@ -288,7 +300,7 @@ export function Patients() {
       .filter((p) => view === "quadro" || !stageFilter || p.stage === stageFilter)
       .map<Row>((p) => {
         const t = treatmentTotals(p);
-        return { p, last: lastVisit(p, appointments), next: nextAppointment(p.id, appointments), balance: t.balance, progress: t.progress, alerts: patientAlerts(p) };
+        return { p, last: lastVisit(p, appointments), next: nextAppointment(p.id, appointments), contactAppointment: appointmentToConfirm(p.id, appointments), balance: t.balance, progress: t.progress, alerts: patientAlerts(p) };
       })
       .filter((r) => {
         if (quick === "alertas") return r.alerts.length > 0;

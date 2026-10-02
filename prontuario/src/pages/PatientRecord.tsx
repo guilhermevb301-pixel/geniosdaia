@@ -17,7 +17,6 @@ import {
   Pencil,
   Phone,
   Printer,
-  RotateCcw,
   Star,
   Trash2,
   Wallet,
@@ -29,7 +28,7 @@ import { Button, WhatsAppIcon } from "@/components/ui/Button";
 import { confirmDialog, toast } from "@/components/ui/feedback";
 import { Avatar, EmptyState, Menu } from "@/components/ui/misc";
 import { stageById } from "@/lib/constants";
-import { isBirthdayToday, patientAgeGroup, patientAlerts, treatmentTotals } from "@/lib/derive";
+import { finishPendingReturns, isBirthdayToday, patientAgeGroup, patientAlerts, treatmentTotals } from "@/lib/derive";
 import { printPatientRecord } from "@/lib/print";
 import { ageLabel, cn, fmtDate, formatPhone, money, whatsappLink } from "@/lib/utils";
 import { usePatient, useStore } from "@/store/store";
@@ -197,8 +196,8 @@ export function PatientRecord() {
                 { label: "Editar dados", icon: <Pencil className="h-4 w-4" />, onClick: () => openPatientModal(patient.id) },
                 { label: "Imprimir prontuário completo", icon: <Printer className="h-4 w-4" />, onClick: () => printPatientRecord(patient, settings, appointments) },
                 ...(patient.email ? [{ label: "Enviar e-mail", icon: <Mail className="h-4 w-4" />, onClick: () => window.open(`mailto:${patient.email}`) }] : []),
-                ...(patient.stage === "manutencao" ? [{ label: "Dar alta ao paciente", icon: <CheckCircle2 className="h-4 w-4" />, onClick: async () => { if (await confirmDialog({ title: "Dar alta ao paciente?", description: "Use a alta somente quando o acompanhamento clínico tiver terminado. Um novo procedimento reabrirá o fluxo automaticamente.", confirmLabel: "Dar alta" })) { updatePatient(patient.id, { stage: "concluido" }); toast.success("Alta registrada"); } } }] : []),
-                ...(patient.stage === "concluido" ? [{ label: "Reabrir acompanhamento", icon: <RotateCcw className="h-4 w-4" />, onClick: () => { updatePatient(patient.id, { stage: "manutencao" }); toast.success("Acompanhamento reaberto"); } }] : []),
+                ...(patient.stage === "manutencao" ? [{ label: "Encerrar acompanhamento e dar alta", icon: <CheckCircle2 className="h-4 w-4" />, onClick: async () => { if (await confirmDialog({ title: "Encerrar acompanhamento e dar alta?", description: "Os retornos pendentes serão concluídos. Um novo procedimento ou retorno cadastrado reabrirá o fluxo automaticamente.", confirmLabel: "Encerrar e dar alta" })) { updatePatient(patient.id, (current) => ({ reminders: finishPendingReturns(current.reminders) })); toast.success("Acompanhamento encerrado e alta registrada"); } } }] : []),
+                ...(patient.stage === "concluido" ? [{ label: "Programar novo retorno", icon: <BellRing className="h-4 w-4" />, onClick: () => { setTab("lembretes"); toast.info("Cadastre o retorno", "Ao criar um lembrete do tipo Retorno, o paciente irá automaticamente para Em acompanhamento."); } }] : []),
                 "divider" as const,
                 {
                   label: patient.archived ? "Desarquivar" : "Arquivar paciente",

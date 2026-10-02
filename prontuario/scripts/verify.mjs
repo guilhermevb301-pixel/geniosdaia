@@ -4,8 +4,8 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 // Bundle the actual TypeScript helpers; no browser, real patient, or cloud writes.
-const result = await build({ stdin: { contents: 'export * from "./src/lib/finance"; export * from "./src/lib/reminders"; export * from "./src/lib/derive"; export { parseMoney } from "./src/lib/utils"; export { DEFAULT_SETTINGS, STAGES } from "./src/lib/constants";', resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm" });
-const { splitInstallments, buildPaymentAgreement, installmentBalance, buildPaymentRecord, reminderAttention, installmentAttention, treatmentTotals, financialSituation, automaticPatientStage, patientAgeGroup, applyClinicalTreatmentStatus, toggleToothSelection, treatmentPriceTotal, sameTreatmentScope, patientCareSummary, patientContactAction, normalizePatientsView, patientBoardMinimumWidth, patientListMinimumWidth, parseMoney, DEFAULT_SETTINGS, STAGES } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
+const result = await build({ stdin: { contents: 'export * from "./src/lib/finance"; export * from "./src/lib/reminders"; export * from "./src/lib/derive"; export { buildDemoData } from "./src/lib/seed"; export { parseMoney } from "./src/lib/utils"; export { DEFAULT_SETTINGS, STAGES } from "./src/lib/constants";', resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm" });
+const { splitInstallments, buildPaymentAgreement, installmentBalance, buildPaymentRecord, reminderAttention, installmentAttention, treatmentTotals, financialSituation, automaticPatientStage, finishPendingReturns, appointmentToConfirm, patientAgeGroup, applyClinicalTreatmentStatus, toggleToothSelection, treatmentPriceTotal, sameTreatmentScope, patientCareSummary, patientContactAction, normalizePatientsView, patientBoardMinimumWidth, patientListMinimumWidth, parseMoney, DEFAULT_SETTINGS, STAGES, buildDemoData } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
 let checks = 0;
 function check(name, fn) { fn(); checks++; console.log(`✓ ${name}`); }
 
@@ -42,24 +42,92 @@ check("O resumo separa o tratamento ativo do motivo real do acompanhamento", () 
   };
   assert.deepEqual(patientCareSummary?.(patient), {
     active: "Extração de terceiro molar · dente 38",
+    proposed: null,
     followUp: "Revisão do implante 46",
+    lastCompleted: "Implante dentário · dente 46",
   });
 });
 
-check("Sem retorno explícito, o acompanhamento informa o último procedimento concluído", () => {
+check("Procedimento concluído não inventa acompanhamento sem retorno explícito", () => {
   const patient = {
     treatments: [{ id: "feito", procedure: "Cirurgia de odontoma", status: "concluido", createdAt: "2026-08-01", completedAt: "2026-09-10" }],
     reminders: [],
   };
-  assert.deepEqual(patientCareSummary?.(patient), { active: null, followUp: "Após Cirurgia de odontoma" });
+  assert.deepEqual(patientCareSummary?.(patient), { active: null, proposed: null, followUp: null, lastCompleted: "Cirurgia de odontoma" });
 });
 
-check("O contato prioriza lembrete urgente, depois cobrança e depois consulta", () => {
+check("Proposta cadastrada aparece como proposta, não como tratamento indefinido", () => {
+  const patient = {
+    treatments: [{ id: "proposta", procedure: "Facetas em resina", teeth: "11, 12", status: "planejado", createdAt: "2026-10-01" }],
+    reminders: [],
+  };
+  assert.deepEqual(patientCareSummary?.(patient), { active: null, proposed: "Facetas em resina · dentes 11, 12", followUp: null, lastCompleted: null });
+});
+
+check("Tratamento ativo e nova proposta permanecem separados no mesmo resumo", () => {
+  const patient = {
+    treatments: [
+      { id: "ativo", procedure: "Implante", teeth: "46", status: "andamento", createdAt: "2026-09-01" },
+      { id: "proposta", procedure: "Coroa", teeth: "46", status: "planejado", createdAt: "2026-10-01" },
+    ],
+    reminders: [],
+  };
+  const summary = patientCareSummary?.(patient);
+  assert.equal(summary.active, "Implante · dente 46");
+  assert.equal(summary.proposed, "Coroa · dente 46");
+});
+
+check("O contato aparece somente para lembrete, cobrança ou consulta realmente próximos", () => {
   const now = new Date("2026-10-01T12:00:00");
   const base = { name: "Ana Beatriz", treatments: [], reminders: [], paymentSchedule: [], payments: [] };
-  assert.deepEqual(patientContactAction?.({ ...base, reminders: [{ title: "Enviar laudo", dueAt: "2026-10-01", done: false }] }, null, now), { label: "Resolver lembrete", reason: "o lembrete: Enviar laudo" });
-  assert.deepEqual(patientContactAction?.({ ...base, paymentSchedule: [{ id: "p1", label: "Parcela 1/2", amount: 500, dueDate: "2026-10-01" }] }, null, now), { label: "Cobrar pagamento", reason: "o pagamento da Parcela 1/2, que vence hoje" });
-  assert.deepEqual(patientContactAction?.(base, { start: "2026-10-02T09:00:00", procedure: "Retorno" }, now), { label: "Confirmar consulta", reason: "a consulta de Retorno em 02/10 às 09:00" });
+  assert.deepEqual(patientContactAction?.({ ...base, reminders: [{ title: "Enviar laudo", dueAt: "2026-10-01", done: false }] }, null, now), {
+    kind: "reminder",
+    label: "Entrar em contato",
+    reason: "Lembrete para hoje: Enviar laudo",
+    message: "Gostaríamos de conversar sobre seu atendimento. Podemos falar por aqui?",
+  });
+  assert.deepEqual(patientContactAction?.({ ...base, paymentSchedule: [{ id: "p1", label: "Parcela 1/2", amount: 500, dueDate: "2026-10-01" }] }, null, now), {
+    kind: "payment",
+    label: "Entrar em contato",
+    reason: "Pagamento vence hoje: Parcela 1/2",
+    message: "Gostaríamos de conversar sobre o pagamento da Parcela 1/2, que vence hoje. Podemos falar por aqui?",
+  });
+  assert.deepEqual(patientContactAction?.(base, { start: "2026-10-02T09:00:00", procedure: "Retorno", status: "agendado" }, now), {
+    kind: "appointment",
+    label: "Entrar em contato",
+    reason: "Confirmar consulta de Retorno em 02/10 às 09:00",
+    message: "Sua consulta de Retorno está marcada para 02/10 às 09:00. Podemos confirmar sua presença?",
+  });
+});
+
+check("Contato não aparece só por existir tratamento, alta, retorno distante ou consulta já confirmada", () => {
+  const now = new Date("2026-10-01T12:00:00");
+  const base = { treatments: [], reminders: [], paymentSchedule: [], payments: [] };
+  assert.equal(patientContactAction?.(base, null, now), null);
+  assert.equal(patientContactAction?.({ ...base, treatments: [{ id: "t1", procedure: "Implante", status: "andamento", createdAt: "2026-09-01" }] }, null, now), null);
+  assert.equal(patientContactAction?.({ ...base, treatments: [{ id: "t1", procedure: "Extração", status: "concluido", createdAt: "2026-09-01" }] }, null, now), null);
+  assert.equal(patientContactAction?.(base, { start: "2026-10-05T09:00:00", procedure: "Retorno", status: "agendado" }, now), null);
+  assert.equal(patientContactAction?.(base, { start: "2026-10-02T09:00:00", procedure: "Retorno", status: "confirmado" }, now), null);
+});
+
+check("Uma consulta confirmada não esconde outra consulta próxima que ainda exige confirmação", () => {
+  const now = new Date("2026-10-01T08:00:00");
+  const appointments = [
+    { id: "a1", patientId: "p1", start: "2026-10-01T10:00:00", duration: 30, procedure: "Avaliação", status: "confirmado" },
+    { id: "a2", patientId: "p1", start: "2026-10-02T09:00:00", duration: 30, procedure: "Retorno", status: "agendado" },
+    { id: "a3", patientId: "p2", start: "2026-10-01T11:00:00", duration: 30, procedure: "Consulta", status: "agendado" },
+  ];
+  assert.equal(appointmentToConfirm?.("p1", appointments, now)?.id, "a2");
+  assert.equal(appointmentToConfirm?.("p2", appointments, now)?.id, "a3");
+  assert.equal(appointmentToConfirm?.("p3", appointments, now), null);
+  assert.equal(appointmentToConfirm?.("p1", [{ ...appointments[1], start: "2026-10-01T07:00:00" }], now), null);
+});
+
+check("O motivo do contato descreve lembretes atrasados e futuros com português natural", () => {
+  const now = new Date("2026-10-01T12:00:00");
+  const base = { treatments: [], paymentSchedule: [], payments: [] };
+  assert.equal(patientContactAction?.({ ...base, reminders: [{ title: "Pedir exame", dueAt: "2026-09-30", done: false }] }, null, now)?.reason, "Lembrete atrasado: Pedir exame");
+  assert.equal(patientContactAction?.({ ...base, reminders: [{ title: "Confirmar retorno", dueAt: "2026-10-04", done: false }] }, null, now)?.reason, "Lembrete em 3 dias: Confirmar retorno");
 });
 
 check("Perfil especializado sem preços inventados e etapas compatíveis com dados anteriores", () => {
@@ -149,18 +217,41 @@ check("Situação financeira nunca presume pagamento", () => {
 });
 
 check("Etapa acompanha automaticamente o trabalho clínico sem confundir aprovação com pagamento", () => {
-  const base = { stage: "avaliacao", treatments: [], payments: [] };
+  const base = { stage: "avaliacao", treatments: [], reminders: [], payments: [] };
   assert.equal(automaticPatientStage(base), "avaliacao");
   assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "planejado" }] }), "orcamento");
   assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "aprovado" }] }), "tratamento");
   assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "andamento" }] }), "tratamento");
-  assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "concluido" }] }), "manutencao");
+  assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "concluido" }] }), "concluido");
+  assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "concluido" }], reminders: [{ type: "retorno", done: false }] }), "manutencao");
+  assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "concluido" }], reminders: [{ type: "retorno", done: true }] }), "concluido");
   assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "planejado" }, { status: "aprovado" }] }), "tratamento");
   assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "concluido" }, { status: "planejado" }] }), "orcamento");
   assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "concluido" }, { status: "andamento" }] }), "tratamento");
   assert.equal(automaticPatientStage({ ...base, stage: "concluido", treatments: [{ status: "concluido" }] }), "concluido");
   assert.equal(automaticPatientStage({ ...base, stage: "concluido", treatments: [{ status: "concluido" }, { status: "planejado" }] }), "orcamento");
   assert.equal(automaticPatientStage({ ...base, stage: "concluido", treatments: [{ status: "concluido" }, { status: "aprovado" }] }), "tratamento");
+});
+
+const demoData = await buildDemoData();
+check("A demonstração só coloca em acompanhamento quem possui retorno pendente", () => {
+  const stages = Object.fromEntries(demoData.patients.map((patient) => [patient.name, patient.stage]));
+  assert.equal(stages["Helena Duarte"], "manutencao");
+  assert.equal(stages["Patrícia Gomes"], "manutencao");
+  assert.equal(stages["Mariana Costa Ribeiro"], "concluido");
+});
+
+check("Dar alta conclui somente os retornos pendentes e preserva outros lembretes", () => {
+  const reminders = [
+    { id: "r1", type: "retorno", done: false },
+    { id: "r2", type: "pagamento", done: false },
+    { id: "r3", type: "retorno", done: true },
+  ];
+  assert.deepEqual(finishPendingReturns?.(reminders), [
+    { id: "r1", type: "retorno", done: true },
+    { id: "r2", type: "pagamento", done: false },
+    { id: "r3", type: "retorno", done: true },
+  ]);
 });
 
 check("Faixa etária é calculada pela data de nascimento e não por etiqueta manual", () => {

@@ -1,5 +1,6 @@
 import { addDays, setHours, setMinutes, startOfDay, subDays, subMonths, subYears, format } from "date-fns";
 import { emptyPatient } from "@/store/store";
+import { automaticPatientStage } from "./derive";
 import { putFile } from "./storage";
 import type {
   Appointment,
@@ -579,6 +580,9 @@ export async function buildDemoData(): Promise<{ patients: Patient[]; appointmen
   // Lembrete de retorno automático em um paciente de manutenção
   helena.reminders.push(rem("Retorno semestral — controle da prótese", 150, "retorno"));
   patricia.reminders.push(rem("Ligar para agendar retorno semestral", -1, "retorno"));
+  patients.forEach((patient) => {
+    patient.stage = automaticPatientStage(patient);
+  });
 
   return { patients, appointments };
 }

@@ -54,6 +54,19 @@ export function nextAppointment(patientId: string, appts: Appointment[]): Appoin
   return best;
 }
 
+export function appointmentToConfirm(patientId: string, appts: Appointment[], now = new Date()): Appointment | null {
+  let best: Appointment | null = null;
+  for (const appointment of appts) {
+    if (appointment.patientId !== patientId || appointment.status !== "agendado") continue;
+    const date = toDate(appointment.start);
+    if (!date || date < now) continue;
+    const days = differenceInCalendarDays(date, now);
+    if (days > 1) continue;
+    if (!best || date < toDate(best.start)!) best = appointment;
+  }
+  return best;
+}
+
 export function treatmentTotals(p: Patient) {
   const contracted = p.treatments.filter((t) => t.status !== "planejado");
   const gross = contracted.reduce((s, t) => s + t.price, 0);
@@ -107,7 +120,12 @@ function treatmentLabel(item: Pick<Patient["treatments"][number], "procedure" | 
   return `${item.procedure} · ${toothCount > 1 ? "dentes" : "dente"} ${item.teeth}`;
 }
 
-export function patientCareSummary(p: Pick<Patient, "treatments" | "reminders">): { active: string | null; followUp: string | null } {
+export function patientCareSummary(p: Pick<Patient, "treatments" | "reminders">): {
+  active: string | null;
+  proposed: string | null;
+  followUp: string | null;
+  lastCompleted: string | null;
+} {
   const activeItems = p.treatments
     .filter((item) => item.status === "aprovado" || item.status === "andamento")
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -115,26 +133,59 @@ export function patientCareSummary(p: Pick<Patient, "treatments" | "reminders">)
     ? `${activeItems.slice(0, 2).map(treatmentLabel).join("; ")}${activeItems.length > 2 ? ` +${activeItems.length - 2}` : ""}`
     : null;
 
+  const proposedItems = p.treatments
+    .filter((item) => item.status === "planejado")
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const proposed = proposedItems.length
+    ? `${proposedItems.slice(0, 2).map(treatmentLabel).join("; ")}${proposedItems.length > 2 ? ` +${proposedItems.length - 2}` : ""}`
+    : null;
+
   const explicitReturn = p.reminders
     .filter((item) => !item.done && item.type === "retorno")
     .sort((a, b) => a.dueAt.localeCompare(b.dueAt))[0];
-  if (explicitReturn) return { active, followUp: explicitReturn.title };
 
   const lastCompleted = p.treatments
     .filter((item) => item.status === "concluido")
     .sort((a, b) => (b.completedAt ?? b.createdAt).localeCompare(a.completedAt ?? a.createdAt))[0];
-  return { active, followUp: !active && lastCompleted ? `Após ${treatmentLabel(lastCompleted)}` : null };
+  return {
+    active,
+    proposed,
+    followUp: explicitReturn?.title ?? null,
+    lastCompleted: lastCompleted ? treatmentLabel(lastCompleted) : null,
+  };
 }
+
+export type PatientContactAction = {
+  kind: "reminder" | "payment" | "appointment";
+  label: "Entrar em contato";
+  reason: string;
+  message: string;
+};
 
 export function patientContactAction(
   p: Pick<Patient, "treatments" | "reminders" | "paymentSchedule" | "payments">,
-  next: Pick<Appointment, "start" | "procedure"> | null,
+  next: Pick<Appointment, "start" | "procedure" | "status"> | null,
   now = new Date(),
-): { label: string; reason: string } {
+): PatientContactAction | null {
   const urgentReminder = p.reminders
     .filter((item) => reminderAttention(item, now))
     .sort((a, b) => a.dueAt.localeCompare(b.dueAt))[0];
-  if (urgentReminder) return { label: "Resolver lembrete", reason: `o lembrete: ${urgentReminder.title}` };
+  if (urgentReminder) {
+    const attention = reminderAttention(urgentReminder, now);
+    const timing = attention === "Atrasado"
+      ? "atrasado"
+      : attention === "Hoje"
+        ? "para hoje"
+        : attention === "Amanhã"
+          ? "para amanhã"
+          : attention?.toLocaleLowerCase("pt-BR") ?? "pendente";
+    return {
+      kind: "reminder",
+      label: "Entrar em contato",
+      reason: `Lembrete ${timing}: ${urgentReminder.title}`,
+      message: "Gostaríamos de conversar sobre seu atendimento. Podemos falar por aqui?",
+    };
+  }
 
   const dueInstallment = (p.paymentSchedule ?? [])
     .map((item) => ({ item, attention: installmentAttention(item, p.payments, now) }))
@@ -146,28 +197,44 @@ export function patientContactAction(
       : dueInstallment.attention?.label.startsWith("Cobrar amanhã")
         ? "que vence amanhã"
         : "que está atrasado";
-    return { label: "Cobrar pagamento", reason: `o pagamento da ${dueInstallment.item.label}, ${timing}` };
+    return {
+      kind: "payment",
+      label: "Entrar em contato",
+      reason: `${timing === "que vence hoje" ? "Pagamento vence hoje" : timing === "que vence amanhã" ? "Pagamento vence amanhã" : "Pagamento atrasado"}: ${dueInstallment.item.label}`,
+      message: `Gostaríamos de conversar sobre o pagamento da ${dueInstallment.item.label}, ${timing}. Podemos falar por aqui?`,
+    };
   }
 
-  if (next) {
+  if (next?.status === "agendado") {
     const date = new Date(next.start);
-    return { label: "Confirmar consulta", reason: `a consulta de ${next.procedure} em ${format(date, "dd/MM 'às' HH:mm")}` };
+    const days = differenceInCalendarDays(date, now);
+    if (days >= 0 && days <= 1) {
+      const when = format(date, "dd/MM 'às' HH:mm");
+      return {
+        kind: "appointment",
+        label: "Entrar em contato",
+        reason: `Confirmar consulta de ${next.procedure} em ${when}`,
+        message: `Sua consulta de ${next.procedure} está marcada para ${when}. Podemos confirmar sua presença?`,
+      };
+    }
   }
 
-  const care = patientCareSummary(p);
-  if (care.active) return { label: "Conversar sobre tratamento", reason: `o tratamento: ${care.active}` };
-  if (care.followUp) return { label: "Combinar acompanhamento", reason: `o acompanhamento: ${care.followUp}` };
-  return { label: "Entrar em contato", reason: "seu atendimento odontológico" };
+  return null;
 }
 
-export function automaticPatientStage(p: Pick<Patient, "stage" | "treatments">): Stage {
+export function automaticPatientStage(p: Pick<Patient, "stage" | "treatments" | "reminders">): Stage {
   const hasActiveTreatment = p.treatments.some((item) => item.status === "aprovado" || item.status === "andamento");
   if (hasActiveTreatment) return "tratamento";
   if (p.treatments.some((item) => item.status === "planejado")) return "orcamento";
   if (p.treatments.length > 0 && p.treatments.every((item) => item.status === "concluido")) {
-    return p.stage === "concluido" ? "concluido" : "manutencao";
+    const hasPendingReturn = p.reminders.some((item) => item.type === "retorno" && !item.done);
+    return hasPendingReturn ? "manutencao" : "concluido";
   }
   return "avaliacao";
+}
+
+export function finishPendingReturns<T extends Pick<Patient["reminders"][number], "type" | "done">>(reminders: T[]): T[] {
+  return reminders.map((item) => item.type === "retorno" && !item.done ? { ...item, done: true } : item);
 }
 
 export function applyClinicalTreatmentStatus(
