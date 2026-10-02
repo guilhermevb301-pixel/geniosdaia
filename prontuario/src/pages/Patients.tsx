@@ -19,7 +19,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button, WhatsAppIcon } from "@/components/ui/Button";
 import { Avatar, EmptyState, Menu, Segmented } from "@/components/ui/misc";
 import { STAGES, stageById } from "@/lib/constants";
-import { birthdayIn, financialSituation, lastVisit, nextAppointment, normalizePatientsView, patientAgeGroup, patientAlerts, patientCareSummary, patientContactAction, recallDue, treatmentTotals, type PatientsView } from "@/lib/derive";
+import { birthdayIn, financialSituation, lastVisit, nextAppointment, normalizePatientsView, patientAgeGroup, patientAlerts, patientBoardMinimumWidth, patientCareSummary, patientContactAction, patientListMinimumWidth, recallDue, treatmentTotals, type PatientsView } from "@/lib/derive";
 import { reminderAttention } from "@/lib/reminders";
 import type { Appointment, Patient, Stage } from "@/lib/types";
 import { ageLabel, cn, digits, fmtDate, formatPhone, money, normalize, toDate, whatsappLink } from "@/lib/utils";
@@ -95,7 +95,7 @@ function PlanProgress({ row }: { row: Row }) {
   if (!row.p.treatments.length) return <span className="text-xs text-ink-3">Sem plano</span>;
   const done = row.p.treatments.filter((item) => item.status === "concluido").length;
   return (
-    <div className="min-w-24">
+    <div className="min-w-0">
       <div className="flex items-center justify-between gap-2 text-xs"><b className="text-ink">{Math.round(row.progress * 100)}%</b><span className="text-ink-3">{done} de {row.p.treatments.length}</span></div>
       <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-line"><div className="h-full rounded-full bg-jade-500" style={{ width: `${row.progress * 100}%` }} /></div>
     </div>
@@ -151,8 +151,8 @@ function ListView({ rows }: { rows: Row[] }) {
   return (
     <div className="card overflow-hidden">
       <div className="scrollbar-thin overflow-x-auto">
-        <div className="min-w-[1240px]" role="table" aria-label="Lista operacional de pacientes">
-          <div role="row" className="grid grid-cols-[240px_minmax(280px,1fr)_170px_120px_190px_190px] gap-4 border-b border-line bg-surface-2/70 px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-ink-3">
+        <div style={{ minWidth: patientListMinimumWidth() }} role="table" aria-label="Lista operacional de pacientes">
+          <div role="row" className="grid grid-cols-[156px_minmax(210px,1fr)_128px_82px_150px_150px] gap-3 border-b border-line bg-surface-2/70 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-ink-3">
             <span role="columnheader">Paciente</span><span role="columnheader">Tratamento e acompanhamento</span><span role="columnheader">Consultas</span><span role="columnheader">Plano</span><span role="columnheader">Financeiro</span><span role="columnheader">Próxima ação</span>
           </div>
           {rows.map((r) => {
@@ -170,12 +170,12 @@ function ListView({ rows }: { rows: Row[] }) {
                     navigate(`/pacientes/${r.p.id}`);
                   }
                 }}
-                className="grid cursor-pointer grid-cols-[240px_minmax(280px,1fr)_170px_120px_190px_190px] items-center gap-4 border-b border-line/60 px-4 py-4 transition last:border-0 hover:bg-brand-soft/30 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-jade-500"
+                className="grid cursor-pointer grid-cols-[156px_minmax(210px,1fr)_128px_82px_150px_150px] items-center gap-3 border-b border-line/60 px-3 py-3 transition last:border-0 hover:bg-brand-soft/30 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-jade-500"
               >
-                <div role="cell" className="flex min-w-0 items-start gap-3">
+                <div role="cell" className="flex min-w-0 items-start gap-2">
                   <button onClick={(e) => { e.stopPropagation(); toggleFavorite(r.p.id); }} className={cn("mt-2 shrink-0", r.p.favorite ? "text-amber-400" : "text-line hover:text-amber-400")} title="Favoritar"><Star className="h-4 w-4" fill={r.p.favorite ? "currentColor" : "none"} /></button>
-                  <Avatar patient={r.p} size={38} />
-                  <div className="min-w-0"><p className="truncate font-semibold text-ink" data-sensitive>{r.p.name}</p><p className="mt-0.5 text-xs text-ink-3">{[ageLabel(r.p.birthDate), formatPhone(r.p.phone)].filter(Boolean).join(" · ") || "—"}</p><span className="mt-1.5 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold" style={{ background: `${stage.color}18`, color: stage.color }}>{stage.label}</span></div>
+                  <Avatar patient={r.p} size={32} />
+                  <div className="min-w-0"><p className="line-clamp-2 text-sm font-semibold leading-tight text-ink" data-sensitive>{r.p.name}</p><p className="mt-0.5 truncate text-[11px] text-ink-3">{[ageLabel(r.p.birthDate), formatPhone(r.p.phone)].filter(Boolean).join(" · ") || "—"}</p><span className="mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold" style={{ background: `${stage.color}18`, color: stage.color }}>{stage.label}</span></div>
                 </div>
                 <div role="cell"><PatientDetails row={r} /></div>
                 <div role="cell" className="space-y-2 text-xs"><p><span className="block text-ink-3">Última visita</span><b className="text-ink">{r.last ? fmtDate(r.last) : "—"}</b></p><p><span className="block text-ink-3">Próxima consulta</span><b className={r.next ? "text-brand" : "text-ink-3"}>{r.next ? fmtDate(r.next.start, "dd/MM HH:mm") : "Não agendada"}</b></p></div>
@@ -193,18 +193,18 @@ function ListView({ rows }: { rows: Row[] }) {
 
 function BoardView({ rows }: { rows: Row[] }) {
   return (
-    <div className="scrollbar-thin -mx-4 overflow-x-auto px-4 pb-4 lg:-mx-8 lg:px-8">
-      <div className="flex min-w-max gap-4">
+    <div className="scrollbar-thin -mx-4 overflow-x-auto px-2 pb-4 lg:-mx-5 lg:px-2">
+      <div className="grid grid-cols-5 gap-2" style={{ minWidth: patientBoardMinimumWidth(STAGES.length) }}>
         {STAGES.map((st) => {
           const items = rows.filter((r) => r.p.stage === st.id);
           return (
-            <div key={st.id} className="flex w-[330px] flex-col rounded-2xl border border-line bg-surface-2/60 p-3">
-              <div className="mb-3 flex items-center gap-2 px-1">
-                <span className="h-2.5 w-2.5 rounded-full" style={{ background: st.color }} />
-                <p className="flex-1 text-sm font-bold text-ink">{st.label}</p>
-                <span className="rounded-md bg-surface px-1.5 py-0.5 text-xs font-bold text-ink-3">{items.length}</span>
+            <div key={st.id} className="flex min-w-0 flex-col rounded-xl border border-line bg-surface-2/60 p-2">
+              <div className="mb-2 flex items-center gap-1.5">
+                <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: st.color }} />
+                <p className="min-w-0 flex-1 text-xs font-bold leading-tight text-ink">{st.label}</p>
+                <span className="rounded-md bg-surface px-1.5 py-0.5 text-[10px] font-bold text-ink-3">{items.length}</span>
               </div>
-              <p className="-mt-2 mb-3 px-1 text-[11px] text-ink-3">{st.hint}</p>
+              <p className="mb-2 line-clamp-2 min-h-7 text-[10px] leading-snug text-ink-3">{st.hint}</p>
               <div className="flex min-h-[120px] flex-1 flex-col gap-2">
                 <AnimatePresence>
                   {items.map((r) => (
@@ -215,12 +215,12 @@ function BoardView({ rows }: { rows: Row[] }) {
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.96 }}
                     >
-                      <article className="rounded-xl border border-line bg-surface p-3 shadow-sm transition hover:-translate-y-0.5 hover:border-jade-300 hover:shadow-card">
+                      <article className="rounded-xl border border-line bg-surface p-2.5 shadow-sm transition hover:-translate-y-0.5 hover:border-jade-300 hover:shadow-card">
                         <Link to={`/pacientes/${r.p.id}`} className="block">
-                        <div className="flex items-center gap-2.5">
-                          <Avatar patient={r.p} size={32} />
+                        <div className="flex items-center gap-2">
+                          <Avatar patient={r.p} size={28} />
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-semibold text-ink" data-sensitive>
+                            <p className="line-clamp-2 min-h-8 text-xs font-semibold leading-tight text-ink" data-sensitive>
                               {r.p.name}
                             </p>
                             <p className="truncate text-[11px] text-ink-3">{[ageLabel(r.p.birthDate), patientAgeGroup(r.p)].filter(Boolean).join(" · ") || "—"}</p>
@@ -229,13 +229,13 @@ function BoardView({ rows }: { rows: Row[] }) {
                           {r.p.favorite && <Star className="h-3.5 w-3.5 shrink-0 text-amber-400" fill="currentColor" />}
                         </div>
                         </Link>
-                        <div className="mt-3 border-t border-line pt-3"><PatientDetails row={r} /></div>
-                        <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-surface-2 p-2 text-xs">
-                          <p><span className="block text-ink-3">Última visita</span><b className="text-ink">{r.last ? fmtDate(r.last, "dd/MM/yy") : "—"}</b></p>
-                          <p><span className="block text-ink-3">Próxima consulta</span><b className={r.next ? "text-brand" : "text-ink-3"}>{r.next ? fmtDate(r.next.start, "dd/MM HH:mm") : "Não agendada"}</b></p>
+                        <div className="mt-2 border-t border-line pt-2"><PatientDetails row={r} /></div>
+                        <div className="mt-2 grid grid-cols-2 gap-1 rounded-lg bg-surface-2 p-2 text-[11px]">
+                          <p><span className="block text-ink-3">Última</span><b className="text-ink">{r.last ? fmtDate(r.last, "dd/MM/yy") : "—"}</b></p>
+                          <p><span className="block text-ink-3">Próxima</span><b className={r.next ? "text-brand" : "text-ink-3"}>{r.next ? fmtDate(r.next.start, "dd/MM HH:mm") : "Não agendada"}</b></p>
                         </div>
-                        <div className="mt-3 grid grid-cols-2 items-end gap-3"><PlanProgress row={r} /><FinanceSummary patient={r.p} /></div>
-                        <div className="mt-3 flex items-center gap-2"><Link to={`/pacientes/${r.p.id}`} className="flex min-h-9 flex-1 items-center justify-center rounded-xl border border-line px-3 py-2 text-xs font-bold text-ink-2 hover:bg-surface-2">Abrir prontuário</Link><ContactButton row={r} /></div>
+                        <div className="mt-2 space-y-2"><PlanProgress row={r} /><FinanceSummary patient={r.p} /></div>
+                        <div className="mt-2 grid gap-1.5"><Link to={`/pacientes/${r.p.id}`} className="flex min-h-9 items-center justify-center rounded-xl border border-line px-2 py-1.5 text-xs font-bold text-ink-2 hover:bg-surface-2">Abrir prontuário</Link><ContactButton row={r} compact /></div>
                       </article>
                     </motion.div>
                   ))}
@@ -324,10 +324,10 @@ export function Patients() {
   const bdays = patients.filter((p) => birthdayIn(p, 0) === 0).length;
 
   return (
-    <div className="mx-auto max-w-[1400px] px-4 py-6 lg:px-8">
+    <div className="mx-auto max-w-none px-3 py-4 lg:px-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-display text-3xl font-semibold text-ink">Pacientes</h1>
+          <h1 className="font-display text-2xl font-semibold text-ink">Pacientes</h1>
           <p className="mt-1 text-sm text-ink-3">
             {activeCount} pacientes ativos{bdays ? ` · ${bdays} aniversariante${bdays > 1 ? "s" : ""} hoje 🎂` : ""}
           </p>
@@ -348,7 +348,7 @@ export function Patients() {
       </div>
 
       {/* Busca e filtros */}
-      <div className="mt-6 flex flex-col gap-3 lg:flex-row lg:items-center">
+      <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-center">
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3" />
           <input className="input h-11 pl-10" placeholder="Buscar por nome, telefone ou CPF…" value={q} onChange={(e) => setQ(e.target.value)} />
@@ -416,7 +416,7 @@ export function Patients() {
         </div>
       )}
 
-      <div className="mt-6">
+      <div className="mt-4">
         {rows.length === 0 ? (
           <div className="card">
             <EmptyState

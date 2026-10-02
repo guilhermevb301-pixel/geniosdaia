@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 // Bundle the actual TypeScript helpers; no browser, real patient, or cloud writes.
 const result = await build({ stdin: { contents: 'export * from "./src/lib/finance"; export * from "./src/lib/reminders"; export * from "./src/lib/derive"; export { parseMoney } from "./src/lib/utils"; export { DEFAULT_SETTINGS, STAGES } from "./src/lib/constants";', resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm" });
-const { splitInstallments, buildPaymentAgreement, installmentBalance, buildPaymentRecord, reminderAttention, installmentAttention, treatmentTotals, financialSituation, automaticPatientStage, patientAgeGroup, applyClinicalTreatmentStatus, toggleToothSelection, treatmentPriceTotal, sameTreatmentScope, patientCareSummary, patientContactAction, normalizePatientsView, parseMoney, DEFAULT_SETTINGS, STAGES } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
+const { splitInstallments, buildPaymentAgreement, installmentBalance, buildPaymentRecord, reminderAttention, installmentAttention, treatmentTotals, financialSituation, automaticPatientStage, patientAgeGroup, applyClinicalTreatmentStatus, toggleToothSelection, treatmentPriceTotal, sameTreatmentScope, patientCareSummary, patientContactAction, normalizePatientsView, patientBoardMinimumWidth, patientListMinimumWidth, parseMoney, DEFAULT_SETTINGS, STAGES } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
 let checks = 0;
 function check(name, fn) { fn(); checks++; console.log(`✓ ${name}`); }
 
@@ -23,6 +23,13 @@ check("A lista antiga de cartões migra para o quadro sem deixar uma visualizaç
   assert.equal(normalizePatientsView?.("lista"), "lista");
   assert.equal(normalizePatientsView?.("quadro"), "quadro");
   assert.equal(normalizePatientsView?.("desconhecida"), "quadro");
+});
+
+check("Quadro e lista cabem na largura útil de um Mac sem rolagem lateral", () => {
+  assert.equal(patientBoardMinimumWidth?.(5), 952);
+  assert.equal(patientListMinimumWidth?.(), 940);
+  assert.ok(patientBoardMinimumWidth?.(5) <= 1012);
+  assert.ok(patientListMinimumWidth?.() <= 1012);
 });
 
 check("O resumo separa o tratamento ativo do motivo real do acompanhamento", () => {

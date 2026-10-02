@@ -88,6 +88,15 @@ export function financialSituation(p: Pick<Patient, "treatments" | "payments" | 
 
 export type PatientsView = "lista" | "quadro";
 
+export function patientBoardMinimumWidth(stageCount: number) {
+  if (!Number.isInteger(stageCount) || stageCount < 1) return 0;
+  return stageCount * 184 + (stageCount - 1) * 8;
+}
+
+export function patientListMinimumWidth() {
+  return 940;
+}
+
 export function normalizePatientsView(view: string | null | undefined): PatientsView {
   return view === "lista" ? "lista" : "quadro";
 }
