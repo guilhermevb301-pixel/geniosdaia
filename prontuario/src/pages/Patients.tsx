@@ -94,16 +94,15 @@ function CareSummary({ patient }: { patient: Patient }) {
     <div className="space-y-2 text-xs">
       {care.active && <p><span className="font-bold text-ink-3">Tratando agora</span><span className="mt-0.5 block break-words font-semibold text-ink">{care.active}</span></p>}
       {care.proposed && <p><span className="font-bold text-amber-700">Proposta aguardando decisão</span><span className="mt-0.5 block break-words text-ink-2">{care.proposed}</span></p>}
-      {patient.stage === "manutencao" && care.lastCompleted && <p><span className="font-bold text-ink-3">Último tratamento</span><span className="mt-0.5 block break-words text-ink-2">{care.lastCompleted}</span></p>}
+      {!care.active && care.lastCompleted && <p><span className="font-bold text-ink-3">Último tratamento</span><span className="mt-0.5 block break-words text-ink-2">{care.lastCompleted}</span></p>}
       {care.followUp && <p><span className="font-bold text-violet-600">Retorno programado</span><span className="mt-0.5 block break-words text-ink-2">{care.followUp}</span></p>}
-      {patient.stage === "manutencao" && !care.followUp && <p className="text-ink-3">Retorno ainda não definido</p>}
-      {!care.active && !care.proposed && patient.stage !== "manutencao" && <p className="text-ink-3">Tratamento ainda não definido</p>}
+      {!care.active && !care.proposed && !care.lastCompleted && <p className="text-ink-3">{patient.importedSources?.length ? "Histórico importado · confirmar situação atual na consulta" : "Tratamento ainda não definido"}</p>}
     </div>
   );
 }
 
 function PlanProgress({ row }: { row: Row }) {
-  if (!row.p.treatments.length) return <span className="text-xs text-ink-3">Sem plano</span>;
+  if (!row.p.treatments.length) return <span className="text-xs text-ink-3">{row.p.historicalPlans?.length ? "Plano anterior no prontuário" : "Sem plano"}</span>;
   const done = row.p.treatments.filter((item) => item.status === "concluido").length;
   return (
     <div className="min-w-0">
@@ -115,7 +114,7 @@ function PlanProgress({ row }: { row: Row }) {
 
 function FinanceSummary({ patient }: { patient: Patient }) {
   const finance = financialSituation(patient);
-  const mainLabel = finance.id === "mixed" ? "A receber" : finance.id === "proposal" ? "Proposta ainda não aceita" : finance.label;
+  const mainLabel = !patient.treatments.length && patient.historicalFinance?.length ? "Saldo anterior a conferir" : finance.id === "mixed" ? "A receber" : finance.id === "proposal" ? "Proposta ainda não aceita" : finance.label;
   return (
     <div className="text-xs">
       <p className={cn("font-bold", finance.id === "paid" ? "text-jade-600" : finance.id === "receivable" || finance.id === "mixed" ? "text-amber-700" : finance.id === "proposal" ? "text-sky-700" : "text-ink-3")}>{mainLabel}{finance.amount > 0 ? ` · ${money(finance.amount)}` : ""}</p>
@@ -206,7 +205,7 @@ function ListView({ rows }: { rows: Row[] }) {
 function BoardView({ rows }: { rows: Row[] }) {
   return (
     <div className="scrollbar-thin -mx-4 overflow-x-auto px-2 pb-4 lg:-mx-5 lg:px-2">
-      <div className="grid grid-cols-5 gap-2" style={{ minWidth: patientBoardMinimumWidth(STAGES.length) }}>
+      <div className="grid grid-cols-3 gap-2" style={{ minWidth: patientBoardMinimumWidth(STAGES.length) }}>
         {STAGES.map((st) => {
           const items = rows.filter((r) => r.p.stage === st.id);
           return (

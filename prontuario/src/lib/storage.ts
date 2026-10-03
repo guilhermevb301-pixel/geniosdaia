@@ -119,7 +119,8 @@ export async function getLocalFile(id: string): Promise<Blob | null> {
 }
 
 /** Guarda um arquivo localmente e envia para a nuvem (quando conectado). */
-export async function putFile(id: string, blob: Blob) {
+export async function putFile(id: string, blob: Blob, requireCloud = false) {
+  if (requireCloud && !remote) throw new Error("Entre na conta antes de importar arquivos.");
   await putLocalFile(id, blob);
   const old = urlCache.get(id);
   if (old) URL.revokeObjectURL(old);
@@ -127,8 +128,9 @@ export async function putFile(id: string, blob: Blob) {
   if (remote) {
     try {
       await remote.upload(id, blob);
-    } catch {
+    } catch (error) {
       remote.onUploadFailed(id);
+      if (requireCloud) throw error;
     }
   }
 }

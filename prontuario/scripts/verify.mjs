@@ -138,7 +138,8 @@ check("Perfil especializado sem preços inventados e etapas compatíveis com dad
   assert.match(DEFAULT_SETTINGS.documentFooter, /Cirurgia.*Implantes.*Próteses.*Odontologia Hospitalar.*Pacientes Especiais.*Atendimento Odontológico Domiciliar/);
   assert.equal(new Set(DEFAULT_SETTINGS.procedures.map(p => p.id)).size, DEFAULT_SETTINGS.procedures.length);
   assert.ok(DEFAULT_SETTINGS.procedures.every(p => p.pricePending && p.price === 0));
-  assert.equal(STAGES.find(s => s.id === "manutencao").label, "Em acompanhamento");
+  assert.deepEqual(STAGES.map(s => s.id), ["avaliacao", "tratamento", "concluido"]);
+  assert.equal(STAGES.find(s => s.id === "concluido").label, "Alta / Inativo");
 });
 
 check("Contas já existentes recebem os dados profissionais sem apagar personalizações", () => {
@@ -290,25 +291,25 @@ check("Situação financeira nunca presume pagamento", () => {
 check("Etapa acompanha automaticamente o trabalho clínico sem confundir aprovação com pagamento", () => {
   const base = { stage: "avaliacao", treatments: [], reminders: [], payments: [] };
   assert.equal(automaticPatientStage(base), "avaliacao");
-  assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "planejado" }] }), "orcamento");
+  assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "planejado" }] }), "avaliacao");
   assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "aprovado" }] }), "tratamento");
   assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "andamento" }] }), "tratamento");
-  assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "concluido" }] }), "concluido");
-  assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "concluido" }], reminders: [{ type: "retorno", done: false }] }), "manutencao");
-  assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "concluido" }], reminders: [{ type: "retorno", done: true }] }), "concluido");
+  assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "concluido" }] }), "tratamento");
+  assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "concluido" }], reminders: [{ type: "retorno", done: false }] }), "tratamento");
+  assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "concluido" }], reminders: [{ type: "retorno", done: true }] }), "tratamento");
   assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "planejado" }, { status: "aprovado" }] }), "tratamento");
-  assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "concluido" }, { status: "planejado" }] }), "orcamento");
+  assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "concluido" }, { status: "planejado" }] }), "avaliacao");
   assert.equal(automaticPatientStage({ ...base, treatments: [{ status: "concluido" }, { status: "andamento" }] }), "tratamento");
   assert.equal(automaticPatientStage({ ...base, stage: "concluido", treatments: [{ status: "concluido" }] }), "concluido");
-  assert.equal(automaticPatientStage({ ...base, stage: "concluido", treatments: [{ status: "concluido" }, { status: "planejado" }] }), "orcamento");
+  assert.equal(automaticPatientStage({ ...base, stage: "concluido", treatments: [{ status: "concluido" }, { status: "planejado" }] }), "avaliacao");
   assert.equal(automaticPatientStage({ ...base, stage: "concluido", treatments: [{ status: "concluido" }, { status: "aprovado" }] }), "tratamento");
 });
 
 const demoData = await buildDemoData();
-check("A demonstração só coloca em acompanhamento quem possui retorno pendente", () => {
+check("A demonstração usa apenas as três etapas e mantém o acompanhamento em tratamento", () => {
   const stages = Object.fromEntries(demoData.patients.map((patient) => [patient.name, patient.stage]));
-  assert.equal(stages["Helena Duarte"], "manutencao");
-  assert.equal(stages["Patrícia Gomes"], "manutencao");
+  assert.equal(stages["Helena Duarte"], "tratamento");
+  assert.equal(stages["Patrícia Gomes"], "tratamento");
   assert.equal(stages["Mariana Costa Ribeiro"], "concluido");
 });
 

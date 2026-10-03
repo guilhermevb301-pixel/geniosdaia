@@ -21,6 +21,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
 import { handleSignOut } from "@/components/Layout";
 import { Logo } from "@/components/Logo";
+import { PatientImport } from "@/components/PatientImport";
 import { Button } from "@/components/ui/Button";
 import { confirmDialog, toast } from "@/components/ui/feedback";
 import { Field, Segmented, Select, Switch } from "@/components/ui/misc";
@@ -434,6 +435,7 @@ export function SettingsPage() {
               </button>
               <input ref={importRef} type="file" accept="application/json,.json" className="hidden" onChange={(e) => (void importBackup(e.target.files?.[0]), (e.target.value = ""))} />
             </div>
+            <PatientImport />
             <div className="mt-5 space-y-3 border-t border-line pt-5">
               {demoCount > 0 && (
                 <div className="flex flex-wrap items-center justify-between gap-3">

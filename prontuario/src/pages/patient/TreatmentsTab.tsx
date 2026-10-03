@@ -10,6 +10,7 @@ import { printBudget } from "@/lib/print";
 import type { Patient, TreatmentItem, TreatmentStatus } from "@/lib/types";
 import { cn, money, nowISO, parseMoney, todayKey, uid } from "@/lib/utils";
 import { useStore } from "@/store/store";
+import { HistoricalNotes } from "@/components/HistoricalNotes";
 
 export function TreatmentsTab({ patient }: { patient: Patient }) {
   const updatePatient = useStore((s) => s.updatePatient);
@@ -76,6 +77,7 @@ export function TreatmentsTab({ patient }: { patient: Patient }) {
   return (
     <>
     <div className="space-y-4">
+      <HistoricalNotes patient={patient} kind="plan"/>
       <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900 dark:border-sky-900 dark:bg-sky-950/30 dark:text-sky-200"><b>Aqui é a parte clínica.</b> “Procedimento realizado” quer dizer que o atendimento foi feito — não que foi pago. Cobranças e recebimentos ficam somente no Financeiro.</div>
       <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
       <Card title="Plano de tratamento" icon={<ClipboardList className="h-5 w-5" />}>

@@ -6,6 +6,7 @@ import { confirmDialog, toast } from "@/components/ui/feedback";
 import { Card, EmptyState } from "@/components/ui/misc";
 import { PAYMENT_METHODS } from "@/lib/constants";
 import { treatmentTotals } from "@/lib/derive";
+import { deletablePaymentAttachment } from "@/lib/finance";
 import { openLink } from "@/lib/messages";
 import { printReceipt } from "@/lib/print";
 import { deleteFile, getFileUrl } from "@/lib/storage";
@@ -13,6 +14,7 @@ import type { Installment, Patient } from "@/lib/types";
 import { firstName, fmtDate, money, whatsappLink } from "@/lib/utils";
 import { useStore } from "@/store/store";
 import { PaymentPlan } from "@/components/PaymentPlan";
+import { HistoricalNotes } from "@/components/HistoricalNotes";
 
 export function FinanceTab({ patient }: { patient: Patient }) {
   const updatePatient = useStore((s) => s.updatePatient);
@@ -29,6 +31,8 @@ export function FinanceTab({ patient }: { patient: Patient }) {
 
   return (
     <div className="space-y-6">
+      <HistoricalNotes patient={patient} kind="finance"/>
+      {patient.payments.some(p=>p.historical) && <div className="card p-4 text-sm"><b>Recebimentos anteriores à importação: {money(patient.payments.filter(p=>p.historical).reduce((sum,p)=>sum+p.amount,0))}</b><p className="mt-1 text-ink-3">Estão preservados no histórico abaixo. Não quitam automaticamente novos tratamentos e não demonstram, sozinhos, o saldo atual do paciente.</p></div>}
       <div className="rounded-2xl border border-jade-200 bg-brand-soft px-4 py-3 text-sm text-brand-ink"><b>Aqui é somente dinheiro.</b> Vencimento é uma cobrança planejada; “pagamento recebido” significa que o dinheiro realmente entrou. A realização do procedimento fica em Tratamentos.</div>
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {[
@@ -83,18 +87,20 @@ export function FinanceTab({ patient }: { patient: Patient }) {
                       <p className="text-sm font-bold text-ink">{money(p.amount)}</p>
                       <p className="truncate text-xs text-ink-3">
                         {fmtDate(p.date)} · {PAYMENT_METHODS[p.method]}
+                        {p.historical ? " · Registro histórico importado" : ""}
                         {p.description ? ` · ${p.description}` : ""}
                       </p>
                     </div>
-                    <Button size="sm" variant="secondary" icon={<Printer className="h-3.5 w-3.5" />} onClick={() => printReceipt(patient, settings, p)}>
+                    {!p.historical && <Button size="sm" variant="secondary" icon={<Printer className="h-3.5 w-3.5" />} onClick={() => printReceipt(patient, settings, p)}>
                       Recibo
-                    </Button>
-                    {p.receiptAttachmentId && <Button size="sm" variant="secondary" icon={<Paperclip className="h-3.5 w-3.5" />} onClick={async () => { const url = await getFileUrl(p.receiptAttachmentId!); if (url) window.open(url, "_blank", "noopener"); else toast.error("Não foi possível abrir o comprovante."); }}>Comprovante</Button>}
+                    </Button>}
+                    {p.receiptAttachmentId && <Button size="sm" variant="secondary" icon={<Paperclip className="h-3.5 w-3.5" />} onClick={async () => { const url = await getFileUrl(p.receiptAttachmentId!); if (url) window.open(url, "_blank", "noopener"); else toast.error("Não foi possível abrir o documento."); }}>{p.historical ? "Documento de origem" : "Comprovante"}</Button>}
                     <button aria-label="Excluir pagamento"
                       onClick={async () => {
-                        if (await confirmDialog({ title: "Excluir este pagamento?", description: p.receiptAttachmentId ? `${money(p.amount)}. O comprovante anexado também será removido.` : money(p.amount), danger: true, confirmLabel: "Excluir" })) {
-                          if (p.receiptAttachmentId) await deleteFile(p.receiptAttachmentId);
-                          updatePatient(patient.id, (x) => ({ payments: x.payments.filter((y) => y.id !== p.id), attachments: p.receiptAttachmentId ? x.attachments.filter((item) => item.id !== p.receiptAttachmentId) : x.attachments }));
+                        const removable = deletablePaymentAttachment(patient, p);
+                        if (await confirmDialog({ title: "Excluir este pagamento?", description: removable ? `${money(p.amount)}. O comprovante anexado também será removido.` : `${money(p.amount)}. Documentos originais importados serão preservados.`, danger: true, confirmLabel: "Excluir" })) {
+                          if (removable) await deleteFile(removable);
+                          updatePatient(patient.id, (x) => ({ payments: x.payments.filter((y) => y.id !== p.id), attachments: removable ? x.attachments.filter((item) => item.id !== removable) : x.attachments }));
                         }
                       }}
                       className="rounded-lg p-2 text-ink-2 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40"

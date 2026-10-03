@@ -20,6 +20,9 @@ const METHOD_COLORS: Record<PaymentMethod, string> = {
   dinheiro: "#F59E0B",
   convenio: "#14B8A6",
   boleto: "#94A3B8",
+  transferencia: "#8B5CF6",
+  cheque: "#A16207",
+  nao_informado: "#64748B",
 };
 
 function Stat({ icon, label, value, hint, tone }: { icon: ReactNode; label: string; value: string; hint?: string; tone: string }) {

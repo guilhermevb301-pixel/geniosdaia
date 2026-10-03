@@ -1,6 +1,6 @@
 export type ID = string;
 
-export type Stage = "avaliacao" | "orcamento" | "tratamento" | "manutencao" | "concluido";
+export type Stage = "avaliacao" | "tratamento" | "concluido";
 
 export type Gender = "F" | "M" | "O";
 
@@ -53,6 +53,8 @@ export interface TreatmentItem {
 }
 
 export interface Evolution {
+  /** Registros administrativos importados não contam como uma visita clínica. */
+  clinicalVisit?: boolean;
   id: ID;
   date: string;
   title: string;
@@ -86,7 +88,7 @@ export interface StickyNote {
   createdAt: string;
 }
 
-export type PaymentMethod = "pix" | "credito" | "debito" | "dinheiro" | "convenio" | "boleto";
+export type PaymentMethod = "pix" | "credito" | "debito" | "dinheiro" | "convenio" | "boleto" | "transferencia" | "cheque" | "nao_informado";
 
 export interface Payment {
   id: ID;
@@ -97,6 +99,8 @@ export interface Payment {
   installments?: number;
   installmentId?: string;
   receiptAttachmentId?: string;
+  /** Recebimento anterior à migração; não abate novos tratamentos. */
+  historical?: boolean;
 }
 
 export interface Installment {
@@ -174,6 +178,10 @@ export interface Patient {
   paymentSchedule?: Installment[];
   paymentAgreement?: PaymentAgreement;
   attachments: Attachment[];
+  importedSources?: { id: string; name: string; attachmentId: string; sha256: string; text: string; importedAt: string }[];
+  importWarnings?: string[];
+  historicalPlans?: { sourceId: string; text: string }[];
+  historicalFinance?: { sourceId: string; text: string }[];
 }
 
 export type AppointmentStatus = "agendado" | "confirmado" | "atendido" | "faltou" | "cancelado";

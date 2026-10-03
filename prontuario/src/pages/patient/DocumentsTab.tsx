@@ -7,6 +7,7 @@ import { formatProfessionalCro, printAnamnesis, printBudget, printFreeText, prin
 import type { Patient } from "@/lib/types";
 import { cn, fmtDate, fmtDateLong, todayKey } from "@/lib/utils";
 import { useStore } from "@/store/store";
+import { ImportedDocuments } from "@/components/ImportedDocuments";
 
 interface Med extends RxItem {
   id: string;
@@ -90,6 +91,8 @@ export function DocumentsTab({ patient }: { patient: Patient }) {
   const canPrint = doc !== "receita" || Object.keys(picked).length > 0 || custom.name.trim();
 
   return (
+    <div className="space-y-6">
+    <ImportedDocuments patient={patient}/>
     <div className="grid gap-6 xl:grid-cols-[300px_1fr]">
       <div className="grid grid-cols-2 gap-2 self-start xl:grid-cols-1">
         {DOCS.map((d) => (
@@ -280,6 +283,7 @@ export function DocumentsTab({ patient }: { patient: Patient }) {
           </p>
         </div>
       </Card>
+    </div>
     </div>
   );
 }

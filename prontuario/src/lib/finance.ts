@@ -1,5 +1,11 @@
 import { addMonths, format, parseISO, isValid } from "date-fns";
-import type { Installment, Payment, PaymentMethod } from "./types";
+import type { Installment, Patient, Payment, PaymentMethod } from "./types";
+
+export function deletablePaymentAttachment(patient: Patient, payment: Payment): string | undefined {
+  const id = payment.receiptAttachmentId;
+  if (!id || payment.historical || patient.importedSources?.some(s => s.attachmentId === id) || patient.payments.some(p => p.id !== payment.id && p.receiptAttachmentId === id)) return undefined;
+  return id;
+}
 
 export type PaymentAgreementMode = "avista" | "parcelado" | "depois";
 

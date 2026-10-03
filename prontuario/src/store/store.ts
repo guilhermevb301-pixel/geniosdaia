@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { DEFAULT_SETTINGS, AVATAR_COLORS } from "@/lib/constants";
 import type { AppData, Appointment, ID, Patient, Settings } from "@/lib/types";
 import { nowISO, uid } from "@/lib/utils";
-import { automaticPatientStage } from "@/lib/derive";
+import { automaticPatientStage, normalizePatientStage } from "@/lib/derive";
 
 export const DATA_VERSION = 1;
 
@@ -27,7 +27,7 @@ export function emptyPatient(partial: Partial<Patient> = {}): Patient {
     attachments: [],
     ...partial,
   };
-  return { ...patient, stage: automaticPatientStage(patient) };
+  return { ...patient, stage: partial.stage ? normalizePatientStage(partial.stage) : automaticPatientStage(patient) };
 }
 
 export function withDefaults(settings?: Partial<Settings> | null): Settings {
@@ -157,7 +157,7 @@ export const useStore = create<State>((set, get) => ({
         if (p.id !== id) return p;
         const changes = typeof patch === "function" ? patch(p) : patch;
         const next = { ...p, ...changes, updatedAt: nowISO() };
-        return { ...next, stage: automaticPatientStage(next) };
+        return { ...next, stage: changes.stage ? normalizePatientStage(changes.stage) : (changes.treatments || changes.reminders) ? automaticPatientStage(next) : normalizePatientStage(next.stage) };
       }),
     })),
 

@@ -26,9 +26,10 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { ToothGlyph } from "@/components/Logo";
 import { Button, WhatsAppIcon } from "@/components/ui/Button";
 import { confirmDialog, toast } from "@/components/ui/feedback";
-import { Avatar, EmptyState, Menu } from "@/components/ui/misc";
-import { stageById } from "@/lib/constants";
-import { finishPendingReturns, isBirthdayToday, patientAgeGroup, patientAlerts, treatmentTotals } from "@/lib/derive";
+import { Avatar, EmptyState, Menu, Select } from "@/components/ui/misc";
+import { STAGES, stageById } from "@/lib/constants";
+import type { Stage } from "@/lib/types";
+import { isBirthdayToday, patientAgeGroup, patientAlerts, treatmentTotals } from "@/lib/derive";
 import { printPatientRecord } from "@/lib/print";
 import { ageLabel, cn, fmtDate, formatPhone, money, whatsappLink } from "@/lib/utils";
 import { usePatient, useStore } from "@/store/store";
@@ -196,8 +197,8 @@ export function PatientRecord() {
                 { label: "Editar dados", icon: <Pencil className="h-4 w-4" />, onClick: () => openPatientModal(patient.id) },
                 { label: "Imprimir prontuário completo", icon: <Printer className="h-4 w-4" />, onClick: () => printPatientRecord(patient, settings, appointments) },
                 ...(patient.email ? [{ label: "Enviar e-mail", icon: <Mail className="h-4 w-4" />, onClick: () => window.open(`mailto:${patient.email}`) }] : []),
-                ...(patient.stage === "manutencao" ? [{ label: "Encerrar acompanhamento e dar alta", icon: <CheckCircle2 className="h-4 w-4" />, onClick: async () => { if (await confirmDialog({ title: "Encerrar acompanhamento e dar alta?", description: "Os retornos pendentes serão concluídos. Um novo procedimento ou retorno cadastrado reabrirá o fluxo automaticamente.", confirmLabel: "Encerrar e dar alta" })) { updatePatient(patient.id, (current) => ({ reminders: finishPendingReturns(current.reminders) })); toast.success("Acompanhamento encerrado e alta registrada"); } } }] : []),
-                ...(patient.stage === "concluido" ? [{ label: "Programar novo retorno", icon: <BellRing className="h-4 w-4" />, onClick: () => { setTab("lembretes"); toast.info("Cadastre o retorno", "Ao criar um lembrete do tipo Retorno, o paciente irá automaticamente para Em acompanhamento."); } }] : []),
+                ...(patient.stage !== "concluido" ? [{ label: "Registrar alta / inativo", icon: <CheckCircle2 className="h-4 w-4" />, onClick: async () => { if (await confirmDialog({ title: "Registrar alta / inativo?", description: "Apenas a classificação será alterada. Procedimentos, pagamentos e lembretes permanecem no histórico, sem serem concluídos automaticamente.", confirmLabel: "Registrar alta / inativo" })) { updatePatient(patient.id, { stage: "concluido" }); toast.success("Alta / inativo registrado"); } } }] : []),
+                ...(patient.stage === "concluido" ? [{ label: "Programar novo retorno", icon: <BellRing className="h-4 w-4" />, onClick: () => { setTab("lembretes"); toast.info("Cadastre o retorno", "O retorno clínico pendente reabre o paciente em tratamento."); } }] : []),
                 "divider" as const,
                 {
                   label: patient.archived ? "Desarquivar" : "Arquivar paciente",
@@ -233,7 +234,7 @@ export function PatientRecord() {
 
         <div className="relative grid grid-cols-2 border-t border-line xl:grid-cols-4">
           {[
-            { label: "Etapa automática", value: <span className="inline-flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ background: stage.color }} />{stage.label}</span> },
+            { label: "Situação do paciente", value: <Select aria-label="Situação do paciente" value={patient.stage} onChange={async (e) => { const next = e.target.value as Stage; if (next === "concluido" && !(await confirmDialog({ title: "Registrar alta / inativo?", description: "Isso não quita valores, não conclui procedimentos e não apaga lembretes.", confirmLabel: "Confirmar" }))) return; updatePatient(patient.id, { stage: next }); }}>{STAGES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}</Select> },
             { label: "Procedimentos", value: totals.count ? `${totals.done}/${totals.count} realizados` : "Sem plano" },
             { label: "Total contratado", value: money(totals.total) },
             { label: "Saldo a receber", value: <span className={totals.balance ? "text-amber-600" : "text-jade-600"}>{money(totals.balance)}</span> },
@@ -244,7 +245,7 @@ export function PatientRecord() {
             </div>
           ))}
         </div>
-        <div className="border-t border-line bg-surface-2 px-5 py-3 text-sm leading-relaxed text-ink-2 sm:px-6"><b className="text-ink">{stage.label}:</b> {stage.hint} <span>A etapa muda automaticamente pelo plano; aceite, realização clínica e pagamento são informações separadas.</span></div>
+        <div className="border-t border-line bg-surface-2 px-5 py-3 text-sm leading-relaxed text-ink-2 sm:px-6"><b className="text-ink">{stage.label}:</b> {stage.hint} <span>Aceitar um tratamento atualiza a etapa. Alta é registrada pelo profissional; realizar um procedimento não significa pagamento nem alta.</span></div>
       </section>
 
       {/* Abas */}

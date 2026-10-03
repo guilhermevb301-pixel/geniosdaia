@@ -30,6 +30,7 @@ export function hasPenicillinAllergy(p: Patient) {
 export function lastVisit(p: Patient, appts: Appointment[]): Date | null {
   let best: Date | null = null;
   for (const e of p.evolutions) {
+    if (e.clinicalVisit === false) continue;
     const d = toDate(e.date);
     if (d && (!best || d > best)) best = d;
   }
@@ -73,7 +74,7 @@ export function treatmentTotals(p: Patient) {
   const discount = (gross * (p.planDiscount ?? 0)) / 100;
   const total = gross - discount;
   const planned = p.treatments.filter((t) => t.status === "planejado").reduce((s, t) => s + t.price, 0);
-  const paid = p.payments.reduce((s, x) => s + x.amount, 0);
+  const paid = p.payments.filter(x => !x.historical).reduce((s, x) => s + x.amount, 0);
   const done = p.treatments.filter((t) => t.status === "concluido").length;
   const count = p.treatments.length;
   return {
@@ -222,15 +223,23 @@ export function patientContactAction(
   return null;
 }
 
+export function normalizePatientStage(stage: string): Stage {
+  if (stage === "orcamento") return "avaliacao";
+  if (stage === "manutencao") return "tratamento";
+  return stage === "tratamento" || stage === "concluido" ? stage : "avaliacao";
+}
+
 export function automaticPatientStage(p: Pick<Patient, "stage" | "treatments" | "reminders">): Stage {
   const hasActiveTreatment = p.treatments.some((item) => item.status === "aprovado" || item.status === "andamento");
   if (hasActiveTreatment) return "tratamento";
-  if (p.treatments.some((item) => item.status === "planejado")) return "orcamento";
+  if (p.reminders.some(item => item.type === "retorno" && !item.done)) return "tratamento";
+  if (p.treatments.some((item) => item.status === "planejado")) return "avaliacao";
   if (p.treatments.length > 0 && p.treatments.every((item) => item.status === "concluido")) {
     const hasPendingReturn = p.reminders.some((item) => item.type === "retorno" && !item.done);
-    return hasPendingReturn ? "manutencao" : "concluido";
+    // Realizar um procedimento não é evidência de alta do paciente.
+    return hasPendingReturn || p.stage !== "concluido" ? "tratamento" : "concluido";
   }
-  return "avaliacao";
+  return normalizePatientStage(p.stage);
 }
 
 export function finishPendingReturns<T extends Pick<Patient["reminders"][number], "type" | "done">>(reminders: T[]): T[] {
