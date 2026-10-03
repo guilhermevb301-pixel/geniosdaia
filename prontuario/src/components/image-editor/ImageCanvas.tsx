@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useId, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { toNormalizedPoint } from "@/lib/imageEdits";
 import type { ImageAnnotation, ImageEditPoint, ImageEdits } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -17,13 +17,13 @@ function Bounds({ start, end }: { start: ImageEditPoint; end: ImageEditPoint }) 
   return { x, y, width: Math.abs(end.x - start.x), height: Math.abs(end.y - start.y) };
 }
 
-function AnnotationShape({ annotation, selected, onSelect }: { annotation: ImageAnnotation; selected: boolean; onSelect?: () => void }) {
+function AnnotationShape({ annotation, selected, onSelect, markerId }: { annotation: ImageAnnotation; selected: boolean; onSelect?: () => void; markerId: string }) {
   const common = { stroke: annotation.color, strokeWidth: annotation.strokeWidth / 500, vectorEffect: "non-scaling-stroke" as const, fill: "none" };
   const selectProps = { onPointerDown: (event: ReactPointerEvent) => { event.stopPropagation(); onSelect?.(); }, className: onSelect ? "cursor-pointer" : undefined };
   if (annotation.kind === "freehand") return <polyline {...common} {...selectProps} points={annotation.points.map((p) => `${p.x},${p.y}`).join(" ")} strokeLinecap="round" strokeLinejoin="round" />;
   if (annotation.kind === "text") return <text {...selectProps} x={annotation.point.x} y={annotation.point.y} fill={annotation.color} stroke="rgba(0,0,0,.65)" strokeWidth="0.004" paintOrder="stroke" fontSize={Math.max(0.035, annotation.strokeWidth / 120)} fontWeight="700">{annotation.text}</text>;
   const b = Bounds({ start: annotation.start, end: annotation.end });
-  if (annotation.kind === "arrow") return <line {...common} {...selectProps} x1={annotation.start.x} y1={annotation.start.y} x2={annotation.end.x} y2={annotation.end.y} markerEnd="url(#clinical-arrow)" strokeLinecap="round" />;
+  if (annotation.kind === "arrow") return <line {...common} {...selectProps} x1={annotation.start.x} y1={annotation.start.y} x2={annotation.end.x} y2={annotation.end.y} markerEnd={`url(#${markerId})`} strokeLinecap="round" opacity={selected ? 0.78 : 1} />;
   if (annotation.kind === "ellipse") return <ellipse {...common} {...selectProps} cx={b.x + b.width / 2} cy={b.y + b.height / 2} rx={b.width / 2} ry={b.height / 2} />;
   return <rect {...common} {...selectProps} x={b.x} y={b.y} width={b.width} height={b.height} rx="0.008" />;
 }
@@ -56,6 +56,7 @@ export function ImageCanvas({
   className?: string;
 }) {
   const ref = useRef<SVGSVGElement>(null);
+  const markerId = useId().replace(/:/g, "");
   const [gesture, setGesture] = useState<ImageGesture | null>(null);
   const crop = edits.crop ?? { x: 0, y: 0, width: 1, height: 1 };
   const rotated = edits.rotation === 90 || edits.rotation === 270;
@@ -91,17 +92,16 @@ export function ImageCanvas({
   const cropDraft = gesture && tool === "crop" ? Bounds(gesture) : null;
 
   return (
-    <div className={cn("relative mx-auto flex max-h-full max-w-full items-center justify-center", className)} style={{ aspectRatio }}>
+    <div className={cn("relative mx-auto flex max-h-full max-w-full items-center justify-center", className)} style={aspectRatio >= 1 ? { aspectRatio, width: "100%", height: "auto" } : { aspectRatio, height: "100%", width: "auto" }}>
       <svg ref={ref} viewBox="0 0 1 1" preserveAspectRatio="none" className={cn("block h-full w-full overflow-hidden rounded-lg bg-black", editable && tool !== "select" && "cursor-crosshair")} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={() => setGesture(null)}>
         <defs>
-          <marker id="clinical-arrow" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 Z" fill={color} /></marker>
-          <filter id="clinical-filters"><feComponentTransfer><feFuncR type="linear" slope={edits.brightness / 100} intercept="0" /><feFuncG type="linear" slope={edits.brightness / 100} intercept="0" /><feFuncB type="linear" slope={edits.brightness / 100} intercept="0" /></feComponentTransfer></filter>
+          <marker id={markerId} markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 Z" fill={color} /></marker>
         </defs>
         <g transform={imageTransform}>
           <image href={src} x={-crop.x / crop.width} y={-crop.y / crop.height} width={1 / crop.width} height={1 / crop.height} preserveAspectRatio="none" style={{ filter: `${edits.invert ? "invert(1) " : ""}brightness(${edits.brightness}%) contrast(${edits.contrast}%)` }} />
         </g>
-        {edits.annotations.map((annotation) => <AnnotationShape key={annotation.id} annotation={annotation} selected={selectedId === annotation.id} onSelect={editable && tool === "select" ? () => onSelectAnnotation?.(annotation.id) : undefined} />)}
-        {draft && <AnnotationShape annotation={draft} selected={false} />}
+        {edits.annotations.map((annotation) => <AnnotationShape key={annotation.id} annotation={annotation} selected={selectedId === annotation.id} markerId={markerId} onSelect={editable && tool === "select" ? () => onSelectAnnotation?.(annotation.id) : undefined} />)}
+        {draft && <AnnotationShape annotation={draft} selected={false} markerId={markerId} />}
         {cropDraft && <rect x={cropDraft.x} y={cropDraft.y} width={cropDraft.width} height={cropDraft.height} fill="rgba(16,185,129,.12)" stroke="#34D399" strokeWidth="0.004" strokeDasharray="0.015 0.01" vectorEffect="non-scaling-stroke" />}
         {selectedId && <rect x="0.004" y="0.004" width="0.992" height="0.992" fill="none" stroke="#34D399" strokeWidth="0.004" strokeDasharray="0.015 0.01" pointerEvents="none" />}
       </svg>

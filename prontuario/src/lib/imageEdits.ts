@@ -1,4 +1,4 @@
-import type { ImageAnnotation, ImageCrop, ImageEditPoint, ImageEdits } from "./types";
+import type { Attachment, ImageAnnotation, ImageCrop, ImageEditPoint, ImageEdits } from "./types";
 
 export type ImageEditorCommand =
   | { type: "rotate"; degrees: number }
@@ -164,4 +164,16 @@ export function redoImageEditHistory(history: ImageEditHistory): ImageEditHistor
 export function hasImageEdits(edits?: Partial<ImageEdits>): boolean {
   const value = normalizeImageEdits(edits);
   return value.rotation !== 0 || Boolean(value.crop) || value.brightness !== 100 || value.contrast !== 100 || value.invert || value.annotations.length > 0;
+}
+
+export function canEditAttachment(attachment: Pick<Attachment, "mime">): boolean {
+  return attachment.mime.startsWith("image/");
+}
+
+export function saveAttachmentImageEdits(attachment: Attachment, edits: ImageEdits): Attachment {
+  return { ...attachment, imageEdits: normalizeImageEdits(edits) };
+}
+
+export function restoreAttachmentOriginal(attachment: Attachment): Attachment {
+  return { ...attachment, imageEdits: undefined };
 }

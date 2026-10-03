@@ -28,7 +28,7 @@ import { confirmDialog, toast } from "@/components/ui/feedback";
 import { EmptyState, Field, Select } from "@/components/ui/misc";
 import { ATTACHMENT_CATEGORIES } from "@/lib/constants";
 import { guessAttachmentCategory } from "@/lib/derive";
-import { hasImageEdits, normalizeImageEdits } from "@/lib/imageEdits";
+import { canEditAttachment, hasImageEdits, normalizeImageEdits, restoreAttachmentOriginal, saveAttachmentImageEdits } from "@/lib/imageEdits";
 import { exportEditedImage } from "@/lib/imageExport";
 import { deleteFile, getFile, getFileUrl, putFile, resizeImage } from "@/lib/storage";
 import type { Attachment, AttachmentCategory, Patient } from "@/lib/types";
@@ -85,6 +85,7 @@ function Thumb({ a, onOpen, selected, onSelect, compareMode }: { a: Attachment; 
         <span className="chip absolute left-2 top-2 bg-black/55 text-white backdrop-blur" style={{ boxShadow: `inset 3px 0 0 ${cat.color}` }}>
           {cat.label}
         </span>
+        {isImage && hasImageEdits(a.imageEdits) && <span className="chip absolute bottom-2 right-2 bg-jade-600 text-white shadow">Editada</span>}
         {compareMode && (
           <span className={cn("absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full border-2 text-xs font-bold", selected ? "border-jade-400 bg-jade-500 text-white" : "border-white/80 bg-black/30")}>
             {selected ? "✓" : ""}
@@ -142,7 +143,7 @@ function Viewer({ patient, list, index, onIndex, onClose }: { patient: Patient; 
   }, [go, onClose]);
 
   if (!a) return null;
-  const isImage = a.mime.startsWith("image/");
+  const isImage = canEditAttachment(a);
   const setMeta = (patch: Partial<Attachment>) => updatePatient(patient.id, (p) => ({ attachments: p.attachments.map((x) => (x.id === a.id ? { ...x, ...patch } : x)) }));
   const downloadOriginal = async () => {
     try {
@@ -246,7 +247,7 @@ function Viewer({ patient, list, index, onIndex, onClose }: { patient: Patient; 
           )}
           {url && isImage ? (
             <div className="flex h-full w-full items-center justify-center p-8 transition-transform duration-150" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom}) rotate(${rot}deg)`, filter: `${invert ? "invert(1) " : ""}brightness(${bright}%) contrast(${contrast}%)` }}>
-              <ImageCanvas src={url} edits={normalizeImageEdits(a.imageEdits)} naturalWidth={a.width} naturalHeight={a.height} className="h-full w-full" />
+              <ImageCanvas src={url} edits={normalizeImageEdits(a.imageEdits)} naturalWidth={a.width} naturalHeight={a.height} />
             </div>
           ) : url ? (
             <iframe src={url} title={a.name} className="h-full w-full bg-white" />
@@ -286,6 +287,7 @@ function Viewer({ patient, list, index, onIndex, onClose }: { patient: Patient; 
               >
                 Restaurar visualização
               </button>
+              {hasImageEdits(a.imageEdits) && <button className="block text-xs font-semibold text-rose-300 hover:underline" onClick={async () => { if (await confirmDialog({ title: "Restaurar imagem original?", description: "O corte, a rotação, os filtros e as marcações salvas serão removidos. O arquivo original continuará intacto.", danger: true, confirmLabel: "Restaurar original" })) { updatePatient(patient.id, (p) => ({ attachments: p.attachments.map((item) => item.id === a.id ? restoreAttachmentOriginal(item) : item) })); toast.success("Imagem original restaurada"); } }}>Restaurar imagem original</button>}
             </div>
           )}
           <div className="space-y-3 border-t border-white/10 pt-4 [&_.input]:border-white/15 [&_.input]:bg-white/5 [&_.input]:text-white [&_.label]:text-white/50">
@@ -333,7 +335,7 @@ function Viewer({ patient, list, index, onIndex, onClose }: { patient: Patient; 
     </motion.div>,
     document.body,
   );
-  return <>{portal}{editing && url && isImage && <ImageEditor attachment={a} src={url} onCancel={() => setEditing(false)} onSave={(edits) => { const normalized = normalizeImageEdits(edits); setMeta({ imageEdits: hasImageEdits(normalized) ? normalized : undefined }); setEditing(false); toast.success("Edições salvas", "O arquivo original foi preservado."); }} />}</>;
+  return <>{portal}{editing && url && isImage && <ImageEditor attachment={a} src={url} onCancel={() => setEditing(false)} onSave={(edits) => { const normalized = normalizeImageEdits(edits); updatePatient(patient.id, (p) => ({ attachments: p.attachments.map((item) => item.id === a.id ? (hasImageEdits(normalized) ? saveAttachmentImageEdits(item, normalized) : restoreAttachmentOriginal(item)) : item) })); setEditing(false); toast.success("Edições salvas", "O arquivo original foi preservado."); }} />}</>;
 }
 
 function Compare({ a, b, onClose }: { a: Attachment; b: Attachment; onClose: () => void }) {

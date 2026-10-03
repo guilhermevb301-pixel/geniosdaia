@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 // Bundle the actual TypeScript helpers; no browser, real patient, or cloud writes.
 const result = await build({ stdin: { contents: 'export * from "./src/lib/finance"; export * from "./src/lib/reminders"; export * from "./src/lib/derive"; export * from "./src/lib/imageEdits"; export * from "./src/lib/imageExport"; export { buildDemoData } from "./src/lib/seed"; export { formatProfessionalCro, documentCity, renderDocumentBranding } from "./src/lib/print"; export { SessionGuard } from "./src/lib/sessionGuard"; export { freshAccountData, freshCloudSession, withDefaults } from "./src/store/store"; export { parseMoney } from "./src/lib/utils"; export { ATTACHMENT_CATEGORIES, DEFAULT_SETTINGS, STAGES } from "./src/lib/constants";', resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm" });
-const { splitInstallments, buildPaymentAgreement, installmentBalance, buildPaymentRecord, reminderAttention, installmentAttention, treatmentTotals, financialSituation, automaticPatientStage, finishPendingReturns, appointmentToConfirm, patientAgeGroup, applyClinicalTreatmentStatus, toggleToothSelection, removeOdontogramMark, treatmentPriceTotal, sameTreatmentScope, appendOdontogramMark, appendProcedureDefinition, guessAttachmentCategory, patientCareSummary, patientContactAction, normalizePatientsView, patientBoardMinimumWidth, patientListMinimumWidth, emptyImageEdits, normalizeImageEdits, applyImageCommand, hasImageEdits, toNormalizedPoint, rotateNormalizedPoint, applyCropSelection, createImageEditHistory, pushImageEditHistory, undoImageEditHistory, redoImageEditHistory, editedImageDimensions, editedImagePoint, formatProfessionalCro, documentCity, renderDocumentBranding, SessionGuard, freshAccountData, freshCloudSession, withDefaults, parseMoney, ATTACHMENT_CATEGORIES, DEFAULT_SETTINGS, STAGES, buildDemoData } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
+const { splitInstallments, buildPaymentAgreement, installmentBalance, buildPaymentRecord, reminderAttention, installmentAttention, treatmentTotals, financialSituation, automaticPatientStage, finishPendingReturns, appointmentToConfirm, patientAgeGroup, applyClinicalTreatmentStatus, toggleToothSelection, removeOdontogramMark, treatmentPriceTotal, sameTreatmentScope, appendOdontogramMark, appendProcedureDefinition, guessAttachmentCategory, patientCareSummary, patientContactAction, normalizePatientsView, patientBoardMinimumWidth, patientListMinimumWidth, emptyImageEdits, normalizeImageEdits, applyImageCommand, hasImageEdits, toNormalizedPoint, rotateNormalizedPoint, applyCropSelection, createImageEditHistory, pushImageEditHistory, undoImageEditHistory, redoImageEditHistory, canEditAttachment, saveAttachmentImageEdits, restoreAttachmentOriginal, editedImageDimensions, editedImagePoint, formatProfessionalCro, documentCity, renderDocumentBranding, SessionGuard, freshAccountData, freshCloudSession, withDefaults, parseMoney, ATTACHMENT_CATEGORIES, DEFAULT_SETTINGS, STAGES, buildDemoData } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
 let checks = 0;
 function check(name, fn) { fn(); checks++; console.log(`✓ ${name}`); }
 
@@ -488,6 +488,31 @@ check("A exportação respeita corte, rotação e tamanho mínimo", () => {
 check("As marcações normalizadas ocupam o lugar correto na imagem exportada", () => {
   assert.deepEqual(editedImagePoint?.({ x: 0.25, y: 0.75 }, { width: 400, height: 600 }), { x: 100, y: 450 });
   assert.deepEqual(editedImagePoint?.({ x: -1, y: 2 }, { width: 400, height: 600 }), { x: 0, y: 600 });
+});
+
+check("Salvar ou restaurar a edição preserva todos os dados e o arquivo clínico original", () => {
+  const attachment = {
+    id: "arq_1",
+    name: "Radiografia panorâmica",
+    category: "panoramica",
+    mime: "image/jpeg",
+    size: 987654,
+    createdAt: "2026-10-01T12:00:00.000Z",
+    takenAt: "2026-09-28",
+    note: "Controle pós-operatório",
+    tooth: "38",
+    width: 1600,
+    height: 900,
+    imageEdits: { rotation: 90, brightness: 110, contrast: 120, invert: false, annotations: [] },
+  };
+  const nextEdits = { rotation: 180, brightness: 95, contrast: 130, invert: true, annotations: [] };
+  const saved = saveAttachmentImageEdits?.(attachment, nextEdits);
+  assert.deepEqual({ ...saved, imageEdits: undefined }, { ...attachment, imageEdits: undefined });
+  assert.deepEqual(saved.imageEdits, nextEdits);
+  const restored = restoreAttachmentOriginal?.(saved);
+  assert.deepEqual(restored, { ...attachment, imageEdits: undefined });
+  assert.equal(canEditAttachment?.(attachment), true);
+  assert.equal(canEditAttachment?.({ ...attachment, mime: "application/pdf" }), false);
 });
 
 check("O preço pode ser informado por dente ou como total do conjunto", () => {

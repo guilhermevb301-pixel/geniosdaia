@@ -73,7 +73,7 @@ export function ImageEditor({ attachment, src, onSave, onCancel }: { attachment:
       </header>
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto p-3 lg:p-6">
-          <ImageCanvas src={src} edits={history.present} naturalWidth={attachment.width} naturalHeight={attachment.height} editable tool={tool} color={color} strokeWidth={strokeWidth} selectedId={selectedId} onSelectAnnotation={setSelectedId} onGesture={gesture} className="h-full w-full" />
+          <ImageCanvas src={src} edits={history.present} naturalWidth={attachment.width} naturalHeight={attachment.height} editable tool={tool} color={color} strokeWidth={strokeWidth} selectedId={selectedId} onSelectAnnotation={setSelectedId} onGesture={gesture} />
         </div>
         <aside className="w-full shrink-0 space-y-4 overflow-y-auto border-t border-white/10 bg-white/[0.03] p-4 lg:w-80 lg:border-l lg:border-t-0">
           <div><p className="mb-2 text-xs font-bold uppercase tracking-wider text-white/55">Ferramenta</p><div className="grid grid-cols-2 gap-2">{tools.map(({ id, label, icon: Icon }) => <button key={id} onClick={() => { setTool(id); setSelectedId(undefined); }} className={cn("flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold", tool === id ? "border-jade-400 bg-jade-500 text-white" : "border-white/10 bg-white/5 hover:bg-white/10")}><Icon className="h-4 w-4" />{label}</button>)}</div></div>
