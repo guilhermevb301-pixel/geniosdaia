@@ -1,5 +1,5 @@
 import { ArrowUpRight, Circle, Crop, MousePointer2, Pencil, Redo2, RotateCcw, RotateCw, Save, Square, Trash2, Type, Undo2, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/Button";
 import { confirmDialog } from "@/components/ui/feedback";
@@ -31,6 +31,15 @@ export function ImageEditor({ attachment, src, onSave, onCancel }: { attachment:
     if (dirty && !(await confirmDialog({ title: "Descartar edições?", description: "As alterações ainda não foram salvas.", danger: true, confirmLabel: "Descartar" }))) return;
     onCancel();
   };
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      void close();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
   const gesture = (value: ImageGesture) => {
     const width = Math.abs(value.end.x - value.start.x);
     const height = Math.abs(value.end.y - value.start.y);

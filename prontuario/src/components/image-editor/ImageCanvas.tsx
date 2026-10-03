@@ -1,5 +1,5 @@
-import { useId, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { toNormalizedPoint } from "@/lib/imageEdits";
+import { useEffect, useId, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { annotationMarkerColors, initialImageDimensions, toNormalizedPoint } from "@/lib/imageEdits";
 import type { ImageAnnotation, ImageEditPoint, ImageEdits } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -31,8 +31,8 @@ function AnnotationShape({ annotation, selected, onSelect, markerId }: { annotat
 export function ImageCanvas({
   src,
   edits,
-  naturalWidth = 4,
-  naturalHeight = 3,
+  naturalWidth,
+  naturalHeight,
   tool = "select",
   editable = false,
   color = "#EF4444",
@@ -58,15 +58,32 @@ export function ImageCanvas({
   const ref = useRef<SVGSVGElement>(null);
   const markerId = useId().replace(/:/g, "");
   const [gesture, setGesture] = useState<ImageGesture | null>(null);
+  const [dimensions, setDimensions] = useState(() => initialImageDimensions(naturalWidth, naturalHeight));
+  useEffect(() => {
+    const provided = initialImageDimensions(naturalWidth, naturalHeight);
+    if (provided) {
+      setDimensions(provided);
+      return;
+    }
+    setDimensions(null);
+    const image = new Image();
+    let alive = true;
+    image.onload = () => alive && setDimensions({ width: image.naturalWidth, height: image.naturalHeight });
+    image.src = src;
+    return () => { alive = false; };
+  }, [src, naturalWidth, naturalHeight]);
+  const markerKey = (value: string) => `${markerId}-${value.replace(/[^a-zA-Z0-9]/g, "") || "mark"}`;
+  const markerColors = useMemo(() => annotationMarkerColors(edits.annotations, color), [edits.annotations, color]);
   const crop = edits.crop ?? { x: 0, y: 0, width: 1, height: 1 };
   const rotated = edits.rotation === 90 || edits.rotation === 270;
-  const aspectRatio = rotated ? (naturalHeight * crop.height) / Math.max(1, naturalWidth * crop.width) : (naturalWidth * crop.width) / Math.max(1, naturalHeight * crop.height);
   const imageTransform = useMemo(() => {
     if (edits.rotation === 90) return "translate(1 0) rotate(90)";
     if (edits.rotation === 180) return "translate(1 1) rotate(180)";
     if (edits.rotation === 270) return "translate(0 1) rotate(270)";
     return undefined;
   }, [edits.rotation]);
+  if (!dimensions) return <div className="flex min-h-48 w-full items-center justify-center text-sm font-semibold text-white/60">Carregando imagem…</div>;
+  const aspectRatio = rotated ? (dimensions.height * crop.height) / Math.max(1, dimensions.width * crop.width) : (dimensions.width * crop.width) / Math.max(1, dimensions.height * crop.height);
   const point = (event: ReactPointerEvent) => toNormalizedPoint({ x: event.clientX, y: event.clientY }, ref.current!.getBoundingClientRect());
   const down = (event: ReactPointerEvent<SVGSVGElement>) => {
     if (!editable || tool === "select") { onSelectAnnotation?.(undefined); return; }
@@ -95,13 +112,13 @@ export function ImageCanvas({
     <div className={cn("relative mx-auto flex max-h-full max-w-full items-center justify-center", className)} style={aspectRatio >= 1 ? { aspectRatio, width: "100%", height: "auto" } : { aspectRatio, height: "100%", width: "auto" }}>
       <svg ref={ref} viewBox="0 0 1 1" preserveAspectRatio="none" className={cn("block h-full w-full overflow-hidden rounded-lg bg-black", editable && tool !== "select" && "cursor-crosshair")} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={() => setGesture(null)}>
         <defs>
-          <marker id={markerId} markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 Z" fill={color} /></marker>
+          {markerColors.map((markerColor) => <marker key={markerColor} id={markerKey(markerColor)} markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto"><path d="M0,0 L5,2.5 L0,5 Z" fill={markerColor} /></marker>)}
         </defs>
         <g transform={imageTransform}>
           <image href={src} x={-crop.x / crop.width} y={-crop.y / crop.height} width={1 / crop.width} height={1 / crop.height} preserveAspectRatio="none" style={{ filter: `${edits.invert ? "invert(1) " : ""}brightness(${edits.brightness}%) contrast(${edits.contrast}%)` }} />
         </g>
-        {edits.annotations.map((annotation) => <AnnotationShape key={annotation.id} annotation={annotation} selected={selectedId === annotation.id} markerId={markerId} onSelect={editable && tool === "select" ? () => onSelectAnnotation?.(annotation.id) : undefined} />)}
-        {draft && <AnnotationShape annotation={draft} selected={false} markerId={markerId} />}
+        {edits.annotations.map((annotation) => <AnnotationShape key={annotation.id} annotation={annotation} selected={selectedId === annotation.id} markerId={markerKey(annotation.color)} onSelect={editable && tool === "select" ? () => onSelectAnnotation?.(annotation.id) : undefined} />)}
+        {draft && <AnnotationShape annotation={draft} selected={false} markerId={markerKey(draft.color)} />}
         {cropDraft && <rect x={cropDraft.x} y={cropDraft.y} width={cropDraft.width} height={cropDraft.height} fill="rgba(16,185,129,.12)" stroke="#34D399" strokeWidth="0.004" strokeDasharray="0.015 0.01" vectorEffect="non-scaling-stroke" />}
         {selectedId && <rect x="0.004" y="0.004" width="0.992" height="0.992" fill="none" stroke="#34D399" strokeWidth="0.004" strokeDasharray="0.015 0.01" pointerEvents="none" />}
       </svg>

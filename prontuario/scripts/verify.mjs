@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 // Bundle the actual TypeScript helpers; no browser, real patient, or cloud writes.
 const result = await build({ stdin: { contents: 'export * from "./src/lib/finance"; export * from "./src/lib/reminders"; export * from "./src/lib/derive"; export * from "./src/lib/imageEdits"; export * from "./src/lib/imageExport"; export { buildDemoData } from "./src/lib/seed"; export { formatProfessionalCro, documentCity, renderDocumentBranding } from "./src/lib/print"; export { SessionGuard } from "./src/lib/sessionGuard"; export { freshAccountData, freshCloudSession, withDefaults } from "./src/store/store"; export { parseMoney } from "./src/lib/utils"; export { ATTACHMENT_CATEGORIES, DEFAULT_SETTINGS, STAGES } from "./src/lib/constants";', resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm" });
-const { splitInstallments, buildPaymentAgreement, installmentBalance, buildPaymentRecord, reminderAttention, installmentAttention, treatmentTotals, financialSituation, automaticPatientStage, finishPendingReturns, appointmentToConfirm, patientAgeGroup, applyClinicalTreatmentStatus, toggleToothSelection, removeOdontogramMark, treatmentPriceTotal, sameTreatmentScope, appendOdontogramMark, appendProcedureDefinition, guessAttachmentCategory, patientCareSummary, patientContactAction, normalizePatientsView, patientBoardMinimumWidth, patientListMinimumWidth, emptyImageEdits, normalizeImageEdits, applyImageCommand, hasImageEdits, toNormalizedPoint, rotateNormalizedPoint, applyCropSelection, createImageEditHistory, pushImageEditHistory, undoImageEditHistory, redoImageEditHistory, canEditAttachment, saveAttachmentImageEdits, restoreAttachmentOriginal, editedImageDimensions, editedImagePoint, formatProfessionalCro, documentCity, renderDocumentBranding, SessionGuard, freshAccountData, freshCloudSession, withDefaults, parseMoney, ATTACHMENT_CATEGORIES, DEFAULT_SETTINGS, STAGES, buildDemoData } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
+const { splitInstallments, buildPaymentAgreement, installmentBalance, buildPaymentRecord, reminderAttention, installmentAttention, treatmentTotals, financialSituation, automaticPatientStage, finishPendingReturns, appointmentToConfirm, patientAgeGroup, applyClinicalTreatmentStatus, toggleToothSelection, removeOdontogramMark, treatmentPriceTotal, sameTreatmentScope, appendOdontogramMark, appendProcedureDefinition, guessAttachmentCategory, patientCareSummary, patientContactAction, normalizePatientsView, patientBoardMinimumWidth, patientListMinimumWidth, emptyImageEdits, normalizeImageEdits, applyImageCommand, hasImageEdits, toNormalizedPoint, rotateNormalizedPoint, applyCropSelection, createImageEditHistory, pushImageEditHistory, undoImageEditHistory, redoImageEditHistory, canEditAttachment, saveAttachmentImageEdits, restoreAttachmentOriginal, viewerShortcutAllowed, thumbnailImageEdits, initialImageDimensions, annotationMarkerColors, editedImageDimensions, editedImagePoint, formatProfessionalCro, documentCity, renderDocumentBranding, SessionGuard, freshAccountData, freshCloudSession, withDefaults, parseMoney, ATTACHMENT_CATEGORIES, DEFAULT_SETTINGS, STAGES, buildDemoData } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
 let checks = 0;
 function check(name, fn) { fn(); checks++; console.log(`✓ ${name}`); }
 
@@ -513,6 +513,25 @@ check("Salvar ou restaurar a edição preserva todos os dados e o arquivo clíni
   assert.deepEqual(restored, { ...attachment, imageEdits: undefined });
   assert.equal(canEditAttachment?.(attachment), true);
   assert.equal(canEditAttachment?.({ ...attachment, mime: "application/pdf" }), false);
+});
+
+check("O editor bloqueia atalhos do visualizador enquanto há uma edição aberta", () => {
+  assert.equal(viewerShortcutAllowed?.(false), true);
+  assert.equal(viewerShortcutAllowed?.(true), false);
+});
+
+check("Miniaturas aplicam corte e rotação sem poluir a grade com anotações", () => {
+  const edits = { rotation: 90, crop: { x: 0.1, y: 0.2, width: 0.7, height: 0.6 }, brightness: 110, contrast: 90, invert: false, annotations: [{ id: "a", kind: "text", color: "#FFF", strokeWidth: 2, point: { x: 0.5, y: 0.5 }, text: "Nota" }] };
+  const thumbnail = thumbnailImageEdits?.(edits);
+  assert.equal(thumbnail.rotation, 90);
+  assert.deepEqual(thumbnail.crop, edits.crop);
+  assert.deepEqual(thumbnail.annotations, []);
+});
+
+check("O canvas espera dimensões reais e mantém a cor própria de cada seta", () => {
+  assert.equal(initialImageDimensions?.(undefined, undefined), null);
+  assert.deepEqual(initialImageDimensions?.(100, 80), { width: 100, height: 80 });
+  assert.deepEqual(annotationMarkerColors?.([{ color: "#00FF00" }, { color: "#2563EB" }, { color: "#00FF00" }], "#EF4444"), ["#00FF00", "#2563EB", "#EF4444"]);
 });
 
 check("O preço pode ser informado por dente ou como total do conjunto", () => {

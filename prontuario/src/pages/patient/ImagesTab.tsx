@@ -28,7 +28,7 @@ import { confirmDialog, toast } from "@/components/ui/feedback";
 import { EmptyState, Field, Select } from "@/components/ui/misc";
 import { ATTACHMENT_CATEGORIES } from "@/lib/constants";
 import { guessAttachmentCategory } from "@/lib/derive";
-import { canEditAttachment, hasImageEdits, normalizeImageEdits, restoreAttachmentOriginal, saveAttachmentImageEdits } from "@/lib/imageEdits";
+import { canEditAttachment, hasImageEdits, normalizeImageEdits, restoreAttachmentOriginal, saveAttachmentImageEdits, thumbnailImageEdits, viewerShortcutAllowed } from "@/lib/imageEdits";
 import { exportEditedImage } from "@/lib/imageExport";
 import { deleteFile, getFile, getFileUrl, putFile, resizeImage } from "@/lib/storage";
 import type { Attachment, AttachmentCategory, Patient } from "@/lib/types";
@@ -75,7 +75,7 @@ function Thumb({ a, onOpen, selected, onSelect, compareMode }: { a: Attachment; 
         {loading ? (
           <div className="skeleton h-full w-full" />
         ) : isImage && url ? (
-          <img src={url} alt={a.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" loading="lazy" />
+          <div className="flex h-full w-full items-center justify-center transition duration-500 group-hover:scale-105"><ImageCanvas src={url} edits={thumbnailImageEdits(a.imageEdits)} naturalWidth={a.width} naturalHeight={a.height} /></div>
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-2 text-ink-3">
             <FileText className="h-10 w-10" />
@@ -131,6 +131,7 @@ function Viewer({ patient, list, index, onIndex, onClose }: { patient: Patient; 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement).tagName === "INPUT" || (e.target as HTMLElement).tagName === "TEXTAREA") return;
+      if (!viewerShortcutAllowed(editing)) return;
       if (e.key === "Escape") onClose();
       if (e.key === "ArrowRight") go(1);
       if (e.key === "ArrowLeft") go(-1);
@@ -140,7 +141,7 @@ function Viewer({ patient, list, index, onIndex, onClose }: { patient: Patient; 
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [go, onClose]);
+  }, [editing, go, onClose]);
 
   if (!a) return null;
   const isImage = canEditAttachment(a);

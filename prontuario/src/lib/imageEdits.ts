@@ -177,3 +177,19 @@ export function saveAttachmentImageEdits(attachment: Attachment, edits: ImageEdi
 export function restoreAttachmentOriginal(attachment: Attachment): Attachment {
   return { ...attachment, imageEdits: undefined };
 }
+
+export function viewerShortcutAllowed(editing: boolean): boolean {
+  return !editing;
+}
+
+export function thumbnailImageEdits(edits?: Partial<ImageEdits>): ImageEdits {
+  return { ...normalizeImageEdits(edits), annotations: [] };
+}
+
+export function initialImageDimensions(width?: number, height?: number): { width: number; height: number } | null {
+  return width && height && width > 0 && height > 0 ? { width, height } : null;
+}
+
+export function annotationMarkerColors(annotations: Array<Pick<ImageAnnotation, "color">>, activeColor: string): string[] {
+  return [...new Set([...annotations.map((annotation) => annotation.color), activeColor])];
+}
