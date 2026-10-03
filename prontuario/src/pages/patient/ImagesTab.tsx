@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/Button";
 import { confirmDialog, toast } from "@/components/ui/feedback";
 import { EmptyState, Field, Select } from "@/components/ui/misc";
 import { ATTACHMENT_CATEGORIES } from "@/lib/constants";
+import { guessAttachmentCategory } from "@/lib/derive";
 import { deleteFile, getFile, getFileUrl, putFile, resizeImage } from "@/lib/storage";
 import type { Attachment, AttachmentCategory, Patient } from "@/lib/types";
 import { clamp, cn, downloadBlob, fileSize, fmtDate, nowISO, todayKey, uid } from "@/lib/utils";
@@ -46,16 +47,6 @@ export function useFileUrl(id?: string) {
     };
   }, [id]);
   return { url, loading };
-}
-
-function guessCategory(name: string, mime: string): AttachmentCategory {
-  const n = name.toLowerCase();
-  if (mime === "application/pdf") return "documento";
-  if (/pano/.test(n)) return "panoramica";
-  if (/tomo|ct|dicom/.test(n)) return "tomografia";
-  if (/rx|raio|periap|radio|x-?ray/.test(n)) return "radiografia";
-  if (/sorriso|smile|face|extra/.test(n)) return "extraoral";
-  return "intraoral";
 }
 
 function Thumb({ a, onOpen, selected, onSelect, compareMode }: { a: Attachment; onOpen: () => void; selected: boolean; onSelect: () => void; compareMode: boolean }) {
@@ -413,7 +404,7 @@ export function ImagesTab({ patient }: { patient: Patient }) {
           added.push({
             id,
             name: f.name.replace(/\.[^.]+$/, "") || "Arquivo",
-            category: filter !== "todas" ? filter : guessCategory(f.name, f.type),
+            category: filter !== "todas" ? filter : guessAttachmentCategory(f.name, f.type),
             mime: blob.type || f.type,
             size: blob.size,
             createdAt: nowISO(),

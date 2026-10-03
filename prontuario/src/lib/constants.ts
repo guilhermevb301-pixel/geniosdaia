@@ -114,6 +114,7 @@ export const ATTACHMENT_CATEGORIES: Record<AttachmentCategory, { label: string; 
   intraoral: { label: "Foto intraoral", color: "#25A56F" },
   extraoral: { label: "Foto do sorriso", color: "#F59E0B" },
   tomografia: { label: "Tomografia", color: "#8B5CF6" },
+  modelo: { label: "Modelo", color: "#A855F7" },
   documento: { label: "Documento", color: "#64748B" },
   encaminhamento: { label: "Encaminhamento", color: "#0891B2" },
   relatorio: { label: "Laudo / relatório", color: "#6366F1" },

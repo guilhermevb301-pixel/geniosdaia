@@ -131,6 +131,7 @@ export type AttachmentCategory =
   | "intraoral"
   | "extraoral"
   | "tomografia"
+  | "modelo"
   | "documento"
   | "encaminhamento"
   | "relatorio"

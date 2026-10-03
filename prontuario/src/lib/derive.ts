@@ -5,6 +5,17 @@ import { parseMoney, toDate, uid } from "./utils";
 import { installmentAttention, reminderAttention } from "./reminders";
 import { installmentBalance } from "./finance";
 
+export function guessAttachmentCategory(name: string, mime: string) {
+  const normalized = name.toLocaleLowerCase("pt-BR");
+  if (/modelo|molde/.test(normalized)) return "modelo" as const;
+  if (mime === "application/pdf") return "documento" as const;
+  if (/pano/.test(normalized)) return "panoramica" as const;
+  if (/tomo|ct|dicom/.test(normalized)) return "tomografia" as const;
+  if (/rx|raio|periap|radio|x-?ray/.test(normalized)) return "radiografia" as const;
+  if (/sorriso|smile|face|extra/.test(normalized)) return "extraoral" as const;
+  return "intraoral" as const;
+}
+
 export function appendOdontogramMark(
   existing: OdontogramMarkDef[],
   input: { label: string; color: string; scope: "face" | "tooth" },
