@@ -4,8 +4,8 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 // Bundle the actual TypeScript helpers; no browser, real patient, or cloud writes.
-const result = await build({ stdin: { contents: 'export * from "./src/lib/finance"; export * from "./src/lib/reminders"; export * from "./src/lib/derive"; export { buildDemoData } from "./src/lib/seed"; export { formatProfessionalCro, documentCity, renderDocumentBranding } from "./src/lib/print"; export { SessionGuard } from "./src/lib/sessionGuard"; export { freshAccountData, freshCloudSession, withDefaults } from "./src/store/store"; export { parseMoney } from "./src/lib/utils"; export { ATTACHMENT_CATEGORIES, DEFAULT_SETTINGS, STAGES } from "./src/lib/constants";', resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm" });
-const { splitInstallments, buildPaymentAgreement, installmentBalance, buildPaymentRecord, reminderAttention, installmentAttention, treatmentTotals, financialSituation, automaticPatientStage, finishPendingReturns, appointmentToConfirm, patientAgeGroup, applyClinicalTreatmentStatus, toggleToothSelection, removeOdontogramMark, treatmentPriceTotal, sameTreatmentScope, appendOdontogramMark, appendProcedureDefinition, guessAttachmentCategory, patientCareSummary, patientContactAction, normalizePatientsView, patientBoardMinimumWidth, patientListMinimumWidth, formatProfessionalCro, documentCity, renderDocumentBranding, SessionGuard, freshAccountData, freshCloudSession, withDefaults, parseMoney, ATTACHMENT_CATEGORIES, DEFAULT_SETTINGS, STAGES, buildDemoData } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
+const result = await build({ stdin: { contents: 'export * from "./src/lib/finance"; export * from "./src/lib/reminders"; export * from "./src/lib/derive"; export * from "./src/lib/imageEdits"; export { buildDemoData } from "./src/lib/seed"; export { formatProfessionalCro, documentCity, renderDocumentBranding } from "./src/lib/print"; export { SessionGuard } from "./src/lib/sessionGuard"; export { freshAccountData, freshCloudSession, withDefaults } from "./src/store/store"; export { parseMoney } from "./src/lib/utils"; export { ATTACHMENT_CATEGORIES, DEFAULT_SETTINGS, STAGES } from "./src/lib/constants";', resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm" });
+const { splitInstallments, buildPaymentAgreement, installmentBalance, buildPaymentRecord, reminderAttention, installmentAttention, treatmentTotals, financialSituation, automaticPatientStage, finishPendingReturns, appointmentToConfirm, patientAgeGroup, applyClinicalTreatmentStatus, toggleToothSelection, removeOdontogramMark, treatmentPriceTotal, sameTreatmentScope, appendOdontogramMark, appendProcedureDefinition, guessAttachmentCategory, patientCareSummary, patientContactAction, normalizePatientsView, patientBoardMinimumWidth, patientListMinimumWidth, emptyImageEdits, normalizeImageEdits, applyImageCommand, hasImageEdits, formatProfessionalCro, documentCity, renderDocumentBranding, SessionGuard, freshAccountData, freshCloudSession, withDefaults, parseMoney, ATTACHMENT_CATEGORIES, DEFAULT_SETTINGS, STAGES, buildDemoData } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
 let checks = 0;
 function check(name, fn) { fn(); checks++; console.log(`✓ ${name}`); }
 
@@ -423,6 +423,37 @@ check("Modelos odontológicos têm categoria própria e são reconhecidos pelo n
   assert.deepEqual(ATTACHMENT_CATEGORIES?.modelo, { label: "Modelo", color: "#A855F7" });
   assert.equal(guessAttachmentCategory?.("modelo-de-gesso-superior.jpg", "image/jpeg"), "modelo");
   assert.equal(guessAttachmentCategory?.("molde digital.jpg", "image/jpeg"), "modelo");
+});
+
+check("Edições de imagem são normalizadas sem alterar o original", () => {
+  const base = emptyImageEdits?.();
+  const rotated = applyImageCommand?.(base, { type: "rotate", degrees: 450 });
+  assert.equal(rotated.rotation, 90);
+  assert.equal(base.rotation, 0);
+
+  const cropped = applyImageCommand?.(rotated, { type: "crop", crop: { x: -0.2, y: 0.1, width: 1.4, height: 0.8 } });
+  assert.deepEqual(cropped.crop, { x: 0, y: 0.1, width: 1, height: 0.8 });
+  const tiny = applyImageCommand?.(cropped, { type: "crop", crop: { x: 0.2, y: 0.2, width: 0.005, height: 0.5 } });
+  assert.equal(tiny.crop, undefined);
+
+  const annotations = [
+    { id: "a1", kind: "freehand", color: "#FF0000", strokeWidth: 4, points: [{ x: 0.1, y: 0.2 }, { x: 0.3, y: 0.4 }] },
+    { id: "a2", kind: "arrow", color: "#00FF00", strokeWidth: 3, start: { x: 0.2, y: 0.2 }, end: { x: 0.8, y: 0.8 } },
+    { id: "a3", kind: "ellipse", color: "#0000FF", strokeWidth: 2, start: { x: 0.1, y: 0.1 }, end: { x: 0.4, y: 0.5 } },
+    { id: "a4", kind: "rectangle", color: "#FFFFFF", strokeWidth: 2, start: { x: 0.4, y: 0.4 }, end: { x: 0.9, y: 0.9 } },
+    { id: "a5", kind: "text", color: "#FFFF00", strokeWidth: 2, point: { x: 0.5, y: 0.5 }, text: "Lesão" },
+  ];
+  let marked = base;
+  for (const annotation of annotations) marked = applyImageCommand?.(marked, { type: "add-annotation", annotation });
+  assert.deepEqual(marked.annotations.map((item) => item.kind), ["freehand", "arrow", "ellipse", "rectangle", "text"]);
+  assert.equal(base.annotations.length, 0);
+  const noBlankText = applyImageCommand?.(marked, { type: "add-annotation", annotation: { id: "blank", kind: "text", color: "#FFF", strokeWidth: 2, point: { x: 0.1, y: 0.1 }, text: "   " } });
+  assert.equal(noBlankText.annotations.length, 5);
+  const removed = applyImageCommand?.(marked, { type: "remove-annotation", id: "a3" });
+  assert.deepEqual(removed.annotations.map((item) => item.id), ["a1", "a2", "a4", "a5"]);
+  assert.equal(hasImageEdits?.(applyImageCommand?.(marked, { type: "reset" })), false);
+  assert.deepEqual(normalizeImageEdits?.(undefined), base);
+  assert.equal("imageEdits" in { id: "old", mime: "image/jpeg" }, false);
 });
 
 check("O preço pode ser informado por dente ou como total do conjunto", () => {

@@ -138,6 +138,37 @@ export type AttachmentCategory =
   | "consentimento"
   | "outro";
 
+export interface ImageEditPoint {
+  x: number;
+  y: number;
+}
+
+export interface ImageCrop extends ImageEditPoint {
+  width: number;
+  height: number;
+}
+
+interface ImageAnnotationStyle {
+  id: ID;
+  color: string;
+  strokeWidth: number;
+}
+
+export type ImageAnnotation =
+  | (ImageAnnotationStyle & { kind: "freehand"; points: ImageEditPoint[] })
+  | (ImageAnnotationStyle & { kind: "arrow" | "ellipse" | "rectangle"; start: ImageEditPoint; end: ImageEditPoint })
+  | (ImageAnnotationStyle & { kind: "text"; point: ImageEditPoint; text: string });
+
+export interface ImageEdits {
+  rotation: 0 | 90 | 180 | 270;
+  crop?: ImageCrop;
+  brightness: number;
+  contrast: number;
+  invert: boolean;
+  annotations: ImageAnnotation[];
+  updatedAt?: string;
+}
+
 export interface Attachment {
   id: ID;
   name: string;
@@ -150,6 +181,7 @@ export interface Attachment {
   tooth?: string;
   width?: number;
   height?: number;
+  imageEdits?: ImageEdits;
 }
 
 export interface Patient {
