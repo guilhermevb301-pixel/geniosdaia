@@ -285,8 +285,8 @@ export function SettingsPage() {
             </div>
           </Section>
 
-          <Section id="procedimentos" title="Procedimentos e preços" desc="Usados no plano de tratamento, orçamentos e agenda." icon={<Stethoscope className="h-5 w-5" />}>
-            <p className="mb-4 text-sm leading-relaxed text-ink-2">Os serviços são atalhos, não uma tabela de preços oficial. Preencha os valores praticados pelo doutor; campos vazios significam “a definir”. Digite 0 somente quando for cortesia.</p>
+          <Section id="procedimentos" title="Base de procedimentos" desc="Opções usadas no plano de tratamento, orçamentos e agenda." icon={<Stethoscope className="h-5 w-5" />}>
+            <p className="mb-4 text-sm leading-relaxed text-ink-2">Cadastre aqui os procedimentos oferecidos. O valor é opcional: deixe em branco para definir de forma individual no plano de cada paciente. Digite 0 somente quando for sempre cortesia.</p>
             {SPECIALTY_PROCEDURES.some(p => !settings.procedures.some(x => x.id === p.id || x.name === p.name)) && <Button variant="secondary" className="mb-4" onClick={() => set({ procedures: [...SPECIALTY_PROCEDURES.filter(p => !settings.procedures.some(x => x.id === p.id || x.name === p.name)), ...settings.procedures] })}>Adicionar serviços bucomaxilofaciais</Button>}
             <div className="space-y-2">
               {settings.procedures.map((p) => (

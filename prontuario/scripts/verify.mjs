@@ -414,6 +414,8 @@ check("Um procedimento criado no plano fica disponível para os próximos pacien
   assert.deepEqual(procedures, [{ id: "p_custom", name: "Enxerto ósseo personalizado", category: "Cirurgia", price: 1250, pricePending: false }]);
   const pending = appendProcedureDefinition?.(procedures, { name: "Sedação assistida", category: "Hospitalar", priceText: "" }, "p_pending");
   assert.equal(pending[1].pricePending, true);
+  const withoutPriceField = appendProcedureDefinition?.(pending, { name: "Faceta personalizada", category: "Estética" }, "p_without_price");
+  assert.deepEqual(withoutPriceField[2], { id: "p_without_price", name: "Faceta personalizada", category: "Estética", price: 0, pricePending: true });
   assert.throws(() => appendProcedureDefinition?.(pending, { name: "sedação assistida", category: "Outra", priceText: "100" }, "p_dup"), /já existe/i);
 });
 

@@ -26,24 +26,19 @@ export function TreatmentsTab({ patient }: { patient: Patient }) {
   const [newProcedureName, setNewProcedureName] = useState("");
   const [newProcedureCategory, setNewProcedureCategory] = useState("Outros");
   const [newProcedurePrice, setNewProcedurePrice] = useState("");
-  const [saveSuggestedPrice, setSaveSuggestedPrice] = useState(false);
   const totals = treatmentTotals(patient);
 
-  const createAndAddProcedure = () => {
-    if (!newProcedurePrice.trim()) return toast.error("Informe o valor combinado com este paciente. Para cortesia, digite 0.");
-    const patientPrice = parseMoney(newProcedurePrice);
-    if (!Number.isFinite(patientPrice) || patientPrice < 0) return toast.error("Informe um valor válido, maior ou igual a zero.");
+  const createProcedure = () => {
     try {
-      const next = appendProcedureDefinition(procedures, { name: newProcedureName, category: newProcedureCategory, priceText: saveSuggestedPrice ? newProcedurePrice : "" }, uid("p_"));
+      const next = appendProcedureDefinition(procedures, { name: newProcedureName, category: newProcedureCategory, priceText: newProcedurePrice }, uid("p_"));
       const created = next[next.length - 1];
       updateSettings({ procedures: next });
-      updatePatient(patient.id, (current) => ({ treatments: [...current.treatments, { id: uid("tr_"), procedure: created.name, teeth: teeth.trim() || undefined, price: patientPrice, status: "planejado", createdAt: nowISO() }] }));
-      toast.success("Procedimento criado e adicionado", `${created.name} ficou disponível para os próximos pacientes.`);
+      setProc(created.name);
+      setPrice(created.pricePending ? "" : String(created.price));
+      toast.success("Procedimento salvo na base", "Ele ainda não foi adicionado ao plano deste paciente.");
       setNewProcedureName("");
       setNewProcedureCategory("Outros");
       setNewProcedurePrice("");
-      setSaveSuggestedPrice(false);
-      setTeeth("");
       setNewProcedureOpen(false);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível criar o procedimento.");
@@ -126,7 +121,7 @@ export function TreatmentsTab({ patient }: { patient: Patient }) {
               <datalist id="proc-options">
                 {procedures.map((p) => (
                   <option key={p.id} value={p.name}>
-                    {p.pricePending ? "Informe o valor" : money(p.price)}
+                    {p.pricePending ? "Valor definido por paciente" : money(p.price)}
                   </option>
                 ))}
               </datalist>
@@ -135,7 +130,7 @@ export function TreatmentsTab({ patient }: { patient: Patient }) {
             <Field label="Dente(s)">
               <input className="input" value={teeth} onChange={(e) => setTeeth(e.target.value)} placeholder="Ex.: 36" />
             </Field>
-            <Field label="Valor (R$)">
+            <Field label="Valor para este paciente (R$)">
               <input className="input" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0,00" onKeyDown={(e) => e.key === "Enter" && add()} />
             </Field>
             <div className="flex items-end">
@@ -247,17 +242,13 @@ export function TreatmentsTab({ patient }: { patient: Patient }) {
       size="sm"
       title="Novo procedimento"
       icon={<Plus className="h-5 w-5" />}
-      footer={<><Button variant="secondary" onClick={() => setNewProcedureOpen(false)}>Cancelar</Button><Button onClick={createAndAddProcedure}>Salvar e adicionar ao plano</Button></>}
+      footer={<><Button variant="secondary" onClick={() => setNewProcedureOpen(false)}>Cancelar</Button><Button onClick={createProcedure}>Salvar na base</Button></>}
     >
       <div className="space-y-4">
+        <p className="rounded-xl bg-brand-soft p-3 text-sm text-brand-ink"><b>Este cadastro é apenas uma opção da lista.</b> Ele não será lançado no plano do paciente e não precisa ter preço.</p>
         <Field label="Nome do procedimento"><input className="input" value={newProcedureName} onChange={(e) => setNewProcedureName(e.target.value)} placeholder="Ex.: Enxerto ósseo personalizado" autoFocus /></Field>
         <Field label="Categoria"><input className="input" value={newProcedureCategory} onChange={(e) => setNewProcedureCategory(e.target.value)} placeholder="Ex.: Cirurgia" /></Field>
-        <Field label="Valor para este paciente (R$)"><input className="input" inputMode="decimal" value={newProcedurePrice} onChange={(e) => setNewProcedurePrice(e.target.value)} placeholder="0,00" /></Field>
-        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-line bg-surface-2 p-3 text-sm text-ink-2">
-          <input type="checkbox" className="mt-0.5 h-4 w-4 accent-jade-600" checked={saveSuggestedPrice} onChange={(e) => setSaveSuggestedPrice(e.target.checked)} />
-          <span><b className="block text-ink">Usar este valor como sugestão</b>Nos próximos pacientes, o valor continuará editável. Desmarcado, será solicitado a cada vez.</span>
-        </label>
-        {teeth.trim() && <p className="rounded-xl bg-brand-soft p-3 text-sm text-brand-ink">Será adicionado para o(s) dente(s): <b>{teeth.trim()}</b>.</p>}
+        <Field label="Valor sugerido (opcional)"><input className="input" inputMode="decimal" value={newProcedurePrice} onChange={(e) => setNewProcedurePrice(e.target.value)} placeholder="Deixe em branco para definir por paciente" /></Field>
       </div>
     </Modal>
     <PaymentAgreementModal patient={patient} treatmentIds={approvalIds} onClose={() => setApprovalIds([])} />

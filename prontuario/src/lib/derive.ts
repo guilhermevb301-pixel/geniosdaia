@@ -47,15 +47,15 @@ export function removeOdontogramMark(
 
 export function appendProcedureDefinition(
   existing: ProcedureDef[],
-  input: { name: string; category: string; priceText: string },
+  input: { name: string; category: string; priceText?: string },
   id: string,
 ): ProcedureDef[] {
   const name = input.name.trim();
   const category = input.category.trim() || "Outros";
   if (!name) throw new Error("Informe o nome do procedimento.");
   if (existing.some((item) => item.name.trim().toLocaleLowerCase("pt-BR") === name.toLocaleLowerCase("pt-BR"))) throw new Error("Esse procedimento já existe.");
-  const pending = !input.priceText.trim();
-  const price = pending ? 0 : parseMoney(input.priceText);
+  const pending = !input.priceText?.trim();
+  const price = pending ? 0 : parseMoney(input.priceText ?? "");
   if (!Number.isFinite(price) || price < 0) throw new Error("Informe um valor válido ou deixe em branco.");
   return [...existing, { id, name, category, price, pricePending: pending }];
 }
