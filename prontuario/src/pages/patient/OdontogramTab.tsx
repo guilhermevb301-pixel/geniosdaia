@@ -7,7 +7,7 @@ import { toast } from "@/components/ui/feedback";
 import { Card, Field, Select } from "@/components/ui/misc";
 import { Modal } from "@/components/ui/Modal";
 import { TREATMENT_STATUS } from "@/lib/constants";
-import { appendOdontogramMark, sameTreatmentScope, treatmentPriceTotal, type TreatmentPriceMode } from "@/lib/derive";
+import { appendOdontogramMark, removeOdontogramMark, sameTreatmentScope, treatmentPriceTotal, type TreatmentPriceMode } from "@/lib/derive";
 import { odontogramMark } from "@/lib/odontogram";
 import { faceLabel, suggestProcedure, toothName } from "@/lib/teeth";
 import type { CustomOdontogramMarkId, Odontogram as Odo, Patient, ToothFace } from "@/lib/types";
@@ -57,6 +57,17 @@ function ToothPanel({ patient, n, onClose }: { patient: Patient; n: number; onCl
     });
   };
 
+  const removeMark = (target: { scope: "tooth"; value: string } | { scope: "face"; face: ToothFace }) => {
+    updatePatient(patient.id, (p) => {
+      const key = String(n);
+      const teeth = { ...p.odontogram.teeth };
+      const next = removeOdontogramMark(teeth[key] ?? {}, target);
+      if (!next.note && !next.whole?.length && !Object.keys(next.faces ?? {}).length) delete teeth[key];
+      else teeth[key] = next;
+      return { odontogram: { ...p.odontogram, teeth, updatedAt: nowISO() } };
+    });
+  };
+
   const addToPlan = () => {
     if (!price.trim()) return toast.error("Informe o valor combinado com este paciente. Para cortesia, digite 0.");
     const value = parseMoney(price);
@@ -87,17 +98,36 @@ function ToothPanel({ patient, n, onClose }: { patient: Patient; n: number; onCl
           {faces.length === 0 && whole.length === 0 ? (
             <p className="text-sm text-ink-3">Dente hígido (sem marcações).</p>
           ) : (
-            <div className="flex flex-wrap gap-1.5">
+            <div>
+              <p className="mb-2 text-xs text-ink-3">Clique em uma marcação para removê-la.</p>
+              <div className="flex flex-wrap gap-1.5">
               {whole.map((w) => (
-                <span key={w} className="chip text-white" style={{ background: odontogramMark(w, customMarks).color }}>
-                  {odontogramMark(w, customMarks).label}
-                </span>
+                <button
+                  key={w}
+                  type="button"
+                  className="chip text-white transition hover:brightness-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                  style={{ background: odontogramMark(w, customMarks).color }}
+                  onClick={() => removeMark({ scope: "tooth", value: w })}
+                  aria-label={`Remover ${odontogramMark(w, customMarks).label} do dente ${n}`}
+                  title="Clique para remover"
+                >
+                  {odontogramMark(w, customMarks).label}<X className="h-3 w-3" />
+                </button>
               ))}
               {faces.map(([f, c]) => (
-                <span key={f} className="chip border" style={{ color: odontogramMark(c, customMarks).color, borderColor: `${odontogramMark(c, customMarks).color}55`, background: `${odontogramMark(c, customMarks).color}12` }}>
-                  {odontogramMark(c, customMarks).label} · {faceLabel(f, n)}
-                </span>
+                <button
+                  key={f}
+                  type="button"
+                  className="chip border transition hover:brightness-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+                  style={{ color: odontogramMark(c, customMarks).color, borderColor: `${odontogramMark(c, customMarks).color}55`, background: `${odontogramMark(c, customMarks).color}12` }}
+                  onClick={() => removeMark({ scope: "face", face: f })}
+                  aria-label={`Remover ${odontogramMark(c, customMarks).label} da face ${faceLabel(f, n)} do dente ${n}`}
+                  title="Clique para remover"
+                >
+                  {odontogramMark(c, customMarks).label} · {faceLabel(f, n)}<X className="h-3 w-3" />
+                </button>
               ))}
+              </div>
             </div>
           )}
         </div>

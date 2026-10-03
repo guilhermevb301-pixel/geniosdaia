@@ -1,6 +1,6 @@
 import { addDays, addMonths, differenceInCalendarDays, format, isSameDay, startOfDay } from "date-fns";
 import { ANAMNESIS_CONDITIONS, FACE_CONDITIONS, TOOTH_CONDITIONS } from "./constants";
-import type { Appointment, OdontogramMarkDef, Patient, ProcedureDef, Settings, Stage, TreatmentStatus } from "./types";
+import type { Appointment, OdontogramMarkDef, Patient, ProcedureDef, Settings, Stage, ToothFace, ToothState, TreatmentStatus } from "./types";
 import { parseMoney, toDate, uid } from "./utils";
 import { installmentAttention, reminderAttention } from "./reminders";
 import { installmentBalance } from "./finance";
@@ -27,6 +27,22 @@ export function appendOdontogramMark(
   const knownLabels = [...Object.values(FACE_CONDITIONS), ...Object.values(TOOTH_CONDITIONS)].map((item) => item.label.toLocaleLowerCase("pt-BR"));
   if (knownLabels.includes(label.toLocaleLowerCase("pt-BR")) || existing.some((item) => item.label.trim().toLocaleLowerCase("pt-BR") === label.toLocaleLowerCase("pt-BR"))) throw new Error("Essa marcação já existe.");
   return [...existing, { id, label, color: input.color.toUpperCase(), scope: input.scope }];
+}
+
+export function removeOdontogramMark(
+  state: ToothState,
+  target: { scope: "tooth"; value: string } | { scope: "face"; face: ToothFace },
+): ToothState {
+  const next: ToothState = {
+    ...state,
+    whole: [...(state.whole ?? [])],
+    faces: { ...(state.faces ?? {}) },
+  };
+  if (target.scope === "tooth") next.whole = next.whole?.filter((mark) => mark !== target.value);
+  else delete next.faces?.[target.face];
+  if (!next.whole?.length) delete next.whole;
+  if (!Object.keys(next.faces ?? {}).length) delete next.faces;
+  return next;
 }
 
 export function appendProcedureDefinition(
