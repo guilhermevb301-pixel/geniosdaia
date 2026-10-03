@@ -1,6 +1,7 @@
-import { ANAMNESIS_CONDITIONS, ANAMNESIS_HABITS, FACE_CONDITIONS, PAYMENT_METHODS, TOOTH_CONDITIONS, TREATMENT_STATUS } from "./constants";
+import { ANAMNESIS_CONDITIONS, ANAMNESIS_HABITS, PAYMENT_METHODS, TREATMENT_STATUS } from "./constants";
 import { patientAlerts, treatmentTotals } from "./derive";
 import { faceLabel, toothName } from "./teeth";
+import { odontogramMark } from "./odontogram";
 import type { Appointment, Patient, Payment, Settings, ToothFace } from "./types";
 import { ageLabel, fmtDate, fmtDateLong, formatPhone, money, moneyInWords } from "./utils";
 
@@ -268,8 +269,8 @@ export function printPatientRecord(p: Patient, s: Settings, appts: Appointment[]
         ? `<table><thead><tr><th>Dente</th><th>Condições</th><th>Anotação</th></tr></thead><tbody>${teeth
             .map(([n, t]) => {
               const conds = [
-                ...(t.whole ?? []).map((w) => TOOTH_CONDITIONS[w].label),
-                ...Object.entries(t.faces ?? {}).map(([f, c]) => `${FACE_CONDITIONS[c!].label} (${faceLabel(f as ToothFace, Number(n))})`),
+                ...(t.whole ?? []).map((w) => odontogramMark(w, s.odontogramMarks).label),
+                ...Object.entries(t.faces ?? {}).map(([f, c]) => `${odontogramMark(c!, s.odontogramMarks).label} (${faceLabel(f as ToothFace, Number(n))})`),
               ];
               return `<tr><td><b>${n}</b><div class="muted">${esc(toothName(Number(n)))}</div></td><td>${conds.map(esc).join("<br/>") || "—"}</td><td>${esc(t.note) || ""}</td></tr>`;
             })

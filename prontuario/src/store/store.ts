@@ -42,6 +42,7 @@ export function withDefaults(settings?: Partial<Settings> | null): Settings {
     address: settings?.address?.trim() || DEFAULT_SETTINGS.address,
     documentFooter: settings?.documentFooter?.trim() || DEFAULT_SETTINGS.documentFooter,
     messages: { ...DEFAULT_SETTINGS.messages, ...(settings?.messages ?? {}) },
+    odontogramMarks: settings?.odontogramMarks ?? [],
   };
 }
 

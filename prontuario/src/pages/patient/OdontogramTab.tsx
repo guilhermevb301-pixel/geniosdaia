@@ -1,22 +1,25 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { Calculator, ClipboardPlus, History, Info, Layers3, StickyNote, Trash2, X } from "lucide-react";
+import { Calculator, ClipboardPlus, History, Info, Layers3, Plus, StickyNote, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Odontogram, OdontogramLegend } from "@/components/odontogram/Odontogram";
 import { Button } from "@/components/ui/Button";
 import { toast } from "@/components/ui/feedback";
 import { Card, Field, Select } from "@/components/ui/misc";
-import { FACE_CONDITIONS, TOOTH_CONDITIONS, TREATMENT_STATUS } from "@/lib/constants";
-import { sameTreatmentScope, treatmentPriceTotal, type TreatmentPriceMode } from "@/lib/derive";
+import { Modal } from "@/components/ui/Modal";
+import { TREATMENT_STATUS } from "@/lib/constants";
+import { appendOdontogramMark, sameTreatmentScope, treatmentPriceTotal, type TreatmentPriceMode } from "@/lib/derive";
+import { odontogramMark } from "@/lib/odontogram";
 import { faceLabel, suggestProcedure, toothName } from "@/lib/teeth";
-import type { Odontogram as Odo, Patient, ToothFace } from "@/lib/types";
+import type { CustomOdontogramMarkId, Odontogram as Odo, Patient, ToothFace } from "@/lib/types";
 import { cn, fmtDate, money, nowISO, parseMoney, uid } from "@/lib/utils";
 import { useStore } from "@/store/store";
 
 function ToothPanel({ patient, n, onClose }: { patient: Patient; n: number; onClose: () => void }) {
   const updatePatient = useStore((s) => s.updatePatient);
   const procedures = useStore((s) => s.settings.procedures);
+  const customMarks = useStore((s) => s.settings.odontogramMarks);
   const state = patient.odontogram.teeth[String(n)];
-  const faces = Object.entries(state?.faces ?? {}) as [ToothFace, keyof typeof FACE_CONDITIONS][];
+  const faces = Object.entries(state?.faces ?? {}) as [ToothFace, string][];
   const whole = state?.whole ?? [];
   const suggestion = suggestProcedure([...faces.map(([, c]) => c), ...whole]);
   const [proc, setProc] = useState(suggestion ?? procedures[0]?.name ?? "");
@@ -86,13 +89,13 @@ function ToothPanel({ patient, n, onClose }: { patient: Patient; n: number; onCl
           ) : (
             <div className="flex flex-wrap gap-1.5">
               {whole.map((w) => (
-                <span key={w} className="chip text-white" style={{ background: TOOTH_CONDITIONS[w].color }}>
-                  {TOOTH_CONDITIONS[w].label}
+                <span key={w} className="chip text-white" style={{ background: odontogramMark(w, customMarks).color }}>
+                  {odontogramMark(w, customMarks).label}
                 </span>
               ))}
               {faces.map(([f, c]) => (
-                <span key={f} className="chip border" style={{ color: FACE_CONDITIONS[c].color, borderColor: `${FACE_CONDITIONS[c].color}55`, background: `${FACE_CONDITIONS[c].color}12` }}>
-                  {FACE_CONDITIONS[c].label} · {faceLabel(f, n)}
+                <span key={f} className="chip border" style={{ color: odontogramMark(c, customMarks).color, borderColor: `${odontogramMark(c, customMarks).color}55`, background: `${odontogramMark(c, customMarks).color}12` }}>
+                  {odontogramMark(c, customMarks).label} · {faceLabel(f, n)}
                 </span>
               ))}
             </div>
@@ -232,17 +235,45 @@ function MultiToothPanel({ patient, selected, onClear }: { patient: Patient; sel
 
 export function OdontogramTab({ patient }: { patient: Patient }) {
   const updatePatient = useStore((s) => s.updatePatient);
+  const updateSettings = useStore((s) => s.updateSettings);
+  const customMarks = useStore((s) => s.settings.odontogramMarks);
   const [selected, setSelected] = useState<number[]>([]);
+  const [newMarkOpen, setNewMarkOpen] = useState(false);
+  const [markName, setMarkName] = useState("");
+  const [markColor, setMarkColor] = useState("#8B5CF6");
+  const [markScope, setMarkScope] = useState<"face" | "tooth">("tooth");
   const onChange = (odontogram: Odo) => updatePatient(patient.id, { odontogram });
+
+  const addMark = () => {
+    try {
+      const id = `custom:${uid("mark_")}` as CustomOdontogramMarkId;
+      const next = appendOdontogramMark(customMarks, { label: markName, color: markColor, scope: markScope }, id);
+      updateSettings({ odontogramMarks: next });
+      toast.success("Marcação criada", `${markName.trim()} já pode ser usada em qualquer paciente.`);
+      setMarkName("");
+      setMarkColor("#8B5CF6");
+      setMarkScope("tooth");
+      setNewMarkOpen(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível criar a marcação.");
+    }
+  };
 
   return (
     <div className="grid gap-6 2xl:grid-cols-[1fr_360px]">
       <div className="min-w-0 space-y-4">
         <Card>
-          <Odontogram value={patient.odontogram} onChange={onChange} selected={selected} onSelect={setSelected} />
+          <Odontogram
+            value={patient.odontogram}
+            onChange={onChange}
+            selected={selected}
+            onSelect={setSelected}
+            customMarks={customMarks}
+            extraToolbar={<Button variant="secondary" size="sm" icon={<Plus className="h-3.5 w-3.5" />} onClick={() => setNewMarkOpen(true)}>Nova marcação</Button>}
+          />
         </Card>
         <div className="card p-4">
-          <OdontogramLegend value={patient.odontogram} />
+          <OdontogramLegend value={patient.odontogram} customMarks={customMarks} />
           <p className="mt-3 flex items-center gap-1.5 text-xs text-ink-3">
             <Info className="h-3.5 w-3.5" />
             Vermelho = a tratar · Azul = já tratado. Última atualização: {patient.odontogram.updatedAt ? fmtDate(patient.odontogram.updatedAt, "dd/MM/yyyy HH:mm") : "—"}
@@ -266,6 +297,28 @@ export function OdontogramTab({ patient }: { patient: Patient }) {
           )}
         </AnimatePresence>
       </div>
+      <Modal
+        open={newMarkOpen}
+        onClose={() => setNewMarkOpen(false)}
+        size="sm"
+        title="Nova marcação do odontograma"
+        icon={<Plus className="h-5 w-5" />}
+        footer={<><Button variant="secondary" onClick={() => setNewMarkOpen(false)}>Cancelar</Button><Button onClick={addMark}>Criar marcação</Button></>}
+      >
+        <div className="space-y-4">
+          <Field label="Nome da marcação"><input className="input" value={markName} onChange={(e) => setMarkName(e.target.value)} placeholder="Ex.: Faceta" autoFocus /></Field>
+          <Field label="Onde será aplicada?">
+            <Select value={markScope} onChange={(e) => setMarkScope(e.target.value as "face" | "tooth")}>
+              <option value="tooth">No dente inteiro</option>
+              <option value="face">Em uma face do dente</option>
+            </Select>
+          </Field>
+          <Field label="Cor">
+            <div className="flex items-center gap-3"><input type="color" value={markColor} onChange={(e) => setMarkColor(e.target.value)} className="h-11 w-16 cursor-pointer rounded-xl border border-line bg-surface p-1" /><span className="text-sm text-ink-3">Essa cor aparecerá no desenho e na legenda.</span></div>
+          </Field>
+          <p className="rounded-xl bg-surface-2 p-3 text-sm text-ink-2">A marcação ficará salva na conta do doutor e poderá ser usada em todos os pacientes.</p>
+        </div>
+      </Modal>
     </div>
   );
 }

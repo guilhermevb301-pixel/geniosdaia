@@ -1,9 +1,37 @@
 import { addDays, addMonths, differenceInCalendarDays, format, isSameDay, startOfDay } from "date-fns";
-import { ANAMNESIS_CONDITIONS } from "./constants";
-import type { Appointment, Patient, Settings, Stage, TreatmentStatus } from "./types";
-import { toDate, uid } from "./utils";
+import { ANAMNESIS_CONDITIONS, FACE_CONDITIONS, TOOTH_CONDITIONS } from "./constants";
+import type { Appointment, OdontogramMarkDef, Patient, ProcedureDef, Settings, Stage, TreatmentStatus } from "./types";
+import { parseMoney, toDate, uid } from "./utils";
 import { installmentAttention, reminderAttention } from "./reminders";
 import { installmentBalance } from "./finance";
+
+export function appendOdontogramMark(
+  existing: OdontogramMarkDef[],
+  input: { label: string; color: string; scope: "face" | "tooth" },
+  id: OdontogramMarkDef["id"],
+): OdontogramMarkDef[] {
+  const label = input.label.trim();
+  if (!label) throw new Error("Informe o nome da marcação.");
+  if (!/^#[0-9A-F]{6}$/i.test(input.color)) throw new Error("Escolha uma cor válida.");
+  const knownLabels = [...Object.values(FACE_CONDITIONS), ...Object.values(TOOTH_CONDITIONS)].map((item) => item.label.toLocaleLowerCase("pt-BR"));
+  if (knownLabels.includes(label.toLocaleLowerCase("pt-BR")) || existing.some((item) => item.label.trim().toLocaleLowerCase("pt-BR") === label.toLocaleLowerCase("pt-BR"))) throw new Error("Essa marcação já existe.");
+  return [...existing, { id, label, color: input.color.toUpperCase(), scope: input.scope }];
+}
+
+export function appendProcedureDefinition(
+  existing: ProcedureDef[],
+  input: { name: string; category: string; priceText: string },
+  id: string,
+): ProcedureDef[] {
+  const name = input.name.trim();
+  const category = input.category.trim() || "Outros";
+  if (!name) throw new Error("Informe o nome do procedimento.");
+  if (existing.some((item) => item.name.trim().toLocaleLowerCase("pt-BR") === name.toLocaleLowerCase("pt-BR"))) throw new Error("Esse procedimento já existe.");
+  const pending = !input.priceText.trim();
+  const price = pending ? 0 : parseMoney(input.priceText);
+  if (!Number.isFinite(price) || price < 0) throw new Error("Informe um valor válido ou deixe em branco.");
+  return [...existing, { id, name, category, price, pricePending: pending }];
+}
 
 export function patientAlerts(p: Patient): string[] {
   const out: string[] = [];

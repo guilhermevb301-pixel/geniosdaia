@@ -16,10 +16,11 @@ import {
   toothKind,
   toothName,
 } from "@/lib/teeth";
-import type { Dentition, FaceCondition, Odontogram as Odo, ToothCondition, ToothFace, ToothState } from "@/lib/types";
+import { odontogramMark } from "@/lib/odontogram";
+import type { CustomOdontogramMarkId, Dentition, FaceCondition, Odontogram as Odo, OdontogramMarkDef, ToothCondition, ToothFace, ToothState } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-export type Tool = { kind: "select" } | { kind: "face"; value: FaceCondition } | { kind: "tooth"; value: ToothCondition } | { kind: "eraser" };
+export type Tool = { kind: "select" } | { kind: "face"; value: FaceCondition } | { kind: "tooth"; value: ToothCondition } | { kind: "custom"; value: CustomOdontogramMarkId; scope: "face" | "tooth" } | { kind: "eraser" };
 
 /* ---------- Geometria do diagrama de 5 faces ---------- */
 const C = 20;
@@ -44,13 +45,14 @@ export function toothHasData(t?: ToothState) {
   return !!t && ((t.whole?.length ?? 0) > 0 || Object.keys(t.faces ?? {}).length > 0 || !!t.note);
 }
 
-function Silhouette({ n, state, onClick, highlight }: { n: number; state?: ToothState; onClick: () => void; highlight: boolean }) {
+function Silhouette({ n, state, onClick, highlight, customMarks }: { n: number; state?: ToothState; onClick: () => void; highlight: boolean; customMarks: OdontogramMarkDef[] }) {
   const s = SILHOUETTES[toothKind(n)];
   const upper = isUpper(n);
   const whole = state?.whole ?? [];
   const absent = whole.includes("ausente");
   const implant = whole.includes("implante");
   const crown = whole.includes("coroa");
+  const customWhole = customMarks.find((item) => item.scope === "tooth" && whole.includes(item.id));
   const flip = upper ? undefined : "translate(0 76) scale(1 -1)";
   return (
     <svg viewBox="-2 -2 44 80" className={cn("h-[64px] w-full cursor-pointer transition", highlight && "drop-shadow-[0_0_6px_rgba(37,165,111,0.55)]")} onClick={onClick}>
@@ -68,9 +70,10 @@ function Silhouette({ n, state, onClick, highlight }: { n: number; state?: Tooth
         {whole.includes("canal") && !implant && <path d={s.canal} stroke="#DB2777" strokeWidth="3" fill="none" strokeLinecap="round" />}
         <path
           d={s.crown}
-          fill={crown ? "#FEF3C7" : "rgb(var(--surface))"}
-          stroke={crown ? "#CA8A04" : "rgb(var(--ink-3))"}
-          strokeWidth={crown ? 2.2 : 1.2}
+          fill={customWhole?.color ?? (crown ? "#FEF3C7" : "rgb(var(--surface))")}
+          fillOpacity={customWhole ? 0.72 : 1}
+          stroke={customWhole?.color ?? (crown ? "#CA8A04" : "rgb(var(--ink-3))")}
+          strokeWidth={crown || customWhole ? 2.2 : 1.2}
           opacity={absent && !implant ? 0.25 : 1}
           strokeDasharray={absent && !implant ? "3 2" : undefined}
         />
@@ -88,16 +91,18 @@ function FaceDiagram({
   onFace,
   hoverable,
   selected,
+  customMarks,
 }: {
   n: number;
   state?: ToothState;
   onFace: (face: ToothFace) => void;
   hoverable: boolean;
   selected: boolean;
+  customMarks: OdontogramMarkDef[];
 }) {
   const pos = facePositions(n);
   const faces = state?.faces ?? {};
-  const fill = (f: ToothFace) => (faces[f] ? FACE_CONDITIONS[faces[f]!].color : "rgb(var(--surface))");
+  const fill = (f: ToothFace) => (faces[f] ? odontogramMark(faces[f]!, customMarks).color : "rgb(var(--surface))");
   const absent = state?.whole?.includes("ausente") && !state?.whole?.includes("implante");
   return (
     <svg viewBox="0 0 40 40" className={cn("h-[34px] w-[34px]", absent && "opacity-30")}>
@@ -146,6 +151,7 @@ function Tooth({
   tool,
   onApplyFace,
   onApplyTooth,
+  customMarks,
 }: {
   n: number;
   state?: ToothState;
@@ -153,6 +159,7 @@ function Tooth({
   tool: Tool;
   onApplyFace: (n: number, face: ToothFace) => void;
   onApplyTooth: (n: number) => void;
+  customMarks: OdontogramMarkDef[];
 }) {
   const upper = isUpper(n);
   const has = toothHasData(state);
@@ -166,8 +173,8 @@ function Tooth({
       {n}
     </span>
   );
-  const sil = <Silhouette n={n} state={state} onClick={() => onApplyTooth(n)} highlight={selected} />;
-  const faces = <FaceDiagram n={n} state={state} onFace={(f) => onApplyFace(n, f)} hoverable={tool.kind === "face" || tool.kind === "eraser"} selected={selected} />;
+  const sil = <Silhouette n={n} state={state} onClick={() => onApplyTooth(n)} highlight={selected} customMarks={customMarks} />;
+  const faces = <FaceDiagram n={n} state={state} onFace={(f) => onApplyFace(n, f)} hoverable={tool.kind === "face" || (tool.kind === "custom" && tool.scope === "face") || tool.kind === "eraser"} selected={selected} customMarks={customMarks} />;
   return (
     <div title={`${n} · ${toothName(n)}${state?.note ? `\n📝 ${state.note}` : ""}`} className={cn("relative flex w-[46px] shrink-0 flex-col items-center gap-1 rounded-xl py-1.5 transition", selected ? "bg-brand-soft/70" : "hover:bg-surface-2")}>
       {upper ? (
@@ -210,12 +217,14 @@ export function Odontogram({
   selected,
   onSelect,
   extraToolbar,
+  customMarks,
 }: {
   value: Odo;
   onChange: (next: Odo) => void;
   selected: number[];
   onSelect: (teeth: number[]) => void;
   extraToolbar?: ReactNode;
+  customMarks: OdontogramMarkDef[];
 }) {
   const [tool, setTool] = useState<Tool>({ kind: "select" });
   const history = useRef<Odo[]>([]);
@@ -274,7 +283,7 @@ export function Odontogram({
       return;
     }
     includeSelection(n);
-    if (tool.kind === "face") {
+    if (tool.kind === "face" || (tool.kind === "custom" && tool.scope === "face")) {
       setTooth(n, (t) => {
         if (t.faces![face] === tool.value) delete t.faces![face];
         else t.faces![face] = tool.value;
@@ -294,7 +303,7 @@ export function Odontogram({
       return;
     }
     includeSelection(n);
-    if (tool.kind === "tooth") {
+    if (tool.kind === "tooth" || (tool.kind === "custom" && tool.scope === "tooth")) {
       setTooth(n, (t) => {
         const w = t.whole!;
         const i = w.indexOf(tool.value);
@@ -308,7 +317,7 @@ export function Odontogram({
   };
 
   const isActive = (t: Tool) => JSON.stringify(t) === JSON.stringify(tool);
-  const rowProps = { odo: value, selected, tool, onApplyFace, onApplyTooth };
+  const rowProps = { odo: value, selected, tool, onApplyFace, onApplyTooth, customMarks };
   const d: Dentition = value.dentition;
 
   return (
@@ -348,6 +357,15 @@ export function Odontogram({
               </button>
             );
           })}
+          {customMarks.map((mark) => {
+            const active = isActive({ kind: "custom", value: mark.id, scope: mark.scope });
+            return (
+              <button key={mark.id} onClick={() => setTool({ kind: "custom", value: mark.id, scope: mark.scope })} className={cn(TOOL_BTN, active ? "text-white" : "border-line bg-surface text-ink-2 hover:border-jade-300")} style={active ? { background: mark.color, borderColor: mark.color } : undefined}>
+                <span className={cn("h-3 w-3 ring-2 ring-white/60", mark.scope === "face" ? "rounded-full" : "rounded-[4px]")} style={{ background: mark.color }} />
+                {mark.label}
+              </button>
+            );
+          })}
           <span className="mx-1 h-6 w-px shrink-0 bg-line" />
           <button onClick={() => setTool({ kind: "eraser" })} className={cn(TOOL_BTN, isActive({ kind: "eraser" }) ? "border-ink bg-ink text-bg" : "border-line bg-surface text-ink-2 hover:border-jade-300")}>
             <Eraser className="h-3.5 w-3.5" /> Borracha
@@ -375,6 +393,7 @@ export function Odontogram({
         {tool.kind === "select" && (selected.length ? `${selected.length} dente${selected.length > 1 ? "s" : ""} selecionado${selected.length > 1 ? "s" : ""}. Clique para adicionar ou remover dentes da seleção.` : "Clique nos dentes para selecionar um ou vários. Escolha uma ferramenta acima para marcar.")}
         {tool.kind === "face" && `Clique nas faces dos dentes para marcar “${FACE_CONDITIONS[tool.value].label}”. Clique de novo para desmarcar.`}
         {tool.kind === "tooth" && `Clique nos dentes para marcar “${TOOTH_CONDITIONS[tool.value].label}”.`}
+        {tool.kind === "custom" && `Clique ${tool.scope === "face" ? "nas faces" : "nos dentes"} para marcar “${odontogramMark(tool.value, customMarks).label}”. Clique de novo para desmarcar.`}
         {tool.kind === "eraser" && "Clique em uma face para limpá-la, ou no desenho do dente para limpar tudo."}
       </motion.p>
 
@@ -397,7 +416,7 @@ export function Odontogram({
   );
 }
 
-export function OdontogramLegend({ value }: { value: Odo }) {
+export function OdontogramLegend({ value, customMarks }: { value: Odo; customMarks: OdontogramMarkDef[] }) {
   const counts: Record<string, number> = {};
   Object.values(value.teeth).forEach((t) => {
     Object.values(t.faces ?? {}).forEach((c) => (counts[c] = (counts[c] ?? 0) + 1));
@@ -406,6 +425,7 @@ export function OdontogramLegend({ value }: { value: Odo }) {
   const all = [
     ...Object.entries(FACE_CONDITIONS).map(([k, v]) => ({ k, label: v.label, color: v.color, round: true })),
     ...Object.entries(TOOTH_CONDITIONS).map(([k, v]) => ({ k, label: v.label, color: v.color, round: false })),
+    ...customMarks.map((v) => ({ k: v.id, label: v.label, color: v.color, round: v.scope === "face" })),
   ];
   return (
     <div className="flex flex-wrap gap-2">

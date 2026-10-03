@@ -245,6 +245,7 @@ export const DEFAULT_SETTINGS: Settings = {
   endHour: 19,
   workSaturday: true,
   procedures: DEFAULT_PROCEDURES,
+  odontogramMarks: [],
   tags: DEFAULT_TAGS,
   messages: {
     confirm:

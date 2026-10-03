@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 // Bundle the actual TypeScript helpers; no browser, real patient, or cloud writes.
 const result = await build({ stdin: { contents: 'export * from "./src/lib/finance"; export * from "./src/lib/reminders"; export * from "./src/lib/derive"; export { buildDemoData } from "./src/lib/seed"; export { formatProfessionalCro, documentCity, renderDocumentBranding } from "./src/lib/print"; export { SessionGuard } from "./src/lib/sessionGuard"; export { freshAccountData, freshCloudSession, withDefaults } from "./src/store/store"; export { parseMoney } from "./src/lib/utils"; export { DEFAULT_SETTINGS, STAGES } from "./src/lib/constants";', resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm" });
-const { splitInstallments, buildPaymentAgreement, installmentBalance, buildPaymentRecord, reminderAttention, installmentAttention, treatmentTotals, financialSituation, automaticPatientStage, finishPendingReturns, appointmentToConfirm, patientAgeGroup, applyClinicalTreatmentStatus, toggleToothSelection, treatmentPriceTotal, sameTreatmentScope, patientCareSummary, patientContactAction, normalizePatientsView, patientBoardMinimumWidth, patientListMinimumWidth, formatProfessionalCro, documentCity, renderDocumentBranding, SessionGuard, freshAccountData, freshCloudSession, withDefaults, parseMoney, DEFAULT_SETTINGS, STAGES, buildDemoData } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
+const { splitInstallments, buildPaymentAgreement, installmentBalance, buildPaymentRecord, reminderAttention, installmentAttention, treatmentTotals, financialSituation, automaticPatientStage, finishPendingReturns, appointmentToConfirm, patientAgeGroup, applyClinicalTreatmentStatus, toggleToothSelection, treatmentPriceTotal, sameTreatmentScope, appendOdontogramMark, appendProcedureDefinition, patientCareSummary, patientContactAction, normalizePatientsView, patientBoardMinimumWidth, patientListMinimumWidth, formatProfessionalCro, documentCity, renderDocumentBranding, SessionGuard, freshAccountData, freshCloudSession, withDefaults, parseMoney, DEFAULT_SETTINGS, STAGES, buildDemoData } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
 let checks = 0;
 function check(name, fn) { fn(); checks++; console.log(`✓ ${name}`); }
 
@@ -381,6 +381,22 @@ check("A seleção do odontograma adiciona e remove vários dentes sem duplicar"
   assert.deepEqual(first, [15]);
   assert.deepEqual(second, [15, 23]);
   assert.deepEqual(repeated, [23]);
+});
+
+check("Uma marcação personalizada válida é salva no catálogo do odontograma", () => {
+  const marks = appendOdontogramMark?.([], { label: "  Faceta  ", color: "#8B5CF6", scope: "tooth" }, "custom:faceta");
+  assert.deepEqual(marks, [{ id: "custom:faceta", label: "Faceta", color: "#8B5CF6", scope: "tooth" }]);
+  assert.throws(() => appendOdontogramMark?.(marks, { label: "faceta", color: "#111111", scope: "face" }, "custom:outra"), /já existe/i);
+  assert.throws(() => appendOdontogramMark?.([], { label: "Cárie", color: "#111111", scope: "face" }, "custom:carie"), /já existe/i);
+  assert.throws(() => appendOdontogramMark?.([], { label: "", color: "vermelho", scope: "face" }, "custom:invalida"));
+});
+
+check("Um procedimento criado no plano fica disponível para os próximos pacientes", () => {
+  const procedures = appendProcedureDefinition?.([], { name: "  Enxerto ósseo personalizado  ", category: " Cirurgia ", priceText: "1.250,00" }, "p_custom");
+  assert.deepEqual(procedures, [{ id: "p_custom", name: "Enxerto ósseo personalizado", category: "Cirurgia", price: 1250, pricePending: false }]);
+  const pending = appendProcedureDefinition?.(procedures, { name: "Sedação assistida", category: "Hospitalar", priceText: "" }, "p_pending");
+  assert.equal(pending[1].pricePending, true);
+  assert.throws(() => appendProcedureDefinition?.(pending, { name: "sedação assistida", category: "Outra", priceText: "100" }, "p_dup"), /já existe/i);
 });
 
 check("O preço pode ser informado por dente ou como total do conjunto", () => {

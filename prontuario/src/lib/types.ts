@@ -10,9 +10,18 @@ export type FaceCondition = "carie" | "restauracao" | "provisoria" | "selante" |
 
 export type ToothCondition = "ausente" | "extracao" | "implante" | "coroa" | "canal" | "protese";
 
+export type CustomOdontogramMarkId = `custom:${string}`;
+
+export interface OdontogramMarkDef {
+  id: CustomOdontogramMarkId;
+  label: string;
+  color: string;
+  scope: "face" | "tooth";
+}
+
 export interface ToothState {
-  faces?: Partial<Record<ToothFace, FaceCondition>>;
-  whole?: ToothCondition[];
+  faces?: Partial<Record<ToothFace, FaceCondition | CustomOdontogramMarkId>>;
+  whole?: (ToothCondition | CustomOdontogramMarkId)[];
   note?: string;
 }
 
@@ -225,6 +234,7 @@ export interface Settings {
   endHour: number;
   workSaturday: boolean;
   procedures: ProcedureDef[];
+  odontogramMarks: OdontogramMarkDef[];
   tags: TagDef[];
   messages: {
     confirm: string;
