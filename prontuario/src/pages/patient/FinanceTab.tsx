@@ -32,14 +32,15 @@ export function FinanceTab({ patient }: { patient: Patient }) {
   return (
     <div className="space-y-6">
       <HistoricalNotes patient={patient} kind="finance"/>
+      {!!patient.importedSources?.length && <div className="card p-4 text-sm"><b>Histórico antigo separado do plano atual</b><p className="mt-1 text-ink-3">Os totais abaixo consideram somente o plano atual e os recebimentos registrados após a importação. R$ 0,00 aqui não confirma quitação do tratamento antigo. Confira os documentos acima com o doutor antes de criar uma cobrança.</p></div>}
       {patient.payments.some(p=>p.historical) && <div className="card p-4 text-sm"><b>Recebimentos anteriores à importação: {money(patient.payments.filter(p=>p.historical).reduce((sum,p)=>sum+p.amount,0))}</b><p className="mt-1 text-ink-3">Estão preservados no histórico abaixo. Não quitam automaticamente novos tratamentos e não demonstram, sozinhos, o saldo atual do paciente.</p></div>}
       <div className="rounded-2xl border border-jade-200 bg-brand-soft px-4 py-3 text-sm text-brand-ink"><b>Aqui é somente dinheiro.</b> Vencimento é uma cobrança planejada; “pagamento recebido” significa que o dinheiro realmente entrou. A realização do procedimento fica em Tratamentos.</div>
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {[
-          { label: "Total contratado", value: money(totals.total), cls: "text-ink" },
-          { label: "Recebido", value: money(totals.paid), cls: "text-jade-600" },
-          { label: "Saldo a receber", value: money(totals.balance), cls: totals.balance ? "text-amber-600" : "text-ink" },
-          { label: "Ainda não aceito", value: money(totals.planned), cls: "text-ink-2" },
+          { label: patient.importedSources?.length ? "Contratado no plano atual" : "Total contratado", value: money(totals.total), cls: "text-ink" },
+          { label: patient.importedSources?.length ? "Recebido após a importação" : "Recebido", value: money(totals.paid), cls: "text-jade-600" },
+          { label: patient.importedSources?.length ? "Saldo do plano atual" : "Saldo a receber", value: money(totals.balance), cls: totals.balance ? "text-amber-600" : "text-ink" },
+          { label: patient.importedSources?.length ? "Novas propostas não aceitas" : "Ainda não aceito", value: money(totals.planned), cls: "text-ink-2" },
         ].map((k) => (
           <div key={k.label} className="card p-5">
             <p className="text-xs font-semibold text-ink-3">{k.label}</p>

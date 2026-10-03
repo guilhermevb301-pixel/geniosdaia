@@ -235,9 +235,9 @@ export function PatientRecord() {
         <div className="relative grid grid-cols-2 border-t border-line xl:grid-cols-4">
           {[
             { label: "Situação do paciente", value: <Select aria-label="Situação do paciente" value={patient.stage} onChange={async (e) => { const next = e.target.value as Stage; if (next === "concluido" && !(await confirmDialog({ title: "Registrar alta / inativo?", description: "Isso não quita valores, não conclui procedimentos e não apaga lembretes.", confirmLabel: "Confirmar" }))) return; updatePatient(patient.id, { stage: next }); }}>{STAGES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}</Select> },
-            { label: "Procedimentos", value: totals.count ? `${totals.done}/${totals.count} realizados` : "Sem plano" },
-            { label: "Total contratado", value: money(totals.total) },
-            { label: "Saldo a receber", value: <span className={totals.balance ? "text-amber-600" : "text-jade-600"}>{money(totals.balance)}</span> },
+            { label: "Procedimentos", value: totals.count ? `${totals.done}/${totals.count} realizados` : patient.historicalPlans?.length ? "Plano anterior em Tratamentos" : "Sem plano atual" },
+            { label: patient.importedSources?.length ? "Contratado no plano atual" : "Total contratado", value: money(totals.total) },
+            { label: patient.importedSources?.length ? "Saldo do plano atual" : "Saldo a receber", value: <span className={totals.balance ? "text-amber-600" : "text-jade-600"}>{money(totals.balance)}</span> },
           ].map((s, i) => (
             <div key={i} className={cn("min-w-0 px-5 py-3 sm:px-6 border-line", i < 2 && "max-xl:col-span-2", i > 0 && "xl:border-l max-xl:border-t", i === 3 && "max-xl:border-l")}>
               <p className="text-[11px] font-semibold uppercase tracking-wider text-ink-3">{s.label}</p>
