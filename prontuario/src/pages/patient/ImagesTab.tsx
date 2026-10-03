@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import {
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Columns2,
   Contrast,
   Download,
@@ -28,6 +29,7 @@ import { EmptyState, Field, Select } from "@/components/ui/misc";
 import { ATTACHMENT_CATEGORIES } from "@/lib/constants";
 import { guessAttachmentCategory } from "@/lib/derive";
 import { hasImageEdits, normalizeImageEdits } from "@/lib/imageEdits";
+import { exportEditedImage } from "@/lib/imageExport";
 import { deleteFile, getFile, getFileUrl, putFile, resizeImage } from "@/lib/storage";
 import type { Attachment, AttachmentCategory, Patient } from "@/lib/types";
 import { clamp, cn, downloadBlob, fileSize, fmtDate, nowISO, todayKey, uid } from "@/lib/utils";
@@ -111,6 +113,7 @@ function Viewer({ patient, list, index, onIndex, onClose }: { patient: Patient; 
   const [bright, setBright] = useState(100);
   const [contrast, setContrast] = useState(100);
   const [editing, setEditing] = useState(false);
+  const [downloadOpen, setDownloadOpen] = useState(false);
   const drag = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
 
   const resetView = () => {
@@ -118,7 +121,10 @@ function Viewer({ patient, list, index, onIndex, onClose }: { patient: Patient; 
     setPan({ x: 0, y: 0 });
     setRot(0);
   };
-  useEffect(resetView, [index]);
+  useEffect(() => {
+    resetView();
+    setDownloadOpen(false);
+  }, [index]);
 
   const go = useCallback((d: number) => onIndex((index + d + list.length) % list.length), [index, list.length, onIndex]);
   useEffect(() => {
@@ -138,6 +144,28 @@ function Viewer({ patient, list, index, onIndex, onClose }: { patient: Patient; 
   if (!a) return null;
   const isImage = a.mime.startsWith("image/");
   const setMeta = (patch: Partial<Attachment>) => updatePatient(patient.id, (p) => ({ attachments: p.attachments.map((x) => (x.id === a.id ? { ...x, ...patch } : x)) }));
+  const downloadOriginal = async () => {
+    try {
+      const blob = await getFile(a.id);
+      if (!blob) throw new Error();
+      downloadBlob(blob, a.name.includes(".") ? a.name : `${a.name}.${(a.mime.split("/")[1] ?? "bin").replace("svg+xml", "svg")}`);
+      setDownloadOpen(false);
+    } catch {
+      toast.error("Não foi possível baixar o arquivo original");
+    }
+  };
+  const downloadEdited = async () => {
+    try {
+      const blob = await getFile(a.id);
+      if (!blob) throw new Error();
+      const output = await exportEditedImage(blob, a.imageEdits);
+      const base = a.name.replace(/\.[^.]+$/, "") || "imagem";
+      downloadBlob(output, `${base}-editada.${output.type === "image/png" ? "png" : "jpg"}`);
+      setDownloadOpen(false);
+    } catch {
+      toast.error("Não foi possível gerar a versão editada", "O arquivo original continua intacto.");
+    }
+  };
 
   const onPointerDown = (e: RPointerEvent) => {
     if (zoom <= 1) return;
@@ -179,16 +207,17 @@ function Viewer({ patient, list, index, onIndex, onClose }: { patient: Patient; 
           </div>
         )}
         <div className="flex items-center gap-1">
-          <button
-            className="rounded-lg p-2 hover:bg-white/10"
-            title="Baixar"
-            onClick={async () => {
-              const blob = await getFile(a.id);
-              if (blob) downloadBlob(blob, a.name.includes(".") ? a.name : `${a.name}.${(a.mime.split("/")[1] ?? "bin").replace("svg+xml", "svg")}`);
-            }}
-          >
-            <Download className="h-5 w-5" />
-          </button>
+          <div className="relative">
+            <button className="flex items-center gap-1 rounded-lg p-2 hover:bg-white/10" title="Baixar arquivo" onClick={() => setDownloadOpen((open) => !open)} aria-expanded={downloadOpen}>
+              <Download className="h-5 w-5" /><ChevronDown className="h-3 w-3" />
+            </button>
+            {downloadOpen && (
+              <div className="absolute right-0 top-full z-20 mt-2 w-56 overflow-hidden rounded-xl border border-white/15 bg-neutral-900 p-1.5 shadow-2xl">
+                <button className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold hover:bg-white/10" onClick={() => void downloadOriginal()}>Baixar original</button>
+                {isImage && hasImageEdits(a.imageEdits) && <button className="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-jade-300 hover:bg-white/10" onClick={() => void downloadEdited()}>Baixar versão editada</button>}
+              </div>
+            )}
+          </div>
           <button className="rounded-lg p-2 hover:bg-white/10" onClick={onClose} title="Fechar (Esc)">
             <X className="h-5 w-5" />
           </button>
