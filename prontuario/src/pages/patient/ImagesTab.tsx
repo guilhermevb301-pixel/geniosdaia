@@ -9,6 +9,7 @@ import {
   ImagePlus,
   Images,
   Loader2,
+  Pencil,
   RotateCw,
   Sun,
   Trash2,
@@ -20,10 +21,13 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/Button";
+import { ImageCanvas } from "@/components/image-editor/ImageCanvas";
+import { ImageEditor } from "@/components/image-editor/ImageEditor";
 import { confirmDialog, toast } from "@/components/ui/feedback";
 import { EmptyState, Field, Select } from "@/components/ui/misc";
 import { ATTACHMENT_CATEGORIES } from "@/lib/constants";
 import { guessAttachmentCategory } from "@/lib/derive";
+import { hasImageEdits, normalizeImageEdits } from "@/lib/imageEdits";
 import { deleteFile, getFile, getFileUrl, putFile, resizeImage } from "@/lib/storage";
 import type { Attachment, AttachmentCategory, Patient } from "@/lib/types";
 import { clamp, cn, downloadBlob, fileSize, fmtDate, nowISO, todayKey, uid } from "@/lib/utils";
@@ -106,6 +110,7 @@ function Viewer({ patient, list, index, onIndex, onClose }: { patient: Patient; 
   const [invert, setInvert] = useState(false);
   const [bright, setBright] = useState(100);
   const [contrast, setContrast] = useState(100);
+  const [editing, setEditing] = useState(false);
   const drag = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
 
   const resetView = () => {
@@ -144,7 +149,7 @@ function Viewer({ patient, list, index, onIndex, onClose }: { patient: Patient; 
     setPan({ x: drag.current.px + (e.clientX - drag.current.x), y: drag.current.py + (e.clientY - drag.current.y) });
   };
 
-  return createPortal(
+  const portal = createPortal(
     <motion.div className="fixed inset-0 z-[65] flex flex-col bg-neutral-950/95 text-white backdrop-blur" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
       <div className="flex flex-wrap items-center gap-2 border-b border-white/10 px-4 py-3">
         <div className="min-w-0 flex-1">
@@ -155,6 +160,9 @@ function Viewer({ patient, list, index, onIndex, onClose }: { patient: Patient; 
         </div>
         {isImage && (
           <div className="flex items-center gap-1 rounded-xl bg-white/5 p-1">
+            <button className="flex items-center gap-1.5 rounded-lg bg-jade-500 px-2.5 py-2 text-xs font-semibold text-white hover:bg-jade-400" onClick={() => setEditing(true)} title="Cortar, girar e fazer marcações">
+              <Pencil className="h-4 w-4" /> Editar imagem
+            </button>
             <button className="rounded-lg p-2 hover:bg-white/10" onClick={() => setZoom((z) => clamp(z / 1.25, 1, 8))} title="Diminuir zoom">
               <ZoomOut className="h-4 w-4" />
             </button>
@@ -208,16 +216,9 @@ function Viewer({ patient, list, index, onIndex, onClose }: { patient: Patient; 
             </>
           )}
           {url && isImage ? (
-            <img
-              src={url}
-              alt={a.name}
-              draggable={false}
-              className="max-h-full max-w-full select-none object-contain transition-transform duration-150"
-              style={{
-                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom}) rotate(${rot}deg)`,
-                filter: `${invert ? "invert(1) " : ""}brightness(${bright}%) contrast(${contrast}%)`,
-              }}
-            />
+            <div className="flex h-full w-full items-center justify-center p-8 transition-transform duration-150" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom}) rotate(${rot}deg)`, filter: `${invert ? "invert(1) " : ""}brightness(${bright}%) contrast(${contrast}%)` }}>
+              <ImageCanvas src={url} edits={normalizeImageEdits(a.imageEdits)} naturalWidth={a.width} naturalHeight={a.height} className="h-full w-full" />
+            </div>
           ) : url ? (
             <iframe src={url} title={a.name} className="h-full w-full bg-white" />
           ) : (
@@ -303,6 +304,7 @@ function Viewer({ patient, list, index, onIndex, onClose }: { patient: Patient; 
     </motion.div>,
     document.body,
   );
+  return <>{portal}{editing && url && isImage && <ImageEditor attachment={a} src={url} onCancel={() => setEditing(false)} onSave={(edits) => { const normalized = normalizeImageEdits(edits); setMeta({ imageEdits: hasImageEdits(normalized) ? normalized : undefined }); setEditing(false); toast.success("Edições salvas", "O arquivo original foi preservado."); }} />}</>;
 }
 
 function Compare({ a, b, onClose }: { a: Attachment; b: Attachment; onClose: () => void }) {

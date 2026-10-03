@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 // Bundle the actual TypeScript helpers; no browser, real patient, or cloud writes.
 const result = await build({ stdin: { contents: 'export * from "./src/lib/finance"; export * from "./src/lib/reminders"; export * from "./src/lib/derive"; export * from "./src/lib/imageEdits"; export { buildDemoData } from "./src/lib/seed"; export { formatProfessionalCro, documentCity, renderDocumentBranding } from "./src/lib/print"; export { SessionGuard } from "./src/lib/sessionGuard"; export { freshAccountData, freshCloudSession, withDefaults } from "./src/store/store"; export { parseMoney } from "./src/lib/utils"; export { ATTACHMENT_CATEGORIES, DEFAULT_SETTINGS, STAGES } from "./src/lib/constants";', resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm" });
-const { splitInstallments, buildPaymentAgreement, installmentBalance, buildPaymentRecord, reminderAttention, installmentAttention, treatmentTotals, financialSituation, automaticPatientStage, finishPendingReturns, appointmentToConfirm, patientAgeGroup, applyClinicalTreatmentStatus, toggleToothSelection, removeOdontogramMark, treatmentPriceTotal, sameTreatmentScope, appendOdontogramMark, appendProcedureDefinition, guessAttachmentCategory, patientCareSummary, patientContactAction, normalizePatientsView, patientBoardMinimumWidth, patientListMinimumWidth, emptyImageEdits, normalizeImageEdits, applyImageCommand, hasImageEdits, formatProfessionalCro, documentCity, renderDocumentBranding, SessionGuard, freshAccountData, freshCloudSession, withDefaults, parseMoney, ATTACHMENT_CATEGORIES, DEFAULT_SETTINGS, STAGES, buildDemoData } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
+const { splitInstallments, buildPaymentAgreement, installmentBalance, buildPaymentRecord, reminderAttention, installmentAttention, treatmentTotals, financialSituation, automaticPatientStage, finishPendingReturns, appointmentToConfirm, patientAgeGroup, applyClinicalTreatmentStatus, toggleToothSelection, removeOdontogramMark, treatmentPriceTotal, sameTreatmentScope, appendOdontogramMark, appendProcedureDefinition, guessAttachmentCategory, patientCareSummary, patientContactAction, normalizePatientsView, patientBoardMinimumWidth, patientListMinimumWidth, emptyImageEdits, normalizeImageEdits, applyImageCommand, hasImageEdits, toNormalizedPoint, rotateNormalizedPoint, applyCropSelection, createImageEditHistory, pushImageEditHistory, undoImageEditHistory, redoImageEditHistory, formatProfessionalCro, documentCity, renderDocumentBranding, SessionGuard, freshAccountData, freshCloudSession, withDefaults, parseMoney, ATTACHMENT_CATEGORIES, DEFAULT_SETTINGS, STAGES, buildDemoData } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
 let checks = 0;
 function check(name, fn) { fn(); checks++; console.log(`✓ ${name}`); }
 
@@ -454,6 +454,27 @@ check("Edições de imagem são normalizadas sem alterar o original", () => {
   assert.equal(hasImageEdits?.(applyImageCommand?.(marked, { type: "reset" })), false);
   assert.deepEqual(normalizeImageEdits?.(undefined), base);
   assert.equal("imageEdits" in { id: "old", mime: "image/jpeg" }, false);
+});
+
+check("Coordenadas e histórico do editor mantêm as marcações alinhadas", () => {
+  assert.deepEqual(toNormalizedPoint?.({ x: 150, y: 100 }, { left: 50, top: 0, width: 200, height: 200 }), { x: 0.5, y: 0.5 });
+  assert.deepEqual(rotateNormalizedPoint?.({ x: 0.2, y: 0.7 }, 90), { x: 0.3, y: 0.2 });
+  assert.deepEqual(rotateNormalizedPoint?.({ x: 0.2, y: 0.7 }, 180), { x: 0.8, y: 0.3 });
+  assert.deepEqual(rotateNormalizedPoint?.({ x: 0.2, y: 0.7 }, 270), { x: 0.7, y: 0.8 });
+
+  const initial = emptyImageEdits?.();
+  const rotated = applyImageCommand?.(initial, { type: "rotate", degrees: 90 });
+  const cropped = applyCropSelection?.(rotated, { x: 0.25, y: 0.2, width: 0.5, height: 0.6 });
+  assert.deepEqual(cropped.crop, { x: 0.2, y: 0.25, width: 0.6, height: 0.5 });
+
+  const history = pushImageEditHistory?.(createImageEditHistory?.(initial), rotated);
+  assert.equal(history.present.rotation, 90);
+  const undone = undoImageEditHistory?.(history);
+  assert.equal(undone.present.rotation, 0);
+  assert.equal(undone.future[0].rotation, 90);
+  const redone = redoImageEditHistory?.(undone);
+  assert.equal(redone.present.rotation, 90);
+  assert.equal(initial.rotation, 0);
 });
 
 check("O preço pode ser informado por dente ou como total do conjunto", () => {
