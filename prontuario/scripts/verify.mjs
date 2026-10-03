@@ -4,8 +4,8 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 // Bundle the actual TypeScript helpers; no browser, real patient, or cloud writes.
-const result = await build({ stdin: { contents: 'export * from "./src/lib/finance"; export * from "./src/lib/reminders"; export * from "./src/lib/derive"; export { buildDemoData } from "./src/lib/seed"; export { parseMoney } from "./src/lib/utils"; export { DEFAULT_SETTINGS, STAGES } from "./src/lib/constants";', resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm" });
-const { splitInstallments, buildPaymentAgreement, installmentBalance, buildPaymentRecord, reminderAttention, installmentAttention, treatmentTotals, financialSituation, automaticPatientStage, finishPendingReturns, appointmentToConfirm, patientAgeGroup, applyClinicalTreatmentStatus, toggleToothSelection, treatmentPriceTotal, sameTreatmentScope, patientCareSummary, patientContactAction, normalizePatientsView, patientBoardMinimumWidth, patientListMinimumWidth, parseMoney, DEFAULT_SETTINGS, STAGES, buildDemoData } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
+const result = await build({ stdin: { contents: 'export * from "./src/lib/finance"; export * from "./src/lib/reminders"; export * from "./src/lib/derive"; export { buildDemoData } from "./src/lib/seed"; export { formatProfessionalCro, documentCity, renderDocumentBranding } from "./src/lib/print"; export { withDefaults } from "./src/store/store"; export { parseMoney } from "./src/lib/utils"; export { DEFAULT_SETTINGS, STAGES } from "./src/lib/constants";', resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm" });
+const { splitInstallments, buildPaymentAgreement, installmentBalance, buildPaymentRecord, reminderAttention, installmentAttention, treatmentTotals, financialSituation, automaticPatientStage, finishPendingReturns, appointmentToConfirm, patientAgeGroup, applyClinicalTreatmentStatus, toggleToothSelection, treatmentPriceTotal, sameTreatmentScope, patientCareSummary, patientContactAction, normalizePatientsView, patientBoardMinimumWidth, patientListMinimumWidth, formatProfessionalCro, documentCity, renderDocumentBranding, withDefaults, parseMoney, DEFAULT_SETTINGS, STAGES, buildDemoData } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
 let checks = 0;
 function check(name, fn) { fn(); checks++; console.log(`✓ ${name}`); }
 
@@ -132,9 +132,43 @@ check("O motivo do contato descreve lembretes atrasados e futuros com português
 
 check("Perfil especializado sem preços inventados e etapas compatíveis com dados anteriores", () => {
   assert.equal(DEFAULT_SETTINGS.doctorName, "Mizael Magalhães Cardoso");
+  assert.equal(DEFAULT_SETTINGS.cro, "BA 3653");
+  assert.equal(DEFAULT_SETTINGS.phone, "(71) 99961-3646");
+  assert.equal(DEFAULT_SETTINGS.address, "Ed. Aero Empresarial, Sala 118 - Centro - Lauro de Freitas - BA");
+  assert.match(DEFAULT_SETTINGS.documentFooter, /Cirurgia.*Implantes.*Próteses.*Odontologia Hospitalar.*Pacientes Especiais.*Atendimento Odontológico Domiciliar/);
   assert.equal(new Set(DEFAULT_SETTINGS.procedures.map(p => p.id)).size, DEFAULT_SETTINGS.procedures.length);
   assert.ok(DEFAULT_SETTINGS.procedures.every(p => p.pricePending && p.price === 0));
   assert.equal(STAGES.find(s => s.id === "manutencao").label, "Em acompanhamento");
+});
+
+check("Contas já existentes recebem os dados profissionais sem apagar personalizações", () => {
+  const migrated = withDefaults?.({
+    doctorName: "Mizael Cardoso",
+    cro: "",
+    specialty: "Cirurgia e Traumatologia Bucomaxilofacial",
+    phone: "",
+    address: "",
+  });
+  assert.equal(migrated.doctorName, DEFAULT_SETTINGS.doctorName);
+  assert.equal(migrated.cro, DEFAULT_SETTINGS.cro);
+  assert.equal(migrated.specialty, DEFAULT_SETTINGS.specialty);
+  assert.equal(migrated.phone, DEFAULT_SETTINGS.phone);
+  assert.equal(migrated.address, DEFAULT_SETTINGS.address);
+  assert.equal(migrated.documentFooter, DEFAULT_SETTINGS.documentFooter);
+  assert.equal(withDefaults?.({ cro: "BA 9999" }).cro, "BA 9999");
+});
+
+check("Todos os documentos recebem a identidade profissional completa e a cidade correta", () => {
+  assert.equal(formatProfessionalCro?.("BA 3653"), "CRO-BA 3653");
+  assert.equal(formatProfessionalCro?.("CRO BA 3653"), "CRO-BA 3653");
+  assert.equal(documentCity?.(DEFAULT_SETTINGS.address), "Lauro de Freitas");
+  const branding = renderDocumentBranding?.(DEFAULT_SETTINGS);
+  assert.match(branding.header, /Dr\. Mizael Magalhães Cardoso/);
+  assert.match(branding.header, /Cirurgia Bucomaxilofacial \/ PCD/);
+  assert.match(branding.header, /CRO-BA 3653/);
+  assert.match(branding.header, /\(71\) 99961-3646/);
+  assert.match(branding.header, /Ed\. Aero Empresarial, Sala 118/);
+  assert.match(branding.footer, /Cirurgia.*Implantes.*Próteses.*Odontologia Hospitalar.*Pacientes Especiais.*Atendimento Odontológico Domiciliar/);
 });
 
 check("Valores brasileiros com ponto de milhar não viram um real", () => {

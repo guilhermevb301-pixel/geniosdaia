@@ -31,11 +31,16 @@ export function emptyPatient(partial: Partial<Patient> = {}): Patient {
 }
 
 export function withDefaults(settings?: Partial<Settings> | null): Settings {
+  const legacySpecialties = ["Cirurgião-Dentista", "Cirurgia e Traumatologia Bucomaxilofacial"];
   return {
     ...DEFAULT_SETTINGS,
     ...(settings ?? {}),
     doctorName: !settings?.doctorName || settings.doctorName === "Mizael Cardoso" ? DEFAULT_SETTINGS.doctorName : settings.doctorName,
-    specialty: !settings?.specialty || settings.specialty === "Cirurgião-Dentista" ? DEFAULT_SETTINGS.specialty : settings.specialty,
+    cro: settings?.cro?.trim() || DEFAULT_SETTINGS.cro,
+    specialty: !settings?.specialty || legacySpecialties.includes(settings.specialty) ? DEFAULT_SETTINGS.specialty : settings.specialty,
+    phone: settings?.phone?.trim() || DEFAULT_SETTINGS.phone,
+    address: settings?.address?.trim() || DEFAULT_SETTINGS.address,
+    documentFooter: settings?.documentFooter?.trim() || DEFAULT_SETTINGS.documentFooter,
     messages: { ...DEFAULT_SETTINGS.messages, ...(settings?.messages ?? {}) },
   };
 }

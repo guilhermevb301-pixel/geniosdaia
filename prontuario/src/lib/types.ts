@@ -210,6 +210,7 @@ export interface Settings {
   phone: string;
   email: string;
   address: string;
+  documentFooter: string;
   signature?: string;
   recallMonths: number;
   startHour: number;

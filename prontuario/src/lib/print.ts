@@ -16,8 +16,9 @@ const STYLE = `
   .pp h1, .pp h2, .pp h3 { font-family: Fraunces, Georgia, serif; font-weight: 600; margin: 0; }
   .pp .lh { display: flex; align-items: center; gap: 14px; padding-bottom: 12px; border-bottom: 2px solid #178559; }
   .pp .lh .name { font-family: Fraunces, Georgia, serif; font-size: 22px; font-weight: 600; color: #114534; }
-  .pp .lh .sub { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #178559; font-weight: 700; }
+  .pp .lh .sub { font-size: 11px; letter-spacing: .09em; text-transform: uppercase; color: #178559; font-weight: 700; }
   .pp .lh .contact { margin-left: auto; text-align: right; font-size: 10.5px; color: #465c53; }
+  .pp .nowrap { white-space: nowrap; }
   .pp .title { text-align: center; margin: 26px 0 18px; font-size: 20px; letter-spacing: .02em; color: #114534; }
   .pp .box { border: 1px solid #dfeae4; border-radius: 10px; padding: 10px 14px; margin: 10px 0; }
   .pp .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px 18px; }
@@ -36,33 +37,75 @@ const STYLE = `
   .pp .sign img { max-height: 70px; display: block; margin: 0 auto -6px; }
   .pp .sign .line { width: 300px; margin: 0 auto; border-top: 1px solid #0c1f18; padding-top: 4px; font-weight: 700; }
   .pp .muted { color: #7d9189; font-size: 10.5px; }
-  .pp .foot { margin-top: 30px; padding-top: 8px; border-top: 1px solid #dfeae4; text-align: center; font-size: 9.5px; color: #7d9189; }
+  .pp .foot { break-inside: avoid; page-break-inside: avoid; margin-top: 30px; padding-top: 8px; border-top: 1px solid #dfeae4; text-align: center; font-size: 9.5px; color: #7d9189; }
+  .pp .foot .services { color: #465c53; font-weight: 700; line-height: 1.45; }
+  .pp .foot .contact-line { margin-top: 4px; }
   .pp .chk { display: inline-block; width: 11px; height: 11px; border: 1.3px solid #465c53; border-radius: 3px; margin-right: 6px; vertical-align: -1px; text-align: center; font-size: 9px; line-height: 10px; }
   .pp .chk.on { background: #178559; border-color: #178559; color: #fff; }
   .pp .cols2 { columns: 2; column-gap: 24px; }
   .pp .total { font-size: 16px; font-weight: 800; color: #114534; }
 </style>`;
 
+export function formatProfessionalCro(cro?: string) {
+  const value = (cro ?? "").trim().replace(/^CRO[\s-]*/i, "");
+  if (!value) return "";
+  const match = value.match(/^([A-Za-z]{2})[\s-]*(.+)$/);
+  return match ? `CRO-${match[1].toUpperCase()} ${match[2].trim()}` : `CRO ${value}`;
+}
+
+export function documentCity(address?: string) {
+  const parts = (address ?? "")
+    .replace(/[–—]/g, "-")
+    .split("-")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (!parts.length) return "";
+  return /^[A-Za-z]{2}$/.test(parts.at(-1) ?? "") && parts.length > 1 ? parts.at(-2)! : parts.at(-1)!;
+}
+
 function letterhead(s: Settings) {
-  const contact = [s.phone && `☎ ${esc(s.phone)}`, s.email && esc(s.email), s.address && esc(s.address)].filter(Boolean).join("<br/>");
+  const addressParts = s.address?.replace(/[–—]/g, "-").split("-").map((part) => part.trim()).filter(Boolean) ?? [];
+  const address = addressParts.length >= 3 && /^[A-Za-z]{2}$/.test(addressParts.at(-1) ?? "")
+    ? `${esc(addressParts.slice(0, -2).join(" - "))}<br/><span class="nowrap">${esc(addressParts.at(-2))} - ${esc(addressParts.at(-1))}</span>`
+    : esc(s.address);
+  const contact = [s.phone && `☎ ${esc(s.phone)}`, s.email && esc(s.email), address].filter(Boolean).join("<br/>");
+  const cro = formatProfessionalCro(s.cro);
   return `
   <div class="lh">
     <svg width="46" height="46" viewBox="0 0 64 64"><rect width="64" height="64" rx="18" fill="#178559"/><path d="${TOOTH}" fill="#fff" transform="translate(4 3) scale(0.875)"/></svg>
     <div>
       <div class="name">${esc(s.title)} ${esc(s.doctorName)}</div>
-      <div class="sub">${esc(s.specialty)}${s.cro ? ` · CRO ${esc(s.cro)}` : ""}</div>
+      <div class="sub">${esc(s.specialty)}${cro ? ` · <span class="nowrap">${esc(cro)}</span>` : ""}</div>
     </div>
     <div class="contact">${contact}</div>
   </div>`;
 }
 
+function documentFooter(s: Settings, extra?: string) {
+  const contact = [s.address, s.phone].filter(Boolean).map(esc).join(" · ");
+  return `<div class="foot">
+    ${s.documentFooter ? `<div class="services">${esc(s.documentFooter)}</div>` : ""}
+    ${contact ? `<div class="contact-line">${contact}</div>` : ""}
+    ${extra ? `<div class="contact-line">${esc(extra)}</div>` : ""}
+  </div>`;
+}
+
+export function renderDocumentBranding(s: Settings) {
+  return { header: letterhead(s), footer: documentFooter(s) };
+}
+
+function brandedDocument(s: Settings, body: string, footerExtra?: string) {
+  return `${letterhead(s)}${body}${documentFooter(s, footerExtra)}`;
+}
+
 function signature(s: Settings, cityDate = true) {
+  const cro = formatProfessionalCro(s.cro);
   return `
-  ${cityDate ? `<p style="text-align:right;margin-top:26px">${esc(s.address?.split("-").pop()?.trim() || "")}${s.address ? ", " : ""}${fmtDateLong(new Date())}.</p>` : ""}
+  ${cityDate ? `<p style="text-align:right;margin-top:26px">${esc(documentCity(s.address))}${s.address ? ", " : ""}${fmtDateLong(new Date())}.</p>` : ""}
   <div class="sign">
     ${s.signature ? `<img src="${s.signature}" alt=""/>` : ""}
     <div class="line">${esc(s.title)} ${esc(s.doctorName)}</div>
-    <div class="muted">${esc(s.specialty)}${s.cro ? ` · CRO ${esc(s.cro)}` : ""}</div>
+    <div class="muted">${esc(s.specialty)}${cro ? ` · ${esc(cro)}` : ""}</div>
   </div>`;
 }
 
@@ -101,7 +144,7 @@ export function printBudget(p: Patient, s: Settings) {
   const gross = list.reduce((a, t) => a + t.price, 0);
   const discount = (gross * (p.planDiscount ?? 0)) / 100;
   printHTML(
-    `${letterhead(s)}
+    brandedDocument(s, `
     <h1 class="title">Orçamento odontológico</h1>
     ${patientBox(p)}
     <table>
@@ -121,7 +164,7 @@ export function printBudget(p: Patient, s: Settings) {
     <div class="box"><b>Formas de pagamento:</b> Pix, dinheiro, cartão de débito ou crédito (consulte parcelamento).<br/>
     <span class="muted">Orçamento válido por 30 dias. Valores sujeitos a alteração caso haja mudança no plano de tratamento.</span></div>
     ${signature(s)}
-    <div class="sign" style="margin-top:40px"><div class="line">${esc(p.name)}</div><div class="muted">De acordo — paciente ou responsável</div></div>`,
+    <div class="sign" style="margin-top:40px"><div class="line">${esc(p.name)}</div><div class="muted">De acordo — paciente ou responsável</div></div>`),
     `Orçamento - ${p.name}`,
   );
 }
@@ -134,7 +177,7 @@ export interface RxItem {
 
 export function printPrescription(p: Patient, s: Settings, items: RxItem[], use: string, notes?: string) {
   printHTML(
-    `${letterhead(s)}
+    brandedDocument(s, `
     <h1 class="title">Receituário</h1>
     <p><b>Paciente:</b> ${esc(p.name)}${p.birthDate ? ` &nbsp;·&nbsp; ${ageLabel(p.birthDate)}` : ""}</p>
     <p style="margin-top:14px"><b>${esc(use)}</b></p>
@@ -145,18 +188,18 @@ export function printPrescription(p: Patient, s: Settings, items: RxItem[], use:
       )
       .join("")}
     ${notes ? `<p class="body" style="font-size:12.5px">${esc(notes)}</p>` : ""}
-    ${signature(s)}`,
+    ${signature(s)}`),
     `Receita - ${p.name}`,
   );
 }
 
 export function printFreeText(p: Patient, s: Settings, title: string, text: string) {
-  printHTML(`${letterhead(s)}<h1 class="title">${esc(title)}</h1><div class="body">${esc(text)}</div>${signature(s)}`, `${title} - ${p.name}`);
+  printHTML(brandedDocument(s, `<h1 class="title">${esc(title)}</h1><div class="body">${esc(text)}</div>${signature(s)}`), `${title} - ${p.name}`);
 }
 
 export function printReceipt(p: Patient, s: Settings, pay: Payment) {
   printHTML(
-    `${letterhead(s)}
+    brandedDocument(s, `
     <h1 class="title">Recibo</h1>
     <div class="box" style="text-align:right"><span class="k">Valor</span><div class="total" style="font-size:22px">${money(pay.amount)}</div></div>
     <div class="body">Recebi de <b>${esc(p.name)}</b>${p.cpf ? `, CPF ${esc(p.cpf)},` : ""} a importância de <b>${money(pay.amount)}</b> (${esc(moneyInWords(pay.amount))}), referente a ${esc(
@@ -164,7 +207,7 @@ export function printReceipt(p: Patient, s: Settings, pay: Payment) {
     )}, paga via ${PAYMENT_METHODS[pay.method].toLowerCase()} em ${fmtDate(pay.date)}.
 
 Para clareza, firmo o presente recibo.</div>
-    ${signature(s)}`,
+    ${signature(s)}`),
     `Recibo - ${p.name}`,
   );
 }
@@ -172,7 +215,7 @@ Para clareza, firmo o presente recibo.</div>
 export function printAnamnesis(p: Patient, s: Settings) {
   const a = p.anamnesis;
   printHTML(
-    `${letterhead(s)}
+    brandedDocument(s, `
     <h1 class="title">Ficha de anamnese</h1>
     ${patientBox(p)}
     <h3 class="sec">Queixa principal</h3>
@@ -191,7 +234,7 @@ export function printAnamnesis(p: Patient, s: Settings) {
     <div class="cols2">${ANAMNESIS_HABITS.map((h) => `<div><span class="chk ${a.habits[h.key] ? "on" : ""}">${a.habits[h.key] ? "✓" : ""}</span>${esc(h.label)}</div>`).join("")}${(a.customHabits ?? []).map((h) => `<div><span class="chk ${a.habits[h.id] ? "on" : ""}">${a.habits[h.id] ? "✓" : ""}</span>${esc(h.label)}</div>`).join("")}</div>
     ${a.notes ? `<h3 class="sec">Observações</h3><p>${esc(a.notes)}</p>` : ""}
     <p style="margin-top:24px">Declaro que as informações acima são verdadeiras e que informarei qualquer alteração no meu estado de saúde.</p>
-    <div class="sign"><div class="line">${esc(p.name)}</div><div class="muted">Assinatura do paciente ou responsável · ${fmtDate(new Date())}</div></div>`,
+    <div class="sign"><div class="line">${esc(p.name)}</div><div class="muted">Assinatura do paciente ou responsável · ${fmtDate(new Date())}</div></div>`),
     `Anamnese - ${p.name}`,
   );
 }
@@ -203,7 +246,7 @@ export function printPatientRecord(p: Patient, s: Settings, appts: Appointment[]
   const evos = [...p.evolutions].sort((a, b) => b.date.localeCompare(a.date));
   const visits = appts.filter((a) => a.patientId === p.id && a.status === "atendido").length;
   printHTML(
-    `${letterhead(s)}
+    brandedDocument(s, `
     <h1 class="title">Prontuário odontológico</h1>
     ${patientBox(p)}
     <div class="box grid">
@@ -253,8 +296,8 @@ export function printPatientRecord(p: Patient, s: Settings, appts: Appointment[]
             .join("")
         : "<p>Sem registros.</p>"
     }
-    ${signature(s)}
-    <div class="foot">Documento gerado pelo prontuário digital em ${fmtDate(new Date(), "dd/MM/yyyy 'às' HH:mm")}</div>`,
+    ${signature(s)}`,
+    `Documento gerado pelo prontuário digital em ${fmtDate(new Date(), "dd/MM/yyyy 'às' HH:mm")}`),
     `Prontuário - ${p.name}`,
   );
 }

@@ -194,7 +194,7 @@ export function SettingsPage() {
         </nav>
 
         <div className="space-y-6">
-          <Section id="perfil" title="Perfil do consultório" desc="Aparece no cabeçalho de receitas, atestados e orçamentos." icon={<UserRound className="h-5 w-5" />}>
+          <Section id="perfil" title="Perfil do consultório" desc="Aparece no cabeçalho e no rodapé de todos os documentos." icon={<UserRound className="h-5 w-5" />}>
             <div className="grid gap-4 sm:grid-cols-[100px_1fr_1fr]">
               <Field label="Título">
                 <Select value={settings.title} onChange={(e) => set({ title: e.target.value })}>
@@ -220,6 +220,9 @@ export function SettingsPage() {
               </Field>
               <Field label="E-mail">
                 <input className="input" value={settings.email} onChange={(e) => set({ email: e.target.value })} />
+              </Field>
+              <Field label="Serviços no rodapé dos documentos" className="sm:col-span-3">
+                <textarea className="input min-h-20 resize-y" value={settings.documentFooter} onChange={(e) => set({ documentFooter: e.target.value })} />
               </Field>
             </div>
             <div className="mt-5 flex flex-wrap items-center gap-4 rounded-2xl border border-dashed border-line p-4">

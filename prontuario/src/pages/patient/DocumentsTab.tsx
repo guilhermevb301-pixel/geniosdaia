@@ -3,7 +3,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card, Field, Select } from "@/components/ui/misc";
 import { hasPenicillinAllergy, patientAlerts } from "@/lib/derive";
-import { printAnamnesis, printBudget, printFreeText, printPatientRecord, printPrescription, type RxItem } from "@/lib/print";
+import { formatProfessionalCro, printAnamnesis, printBudget, printFreeText, printPatientRecord, printPrescription, type RxItem } from "@/lib/print";
 import type { Patient } from "@/lib/types";
 import { cn, fmtDate, fmtDateLong, todayKey } from "@/lib/utils";
 import { useStore } from "@/store/store";
@@ -275,7 +275,7 @@ export function DocumentsTab({ patient }: { patient: Patient }) {
 
           <p className="mt-6 border-t border-line pt-4 text-xs text-ink-3">
             Os documentos saem com o cabeçalho do {settings.title} {settings.doctorName}
-            {settings.cro ? ` (CRO ${settings.cro})` : " — cadastre o CRO em Configurações"} e data de {fmtDate(new Date())}. Na janela de impressão, escolha “Salvar como PDF” para enviar
+            {settings.cro ? ` (${formatProfessionalCro(settings.cro)})` : " — cadastre o CRO em Configurações"} e data de {fmtDate(new Date())}. Na janela de impressão, escolha “Salvar como PDF” para enviar
             por WhatsApp ou e-mail.
           </p>
         </div>
