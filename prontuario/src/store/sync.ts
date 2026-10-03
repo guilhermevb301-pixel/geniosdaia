@@ -2,6 +2,7 @@ import type { User } from "@supabase/supabase-js";
 import { toast } from "@/components/ui/feedback";
 import { capturedAuth } from "@/lib/authRedirect";
 import { DEFAULT_SETTINGS } from "@/lib/constants";
+import { SessionGuard, type SessionToken } from "@/lib/sessionGuard";
 import {
   clearLocal,
   deleteFile,
@@ -27,7 +28,7 @@ import {
 } from "@/lib/supabase";
 import type { Appointment, Patient, Settings } from "@/lib/types";
 import { nowISO } from "@/lib/utils";
-import { DATA_VERSION, migrate, useStore, withDefaults, type State } from "./store";
+import { DATA_VERSION, freshAccountData, freshCloudSession, migrate, useStore, withDefaults, type State } from "./store";
 
 /*
  * Sincronização com o Supabase.
@@ -48,6 +49,7 @@ interface Cache {
 }
 
 let userId: string | null = null;
+const sessionGuard = new SessionGuard();
 let applyingRemote = false;
 let starting: Promise<void> | null = null;
 let prev: { patients: Patient[]; appointments: Appointment[]; settings: Settings } = {
@@ -158,6 +160,21 @@ function scheduleRetry() {
   retryDelay = Math.min(60_000, retryDelay * 2);
 }
 
+function clearSyncTracking() {
+  dirtyP.clear();
+  dirtyA.clear();
+  delP.clear();
+  delA.clear();
+  pendingUploads.clear();
+  settingsDirty = false;
+  rerun = false;
+  if (flushTimer) clearTimeout(flushTimer);
+  if (retryTimer) clearTimeout(retryTimer);
+  flushTimer = null;
+  retryTimer = null;
+  retryDelay = 4000;
+}
+
 function isNetworkError(err: unknown) {
   const msg = String((err as { message?: string })?.message ?? err);
   return /fetch|network|timeout|Failed to fetch|Load failed/i.test(msg);
@@ -165,6 +182,8 @@ function isNetworkError(err: unknown) {
 
 export async function flush(): Promise<void> {
   if (!userId) return;
+  const sessionToken = sessionGuard.current();
+  if (!sessionGuard.isCurrent(sessionToken) || sessionToken.userId !== userId) return;
   if (flushing) {
     rerun = true;
     return;
@@ -198,18 +217,26 @@ export async function flush(): Promise<void> {
     const aMap = new Map(s.appointments.map((a) => [a.id, a]));
     const pRows = takeP.map((id) => pMap.get(id)).filter((p): p is Patient => Boolean(p));
     const aRows = takeA.map((id) => aMap.get(id)).filter((a): a is Appointment => Boolean(a));
-    if (pRows.length) await upsertRows("patients", pRows);
-    if (aRows.length) await upsertRows("appointments", aRows);
-    if (takeDA.length) await deleteRows("appointments", takeDA);
-    if (takeDP.length) await deleteRows("patients", takeDP);
+    if (pRows.length) await upsertRows("patients", pRows, uid);
+    if (!sessionGuard.isCurrent(sessionToken)) return;
+    if (aRows.length) await upsertRows("appointments", aRows, uid);
+    if (!sessionGuard.isCurrent(sessionToken)) return;
+    if (takeDA.length) await deleteRows("appointments", takeDA, uid);
+    if (!sessionGuard.isCurrent(sessionToken)) return;
+    if (takeDP.length) await deleteRows("patients", takeDP, uid);
+    if (!sessionGuard.isCurrent(sessionToken)) return;
     if (takeS) await saveCloudSettings(uid, s.settings);
+    if (!sessionGuard.isCurrent(sessionToken)) return;
     for (const id of takeF) {
       const blob = await getLocalFile(id);
+      if (!sessionGuard.isCurrent(sessionToken)) return;
       if (blob) await uploadCloudFile(uid, id, blob);
+      if (!sessionGuard.isCurrent(sessionToken)) return;
     }
     retryDelay = 4000;
     setSync({ status: pendingCount() ? "saving" : "saved", lastSavedAt: nowISO(), error: undefined });
   } catch (err) {
+    if (!sessionGuard.isCurrent(sessionToken)) return;
     takeP.forEach((id) => !delP.has(id) && dirtyP.add(id));
     takeA.forEach((id) => !delA.has(id) && dirtyA.add(id));
     takeDP.forEach((id) => !dirtyP.has(id) && delP.add(id));
@@ -221,6 +248,12 @@ export async function flush(): Promise<void> {
     scheduleRetry();
   } finally {
     flushing = false;
+    if (!sessionGuard.isCurrent(sessionToken)) {
+      const needsFlush = rerun || pendingCount() > 0;
+      rerun = false;
+      if (needsFlush) scheduleFlush(0);
+      return;
+    }
     writeCache();
     if (rerun) {
       rerun = false;
@@ -229,7 +262,8 @@ export async function flush(): Promise<void> {
   }
 }
 
-function mergeCloud(cloud: Awaited<ReturnType<typeof fetchCloud>>, cachedOnboarded: boolean) {
+function mergeCloud(cloud: Awaited<ReturnType<typeof fetchCloud>>, cachedOnboarded: boolean, sessionToken: SessionToken) {
+  if (!sessionGuard.isCurrent(sessionToken)) return;
   const s = useStore.getState();
   const localP = new Map(s.patients.map((p) => [p.id, p]));
   const localA = new Map(s.appointments.map((a) => [a.id, a]));
@@ -252,6 +286,9 @@ function mergeCloud(cloud: Awaited<ReturnType<typeof fetchCloud>>, cachedOnboard
 
 async function startCloud(user: User) {
   if (userId === user.id && useStore.getState().mode === "cloud" && useStore.getState().ready) return;
+  const previousUserId = userId;
+  const sessionToken = sessionGuard.begin(user.id);
+  clearSyncTracking();
   userId = user.id;
   setMemoryOnly(false);
   setRemoteFiles({
@@ -265,9 +302,13 @@ async function startCloud(user: User) {
       scheduleRetry();
     },
   });
-  useStore.setState({ userId: user.id, userEmail: user.email ?? undefined, bootError: undefined });
+  applyRemote({ ...freshCloudSession(user.id, user.email ?? undefined), bootError: undefined });
+
+  if (previousUserId && previousUserId !== user.id) await flushCache(`cache:${previousUserId}`);
+  if (!sessionGuard.isCurrent(sessionToken)) return;
 
   const cached = await loadCache<Cache>(cacheKey());
+  if (!sessionGuard.isCurrent(sessionToken)) return;
   if (cached) {
     cached.pending.p.forEach((id) => dirtyP.add(id));
     cached.pending.a.forEach((id) => dirtyA.add(id));
@@ -283,12 +324,14 @@ async function startCloud(user: User) {
 
   try {
     const cloud = await fetchCloud();
-    mergeCloud(cloud, cached?.onboarded ?? false);
+    if (!sessionGuard.isCurrent(sessionToken)) return;
+    mergeCloud(cloud, cached?.onboarded ?? false, sessionToken);
     if (!cached) useStore.setState({ locked: Boolean(useStore.getState().settings.pinHash) });
     writeCache();
     setSync({ status: pendingCount() ? "saving" : "saved" });
     if (pendingCount()) void flush();
   } catch (err) {
+    if (!sessionGuard.isCurrent(sessionToken)) return;
     if (err instanceof SchemaMissingError) {
       useStore.setState({ mode: "setup", ready: false });
       return;
@@ -309,10 +352,13 @@ async function startCloud(user: User) {
 async function refreshFromCloud() {
   const s = useStore.getState();
   if (s.mode !== "cloud" || !s.ready || !userId || flushing || pendingCount()) return;
+  const sessionToken = sessionGuard.current();
+  if (!sessionGuard.isCurrent(sessionToken) || sessionToken.userId !== userId) return;
   try {
     const cloud = await fetchCloud();
-    if (pendingCount() || flushing) return;
-    mergeCloud(cloud, true);
+    if (!sessionGuard.isCurrent(sessionToken) || pendingCount() || flushing) return;
+    mergeCloud(cloud, true, sessionToken);
+    if (!sessionGuard.isCurrent(sessionToken)) return;
     writeCache();
   } catch {
     /* segue com os dados locais */
@@ -320,25 +366,18 @@ async function refreshFromCloud() {
 }
 
 function resetState(mode: State["mode"]) {
+  const fresh = freshAccountData();
+  sessionGuard.clear();
   userId = null;
   starting = null;
-  dirtyP.clear();
-  dirtyA.clear();
-  delP.clear();
-  delA.clear();
-  pendingUploads.clear();
-  settingsDirty = false;
+  clearSyncTracking();
   setRemoteFiles(null);
   applyRemote({
     mode,
     ready: false,
     userId: undefined,
     userEmail: undefined,
-    patients: [],
-    appointments: [],
-    settings: DEFAULT_SETTINGS,
-    recent: [],
-    onboarded: false,
+    ...fresh,
     locked: false,
     sync: { status: "idle", pending: 0 },
   });

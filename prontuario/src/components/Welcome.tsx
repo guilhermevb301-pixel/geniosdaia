@@ -41,7 +41,7 @@ export function Welcome() {
               </motion.div>
               <h1 className="relative mt-5 font-display text-4xl font-semibold leading-tight">Bem-vindo, Dr. Mizael! 🦷</h1>
               <p className="relative mt-2 max-w-xl text-jade-100/85">
-                Este é o seu novo prontuário digital — feito sob medida para o seu consultório. Tudo fica salvo com segurança na nuvem.
+                Este é o seu novo prontuário digital — feito sob medida para o seu consultório. Sua conta começa com 0 pacientes e 0 consultas.
               </p>
             </div>
             <div className="grid gap-3 p-6 sm:grid-cols-2 sm:p-8">
@@ -64,7 +64,7 @@ export function Welcome() {
               ))}
             </div>
             <div className="flex flex-col gap-3 border-t border-line bg-surface-2/50 p-6 sm:flex-row sm:items-center sm:justify-between sm:px-8">
-              <p className="text-sm text-ink-2">Sua conta começa sem pacientes fictícios. Depois, confira seus dados em Configurações. O botão Ajuda acompanha você em todas as telas.</p>
+              <p className="text-sm text-ink-2">Nada da demonstração entra na sua conta. Seus cadastros ficam salvos automaticamente neste computador e na nuvem para continuar depois.</p>
               <div className="flex gap-2">
                 <Button
                   disabled={!!busy}
@@ -74,7 +74,7 @@ export function Welcome() {
                   }}
                   icon={busy === "empty" ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
                 >
-                  Começar meu consultório
+                  Criar meu prontuário vazio
                 </Button>
               </div>
             </div>

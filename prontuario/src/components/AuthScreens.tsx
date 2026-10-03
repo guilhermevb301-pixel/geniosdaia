@@ -147,7 +147,7 @@ export function LoginScreen() {
           {mode === "login"
             ? "Entre para acessar seus pacientes."
             : mode === "signup"
-              ? "Primeiro acesso: crie o login do consultório."
+              ? "Primeiro acesso: use seu e-mail e crie uma senha."
               : "Informe seu e-mail para receber o link de redefinição."}
         </p>
 
@@ -182,7 +182,7 @@ export function LoginScreen() {
           {mode !== "reset" && <label className="flex items-center gap-2 text-sm text-ink-2"><input type="checkbox" checked={showPassword} onChange={e => setShowPassword(e.target.checked)} /> Mostrar senha</label>}
           {mode === "signup" && <>
             <Field label="Digite a senha novamente"><input className="input h-12" type={showPassword ? "text" : "password"} autoComplete="new-password" value={passwordConfirmation} onChange={e => setPasswordConfirmation(e.target.value)} /></Field>
-            <p className="text-sm text-ink-2">Use seu e-mail e crie uma senha com pelo menos 6 caracteres. Guarde os dois para entrar novamente. O perfil do Dr. Mizael já vem preenchido e pode ser ajustado em Configurações. Se pedirmos confirmação, abra o link recebido por e-mail.</p>
+            <p className="text-sm text-ink-2">Guarde o e-mail e a senha para entrar novamente. A conta começa vazia, sem pacientes fictícios, e tudo que for cadastrado fica salvo. Depois de criar, abra o link de confirmação enviado ao e-mail.</p>
           </>}
           {error && <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700 dark:bg-rose-950/40 dark:text-rose-300">{error}</p>}
           {info && <p className="rounded-xl bg-jade-50 px-3 py-2 text-sm font-medium text-jade-800 dark:bg-jade-900/40 dark:text-jade-200">{info}</p>}

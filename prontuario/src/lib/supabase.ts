@@ -83,19 +83,21 @@ function chunks<T>(list: T[], size: number): T[][] {
   return out;
 }
 
-export async function upsertRows(table: "patients" | "appointments", rows: { id: string }[]) {
+export async function upsertRows(table: "patients" | "appointments", rows: { id: string }[], ownerId?: string) {
   for (const part of chunks(rows, 40)) {
     const { error } = await supabase.from(table).upsert(
-      part.map((r) => ({ id: r.id, data: r })),
+      part.map((r) => ({ id: r.id, ...(ownerId ? { owner_id: ownerId } : {}), data: r })),
       { onConflict: "id" },
     );
     if (error) throw error;
   }
 }
 
-export async function deleteRows(table: "patients" | "appointments", ids: string[]) {
+export async function deleteRows(table: "patients" | "appointments", ids: string[], ownerId?: string) {
   for (const part of chunks(ids, 100)) {
-    const { error } = await supabase.from(table).delete().in("id", part);
+    let query = supabase.from(table).delete().in("id", part);
+    if (ownerId) query = query.eq("owner_id", ownerId);
+    const { error } = await query;
     if (error) throw error;
   }
 }

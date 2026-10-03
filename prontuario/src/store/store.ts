@@ -45,6 +45,17 @@ export function withDefaults(settings?: Partial<Settings> | null): Settings {
   };
 }
 
+/** Estado clínico de uma conta recém-criada. Nunca inclui dados da demonstração. */
+export function freshAccountData(): Omit<AppData, "version"> {
+  return {
+    settings: withDefaults(),
+    patients: [],
+    appointments: [],
+    recent: [],
+    onboarded: false,
+  };
+}
+
 export function migrate(data: Partial<AppData>): Omit<AppData, "version"> {
   return {
     settings: withDefaults(data.settings),
@@ -90,6 +101,19 @@ export interface State {
   setLocked: (v: boolean) => void;
 }
 
+/** Estado transitório ao autenticar uma identidade antes de carregar cache/nuvem. */
+export function freshCloudSession(userId: string, userEmail?: string): Partial<State> {
+  return {
+    ...freshAccountData(),
+    mode: "cloud",
+    ready: false,
+    userId,
+    userEmail,
+    locked: false,
+    sync: { status: "idle", pending: 0 },
+  };
+}
+
 export const useStore = create<State>((set, get) => ({
   mode: "boot",
   recovery: false,
@@ -115,6 +139,9 @@ export const useStore = create<State>((set, get) => ({
       }));
     } else {
       set((s) => ({ onboarded: true, settings: { ...s.settings } }));
+      const [{ flush }, { flushCache }] = await Promise.all([import("./sync"), import("@/lib/storage")]);
+      await flushCache();
+      await flush();
     }
   },
 

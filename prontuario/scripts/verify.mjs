@@ -4,8 +4,8 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 // Bundle the actual TypeScript helpers; no browser, real patient, or cloud writes.
-const result = await build({ stdin: { contents: 'export * from "./src/lib/finance"; export * from "./src/lib/reminders"; export * from "./src/lib/derive"; export { buildDemoData } from "./src/lib/seed"; export { formatProfessionalCro, documentCity, renderDocumentBranding } from "./src/lib/print"; export { withDefaults } from "./src/store/store"; export { parseMoney } from "./src/lib/utils"; export { DEFAULT_SETTINGS, STAGES } from "./src/lib/constants";', resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm" });
-const { splitInstallments, buildPaymentAgreement, installmentBalance, buildPaymentRecord, reminderAttention, installmentAttention, treatmentTotals, financialSituation, automaticPatientStage, finishPendingReturns, appointmentToConfirm, patientAgeGroup, applyClinicalTreatmentStatus, toggleToothSelection, treatmentPriceTotal, sameTreatmentScope, patientCareSummary, patientContactAction, normalizePatientsView, patientBoardMinimumWidth, patientListMinimumWidth, formatProfessionalCro, documentCity, renderDocumentBranding, withDefaults, parseMoney, DEFAULT_SETTINGS, STAGES, buildDemoData } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
+const result = await build({ stdin: { contents: 'export * from "./src/lib/finance"; export * from "./src/lib/reminders"; export * from "./src/lib/derive"; export { buildDemoData } from "./src/lib/seed"; export { formatProfessionalCro, documentCity, renderDocumentBranding } from "./src/lib/print"; export { SessionGuard } from "./src/lib/sessionGuard"; export { freshAccountData, freshCloudSession, withDefaults } from "./src/store/store"; export { parseMoney } from "./src/lib/utils"; export { DEFAULT_SETTINGS, STAGES } from "./src/lib/constants";', resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm" });
+const { splitInstallments, buildPaymentAgreement, installmentBalance, buildPaymentRecord, reminderAttention, installmentAttention, treatmentTotals, financialSituation, automaticPatientStage, finishPendingReturns, appointmentToConfirm, patientAgeGroup, applyClinicalTreatmentStatus, toggleToothSelection, treatmentPriceTotal, sameTreatmentScope, patientCareSummary, patientContactAction, normalizePatientsView, patientBoardMinimumWidth, patientListMinimumWidth, formatProfessionalCro, documentCity, renderDocumentBranding, SessionGuard, freshAccountData, freshCloudSession, withDefaults, parseMoney, DEFAULT_SETTINGS, STAGES, buildDemoData } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
 let checks = 0;
 function check(name, fn) { fn(); checks++; console.log(`✓ ${name}`); }
 
@@ -156,6 +156,43 @@ check("Contas já existentes recebem os dados profissionais sem apagar personali
   assert.equal(migrated.address, DEFAULT_SETTINGS.address);
   assert.equal(migrated.documentFooter, DEFAULT_SETTINGS.documentFooter);
   assert.equal(withDefaults?.({ cro: "BA 9999" }).cro, "BA 9999");
+});
+
+check("Uma conta nova começa totalmente vazia e separada da demonstração", () => {
+  const account = freshAccountData?.();
+  assert.deepEqual(account.patients, []);
+  assert.deepEqual(account.appointments, []);
+  assert.deepEqual(account.recent, []);
+  assert.equal(account.onboarded, false);
+  assert.equal(account.settings.doctorName, DEFAULT_SETTINGS.doctorName);
+  assert.equal(account.settings.cro, DEFAULT_SETTINGS.cro);
+  assert.notEqual(account.settings, DEFAULT_SETTINGS);
+});
+
+check("Trocar diretamente de usuário limpa os dados da conta anterior antes de carregar a próxima", () => {
+  const next = freshCloudSession?.("usuario_b", "tio@example.com");
+  assert.equal(next.userId, "usuario_b");
+  assert.equal(next.userEmail, "tio@example.com");
+  assert.equal(next.mode, "cloud");
+  assert.equal(next.ready, false);
+  assert.deepEqual(next.patients, []);
+  assert.deepEqual(next.appointments, []);
+  assert.deepEqual(next.recent, []);
+  assert.equal(next.onboarded, false);
+  assert.deepEqual(next.sync, { status: "idle", pending: 0 });
+});
+
+check("Operações assíncronas de uma sessão antiga são invalidadas na troca de conta", () => {
+  const guard = SessionGuard ? new SessionGuard() : undefined;
+  const accountA = guard.begin("usuario_a");
+  assert.equal(guard.isCurrent(accountA), true);
+  const accountB = guard.begin("usuario_b");
+  assert.equal(guard.isCurrent(accountA), false);
+  assert.equal(guard.isCurrent(accountB), true);
+  assert.deepEqual(guard.current(), accountB);
+  guard.clear();
+  assert.equal(guard.isCurrent(accountB), false);
+  assert.equal(guard.current(), null);
 });
 
 check("Todos os documentos recebem a identidade profissional completa e a cidade correta", () => {
