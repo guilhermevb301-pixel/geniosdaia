@@ -1,0 +1,166 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg: 243 248 245;
+    --surface: 255 255 255;
+    --surface-2: 247 251 249;
+    --line: 223 234 228;
+    --ink: 12 31 24;
+    --ink-2: 70 92 83;
+    --ink-3: 87 112 101;
+    --brand: 23 133 89;
+    --brand-soft: 214 245 227;
+    --brand-ink: 17 69 52;
+    color-scheme: light;
+  }
+
+  .dark {
+    --bg: 6 17 13;
+    --surface: 12 28 22;
+    --surface-2: 16 36 28;
+    --line: 29 54 44;
+    --ink: 228 242 235;
+    --ink-2: 164 190 178;
+    --ink-3: 110 138 126;
+    --brand: 72 192 137;
+    --brand-soft: 19 64 47;
+    --brand-ink: 176 234 203;
+    color-scheme: dark;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-bg font-sans text-ink antialiased;
+    font-feature-settings: "ss01", "cv11";
+  }
+
+  ::selection {
+    background: rgb(37 165 111 / 0.25);
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    font: inherit;
+  }
+
+  /* evita que conteúdo largo estique as colunas do grid (principalmente no celular) */
+  .grid > * {
+    min-width: 0;
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--brand));
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-line bg-surface shadow-card;
+  }
+
+  .input {
+    @apply h-11 w-full rounded-xl border border-line bg-surface px-3 text-base text-ink placeholder:text-ink-3
+      outline-none transition focus:border-jade-400 focus:shadow-glow disabled:opacity-60;
+  }
+
+  textarea.input {
+    @apply h-auto py-2.5 leading-relaxed;
+  }
+
+  .label {
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wide text-ink-3;
+  }
+
+  .chip {
+    @apply inline-flex max-w-full items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold leading-snug;
+    overflow-wrap: anywhere;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--line)) transparent;
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sidebar-bg {
+    background:
+      radial-gradient(120% 60% at 0% 0%, rgb(37 165 111 / 0.28), transparent 60%),
+      radial-gradient(90% 50% at 100% 100%, rgb(72 192 137 / 0.14), transparent 60%),
+      linear-gradient(180deg, #0a3326 0%, #07271d 55%, #051c15 100%);
+  }
+
+  .hero-bg {
+    background:
+      radial-gradient(80% 120% at 100% 0%, rgb(125 217 172 / 0.35), transparent 55%),
+      radial-gradient(60% 90% at 0% 100%, rgb(37 165 111 / 0.35), transparent 60%),
+      linear-gradient(135deg, #136a4a 0%, #0f5a3f 45%, #0a3d2c 100%);
+  }
+
+  .skeleton {
+    background: linear-gradient(90deg, rgb(var(--line)) 0%, rgb(var(--surface-2)) 50%, rgb(var(--line)) 100%);
+    background-size: 200% 100%;
+    @apply animate-shimmer;
+  }
+}
+
+/* Modo privacidade: desfoca dados sensíveis (nome, telefone, CPF) até passar o mouse */
+.privacy [data-sensitive] {
+  filter: blur(6px);
+  transition: filter 0.2s ease;
+}
+.privacy [data-sensitive]:hover {
+  filter: none;
+}
+
+/* Negatoscópio: realce de radiografias */
+.xray-invert {
+  filter: invert(1);
+}
+
+/* ---------- Impressão ---------- */
+#print-root {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm 14mm 16mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+    height: auto;
+  }
+  #root {
+    display: none !important;
+  }
+  #print-root {
+    display: block !important;
+    color: #0c1f18;
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  }
+  .print-avoid-break {
+    break-inside: avoid;
+  }
+  .print-page-break {
+    break-before: page;
+  }
+}
