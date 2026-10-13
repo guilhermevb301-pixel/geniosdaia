@@ -1,4 +1,4 @@
-import { Bell, Cake, CalendarCheck, Check, Clock, HardDriveDownload, RotateCcw } from "lucide-react";
+import { Bell, Cake, CalendarCheck, Check, Clock, RotateCcw } from "lucide-react";
 import { useMemo, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { buildNotifications, type AppNotification } from "@/lib/derive";
@@ -14,7 +14,6 @@ const icons: Record<AppNotification["kind"], ReactNode> = {
   aniversario: <Cake className="h-4 w-4" />,
   confirmar: <CalendarCheck className="h-4 w-4" />,
   retorno: <RotateCcw className="h-4 w-4" />,
-  backup: <HardDriveDownload className="h-4 w-4" />,
   alerta: <Bell className="h-4 w-4" />,
 };
 

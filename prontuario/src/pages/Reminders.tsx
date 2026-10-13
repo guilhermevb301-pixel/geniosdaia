@@ -112,7 +112,7 @@ export function Reminders() {
         </div>
         <Card title="Avisos automáticos" icon={<Sparkles className="h-5 w-5" />} className="lg:self-start">
           <div className="p-4 pt-2">
-            <p className="mb-3 text-sm text-ink-2">Parcelas próximas ou atrasadas, aniversários, consultas a confirmar e backup.</p>
+            <p className="mb-3 text-sm text-ink-2">Parcelas próximas ou atrasadas, aniversários e consultas a confirmar.</p>
             <NotificationList items={auto} />
           </div>
         </Card>

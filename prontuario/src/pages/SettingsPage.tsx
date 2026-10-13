@@ -1,9 +1,7 @@
 import {
   Bell,
   CalendarDays,
-  Download,
   Eraser,
-  HardDriveDownload,
   Heart,
   KeyRound,
   Lock,
@@ -27,12 +25,12 @@ import { confirmDialog, toast } from "@/components/ui/feedback";
 import { Field, Segmented, Select, Switch } from "@/components/ui/misc";
 import { Modal } from "@/components/ui/Modal";
 import { SPECIALTY_PROCEDURES } from "@/lib/constants";
-import { blobToDataURL, dataURLToBlob, getFile, putFile, resizeImage } from "@/lib/storage";
+import { blobToDataURL, resizeImage } from "@/lib/storage";
 import { supabase } from "@/lib/supabase";
-import type { AppData, Settings } from "@/lib/types";
-import { downloadBlob, fmtDate, nowISO, parseMoney, sha256, uid } from "@/lib/utils";
-import { DATA_VERSION, useStore } from "@/store/store";
-import { eraseEverything, removeDemoPatients } from "@/store/sync";
+import type { Settings } from "@/lib/types";
+import { parseMoney, sha256, uid } from "@/lib/utils";
+import { useStore } from "@/store/store";
+import { removeDemoPatients } from "@/store/sync";
 
 const SECTIONS = [
   { id: "perfil", label: "Perfil do consultório", icon: UserRound },
@@ -41,7 +39,7 @@ const SECTIONS = [
   { id: "mensagens", label: "Mensagens do WhatsApp", icon: MessageCircle },
   { id: "seguranca", label: "Segurança e notificações", icon: Lock },
   { id: "aparencia", label: "Aparência", icon: Palette },
-  { id: "backup", label: "Backup e dados", icon: HardDriveDownload },
+  { id: "dados", label: "Importação de pacientes", icon: Upload },
   { id: "conta", label: "Conta", icon: KeyRound },
 ];
 
@@ -111,9 +109,7 @@ export function SettingsPage() {
   const email = useStore((s) => s.userEmail);
   const [params] = useSearchParams();
   const [pinOpen, setPinOpen] = useState(false);
-  const [busy, setBusy] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");
-  const importRef = useRef<HTMLInputElement>(null);
   const sigRef = useRef<HTMLInputElement>(null);
   const set = (patch: Partial<Settings>) => updateSettings(patch);
 
@@ -123,51 +119,6 @@ export function SettingsPage() {
   }, [params]);
 
   const demoCount = patients.filter((p) => p.demo).length;
-
-  const exportBackup = async () => {
-    setBusy("export");
-    try {
-      const s = useStore.getState();
-      const data: AppData = { version: DATA_VERSION, patients: s.patients, appointments: s.appointments, settings: s.settings, recent: s.recent, onboarded: true };
-      const files: Record<string, string> = {};
-      for (const p of s.patients)
-        for (const a of p.attachments) {
-          const blob = await getFile(a.id);
-          if (blob) files[a.id] = await blobToDataURL(blob);
-        }
-      const blob = new Blob([JSON.stringify({ app: "prontuario-dr-mizael", exportedAt: nowISO(), data, files })], { type: "application/json" });
-      downloadBlob(blob, `backup-prontuario-${fmtDate(new Date(), "yyyy-MM-dd")}.json`);
-      set({ lastBackupAt: nowISO() });
-      toast.success("Backup baixado!", "Guarde o arquivo em um pen drive ou no Google Drive.");
-    } catch {
-      toast.error("Não foi possível gerar o backup");
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const importBackup = async (file?: File) => {
-    if (!file) return;
-    try {
-      const json = JSON.parse(await file.text());
-      if (json.app !== "prontuario-dr-mizael" || !json.data) throw new Error("arquivo inválido");
-      const ok = await confirmDialog({
-        title: "Restaurar este backup?",
-        description: `O backup de ${fmtDate(json.exportedAt, "dd/MM/yyyy HH:mm")} tem ${json.data.patients?.length ?? 0} pacientes. Os dados atuais serão SUBSTITUÍDOS.`,
-        confirmLabel: "Restaurar",
-        danger: true,
-      });
-      if (!ok) return;
-      setBusy("import");
-      for (const [id, url] of Object.entries(json.files ?? {})) await putFile(id, await dataURLToBlob(url as string));
-      useStore.getState().replaceAll(json.data);
-      toast.success("Backup restaurado!");
-    } catch {
-      toast.error("Arquivo de backup inválido");
-    } finally {
-      setBusy(null);
-    }
-  };
 
   const onSignature = async (file?: File) => {
     if (!file) return;
@@ -413,28 +364,7 @@ export function SettingsPage() {
             />
           </Section>
 
-          <Section id="backup" title="Backup e dados" desc={mode === "demo" ? "Nesta demonstração, os dados são fictícios. Na sua conta, mantenha uma cópia extra de segurança." : "O backup é uma cópia extra de segurança dos dados da sua conta. Guarde em local protegido."} icon={<HardDriveDownload className="h-5 w-5" />}>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <button onClick={exportBackup} disabled={!!busy} className="flex items-center gap-4 rounded-2xl border border-line p-4 text-left transition hover:border-jade-400 hover:bg-brand-soft/30">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-jade-600 text-white">
-                  <Download className="h-6 w-6" />
-                </div>
-                <div>
-                  <p className="font-bold text-ink">{busy === "export" ? "Gerando…" : "Baixar backup completo"}</p>
-                  <p className="text-xs text-ink-3">Último: {settings.lastBackupAt ? fmtDate(settings.lastBackupAt, "dd/MM/yyyy HH:mm") : "nunca"}</p>
-                </div>
-              </button>
-              <button onClick={() => importRef.current?.click()} disabled={!!busy} className="flex items-center gap-4 rounded-2xl border border-line p-4 text-left transition hover:border-jade-400 hover:bg-brand-soft/30">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-2 text-ink-2">
-                  <Upload className="h-6 w-6" />
-                </div>
-                <div>
-                  <p className="font-bold text-ink">{busy === "import" ? "Restaurando…" : "Restaurar backup"}</p>
-                  <p className="text-xs text-ink-3">A partir de um arquivo .json</p>
-                </div>
-              </button>
-              <input ref={importRef} type="file" accept="application/json,.json" className="hidden" onChange={(e) => (void importBackup(e.target.files?.[0]), (e.target.value = ""))} />
-            </div>
+          <Section id="dados" title="Importação de pacientes" desc="Acrescente pacientes a partir de documentos e dados existentes." icon={<Upload className="h-5 w-5" />}>
             <PatientImport />
             <div className="mt-5 space-y-3 border-t border-line pt-5">
               {demoCount > 0 && (
@@ -455,32 +385,6 @@ export function SettingsPage() {
                     }}
                   >
                     Remover exemplos
-                  </Button>
-                </div>
-              )}
-              {mode === "cloud" && (
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-sm text-ink-2">Apagar todos os pacientes, consultas e imagens desta conta.</p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-rose-600"
-                    icon={<Trash2 className="h-4 w-4" />}
-                    onClick={async () => {
-                      if (
-                        await confirmDialog({
-                          title: "Apagar TODOS os dados?",
-                          description: "Esta ação não pode ser desfeita. Recomendamos baixar um backup antes.",
-                          confirmLabel: "Apagar tudo",
-                          danger: true,
-                        })
-                      ) {
-                        await eraseEverything();
-                        toast.success("Todos os dados foram apagados");
-                      }
-                    }}
-                  >
-                    Apagar tudo
                   </Button>
                 </div>
               )}

@@ -403,7 +403,7 @@ export function recallDue(p: Patient, appts: Appointment[], months: number): Dat
   return due;
 }
 
-export type NotificationKind = "lembrete" | "aniversario" | "confirmar" | "retorno" | "backup" | "alerta";
+export type NotificationKind = "lembrete" | "aniversario" | "confirmar" | "retorno" | "alerta";
 
 export interface AppNotification {
   id: string;
@@ -487,18 +487,6 @@ export function buildNotifications(patients: Patient[], appts: Appointment[], se
         href: `/agenda?data=${d.toISOString().slice(0, 10)}`,
       });
     }
-  }
-
-  const lastBackup = toDate(settings.lastBackupAt);
-  if (patients.length > 0 && (!lastBackup || differenceInCalendarDays(now, lastBackup) >= 7)) {
-    out.push({
-      id: "backup",
-      kind: "backup",
-      title: "Faça um backup dos dados",
-      subtitle: lastBackup ? `Último backup há ${differenceInCalendarDays(now, lastBackup)} dias` : "Nenhum backup feito ainda",
-      severity: "info",
-      href: "/configuracoes?secao=backup",
-    });
   }
 
   const order = { danger: 0, warn: 1, success: 2, info: 3 } as const;

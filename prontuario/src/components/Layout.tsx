@@ -5,7 +5,6 @@ import {
   Command,
   Eye,
   EyeOff,
-  HardDriveDownload,
   LayoutDashboard,
   Lock,
   Menu as MenuIcon,
@@ -25,7 +24,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { useEffect, useMemo, type ReactNode } from "react";
-import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { buildNotifications } from "@/lib/derive";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/store/store";
@@ -178,7 +177,6 @@ export async function handleSignOut() {
 }
 
 function TopBar() {
-  const navigate = useNavigate();
   const { setPalette, setNotifications, openPatientModal, setMobileNav } = useUI();
   const privacy = useStore((s) => s.privacy);
   const setPrivacy = useStore((s) => s.setPrivacy);
@@ -246,7 +244,6 @@ function TopBar() {
             { label: "Nova consulta", icon: <CalendarDays className="h-4 w-4" />, onClick: () => useUI.getState().openApptModal() },
             "divider",
             ...(hasPin ? [{ label: "Bloquear tela", icon: <Lock className="h-4 w-4" />, onClick: () => setLocked(true) }] : []),
-            { label: "Fazer backup", icon: <HardDriveDownload className="h-4 w-4" />, onClick: () => navigate("/configuracoes?secao=backup") },
             ...(mode === "cloud"
               ? [{ label: "Sair da conta", icon: <LogOut className="h-4 w-4" />, onClick: () => void handleSignOut(), danger: true }]
               : [{ label: "Sair da demonstração", icon: <LogOut className="h-4 w-4" />, onClick: () => exitDemo(), danger: true }]),

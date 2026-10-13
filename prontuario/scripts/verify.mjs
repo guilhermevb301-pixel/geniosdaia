@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 // Bundle the actual TypeScript helpers; no browser, real patient, or cloud writes.
 const result = await build({ stdin: { contents: 'export * from "./src/lib/finance"; export * from "./src/lib/reminders"; export * from "./src/lib/derive"; export * from "./src/lib/imageEdits"; export * from "./src/lib/imageExport"; export { buildDemoData } from "./src/lib/seed"; export { formatProfessionalCro, documentCity, renderDocumentBranding } from "./src/lib/print"; export { SessionGuard } from "./src/lib/sessionGuard"; export { freshAccountData, freshCloudSession, withDefaults } from "./src/store/store"; export { parseMoney } from "./src/lib/utils"; export { ATTACHMENT_CATEGORIES, DEFAULT_SETTINGS, STAGES } from "./src/lib/constants";', resolveDir: process.cwd(), loader: "ts" }, bundle: true, write: false, platform: "node", format: "esm" });
+const notificationHelpers = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
 const { splitInstallments, buildPaymentAgreement, installmentBalance, buildPaymentRecord, reminderAttention, installmentAttention, treatmentTotals, financialSituation, automaticPatientStage, finishPendingReturns, appointmentToConfirm, patientAgeGroup, applyClinicalTreatmentStatus, toggleToothSelection, removeOdontogramMark, treatmentPriceTotal, sameTreatmentScope, appendOdontogramMark, appendProcedureDefinition, guessAttachmentCategory, patientCareSummary, patientContactAction, normalizePatientsView, patientBoardMinimumWidth, patientListMinimumWidth, emptyImageEdits, normalizeImageEdits, applyImageCommand, hasImageEdits, toNormalizedPoint, rotateNormalizedPoint, applyCropSelection, createImageEditHistory, pushImageEditHistory, undoImageEditHistory, redoImageEditHistory, canEditAttachment, saveAttachmentImageEdits, restoreAttachmentOriginal, viewerShortcutAllowed, thumbnailImageEdits, initialImageDimensions, annotationMarkerColors, editedImageDimensions, editedImagePoint, formatProfessionalCro, documentCity, renderDocumentBranding, SessionGuard, freshAccountData, freshCloudSession, withDefaults, parseMoney, ATTACHMENT_CATEGORIES, DEFAULT_SETTINGS, STAGES, buildDemoData } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
 let checks = 0;
 function check(name, fn) { fn(); checks++; console.log(`✓ ${name}`); }
@@ -306,6 +307,12 @@ check("Etapa acompanha automaticamente o trabalho clínico sem confundir aprova�
 });
 
 const demoData = await buildDemoData();
+check("O doutor não recebe cobranças de backup manual, mesmo com pacientes e conta antiga", () => {
+  for (const lastBackupAt of [undefined, "2020-01-01"]) {
+    const notices = notificationHelpers.buildNotifications(demoData.patients, [], { ...DEFAULT_SETTINGS, lastBackupAt });
+    assert.ok(notices.every((notice) => notice.kind !== "backup" && !notice.href.includes("secao=backup")));
+  }
+});
 check("A demonstração usa apenas as três etapas e mantém o acompanhamento em tratamento", () => {
   const stages = Object.fromEntries(demoData.patients.map((patient) => [patient.name, patient.stage]));
   assert.equal(stages["Helena Duarte"], "tratamento");
