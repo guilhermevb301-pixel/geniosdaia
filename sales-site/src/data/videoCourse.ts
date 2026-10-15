@@ -5,30 +5,44 @@ export const COURSE_ASSETS = "/realframe-videos";
 export interface PortfolioFilm {
   id: string;
   title: string;
-  category: "Cinema" | "Publicidade" | "Artistas";
   description: string;
   poster: string;
-  driveId?: string;
-  video?: string;
+  video: string;
   portrait?: boolean;
 }
 
 export const portfolioFilms: PortfolioFilm[] = [
-  { id: "gta", title: "GTA · A isca", category: "Cinema", description: "Personagens, narrativa e direção de cena.", poster: "gta.jpg", video: "gta.mp4", driveId: "1Y1XKotd5ouWJBjFEUJf7jiIwnPf8viJs" },
-  { id: "peaky", title: "Peaky Blinders", category: "Cinema", description: "Atmosfera, figurino e linguagem de cinema.", poster: "peaky.jpg", driveId: "1LemhpmtXMJO9C_jk4tScAEUbkPotFPc-" },
-  { id: "donut", title: "RealFrame Donut", category: "Publicidade", description: "Uma ideia de marca transformada em vídeo.", poster: "donut.jpg", video: "donut.mp4", driveId: "16JiuFmh00CjqpfXCUHR_6sSCPUAu_pOr" },
-  { id: "doggy", title: "Doggy Plus", category: "Publicidade", description: "Conceito criativo aplicado à publicidade.", poster: "doggy.jpg", driveId: "1GzsPUXKqVphTQ2Yzv50kojUonTtt-tk3" },
-  { id: "odisseya", title: "Odisseya", category: "Cinema", description: "Uma história contada em imagens e movimento.", poster: "odisseya.jpg", driveId: "1cfwbgOZqmRl8WUdgozVwTQuvnii5NpJ4" },
-  { id: "one-hour", title: "They have one hour", category: "Cinema", description: "Suspense, continuidade e atuação com IA.", poster: "one-hour.jpg", driveId: "1Pi1uFoWaIBvUYLN8PSC9iaWZCElbMcqY" },
-  { id: "kauanzinho", title: "Kauanzinho", category: "Artistas", description: "Produção com IA para o universo musical.", poster: "kauanzinho.jpg", driveId: "1XxscZclc67CXPTibdpbyiLtu1ubHb8nl" },
-  { id: "leo", title: "Se eu morasse aqui pertinho", category: "Artistas", description: "Clipe com IA · Léo Santana e Guga Meyra.", poster: "clipe-leo-santana.webp", video: "clipe-leo-santana.mp4", portrait: true },
+  { id: "gta", title: "GTA · A isca", description: "Personagens, narrativa e direção de cena.", poster: "gta.jpg", video: "gta.mp4" },
+  { id: "peaky", title: "Peaky Blinders", description: "Atmosfera, figurino e linguagem de cinema.", poster: "peaky.jpg", video: "peaky.mp4" },
+  { id: "donut", title: "RealFrame Donut", description: "Uma ideia de marca transformada em vídeo.", poster: "donut.jpg", video: "donut.mp4" },
+  { id: "doggy", title: "Doggy Plus", description: "Conceito criativo aplicado à publicidade.", poster: "doggy.jpg", video: "doggy.mp4" },
+  { id: "odisseya", title: "Odisseya", description: "Uma história contada em imagens e movimento.", poster: "odisseya.jpg", video: "odisseya.mp4" },
+  { id: "one-hour", title: "They have one hour", description: "Suspense, continuidade e atuação com IA.", poster: "one-hour.jpg", video: "one-hour.mp4" },
+  { id: "kauanzinho", title: "Kauanzinho", description: "Produção com IA para o universo musical.", poster: "kauanzinho.jpg", video: "kauanzinho.mp4" },
+  { id: "leo", title: "Se eu morasse aqui pertinho", description: "Clipe com IA · Léo Santana e Guga Meyra.", poster: "clipe-leo-santana.webp", video: "clipe-leo-santana.mp4", portrait: true },
 ];
 
 export const editingFilm: PortfolioFilm = {
-  id: "edicao", title: "Edição de vídeo com Claude", category: "Publicidade",
+  id: "edicao", title: "Edição de vídeo com IA",
   description: "Demonstração do meu processo de edição com IA.",
-  poster: "edicao-claude.jpg", video: "edicao-claude.mp4", portrait: true,
+  poster: "edicao-demonstracao.jpg", video: "edicao-demonstracao.mp4", portrait: true,
 };
+
+export const artistCases = [
+  { name: "Léo Santana", image: "artista-leo.png", handle: "@leosantana" },
+  { name: "Renato Cariani", image: "artista-cariani.png", handle: "@renato_cariani" },
+  { name: "Pablo", image: "artista-pablo.png", handle: "@pablo_oficial" },
+  { name: "Guga Meyra", image: "artista-guga.png", handle: "@gugameyra" },
+  { name: "Kauanzinho", image: "artista-kauanzinho.png", handle: "@kauanzinhooficiaal" },
+];
+
+export const courseBonuses = [
+  { title: "Criação de imagens", image: "bonus-imagens.webp", text: "Crie as referências que dão vida às suas ideias.", lessons: ["Nano Banana Pro", "Sessões de fotos com IA", "Personagens, produtos e cenários"] },
+  { title: "Influencers de IA", image: "bonus-influencer.webp", text: "Uma persona com identidade. Conteúdo sem depender de gravação.", lessons: ["Criação da influencer", "Roteiro e cenas UGC", "Conteúdo e monetização"] },
+  { title: "Seu clone digital", image: "bonus-clone.webp", text: "Transforme suas referências em presença digital.", lessons: ["Criação da persona", "Consistência do seu clone", "Produção de conteúdo e HeyGen"] },
+  { title: "Criação e clonagem de voz", image: "bonus-voz.png", text: "Complete a produção com uma voz que faz sentido para a cena.", lessons: ["Como clonar sua voz: 3 formas", "Criação de voz no ElevenLabs", "Voz para personagens e UGC"] },
+  { title: "Claude na prática", image: "bonus-claude.webp", text: "Um copiloto para pensar, organizar e executar os seus projetos.", lessons: ["Introdução ao Claude", "Claude como copiloto", "Skills de criação e edição"] },
+];
 
 export const courseChapters = [
   { title: "Da ideia ao roteiro", label: "Direção", image: "gta.jpg", text: "Organize a ideia, escreva um roteiro e transforme cada trecho em uma cena. Entenda enquadramento, câmera, luz e ritmo para pedir à IA o que você quer ver.", lessons: ["Ideia, referência e roteiro", "Direção de cena e linguagem visual", "Prompts com intenção e continuidade"] },

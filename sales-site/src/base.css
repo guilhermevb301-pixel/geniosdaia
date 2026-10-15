@@ -1,0 +1,19 @@
+@font-face { font-family: 'Geist Sans'; font-style: normal; font-weight: 100 900; font-display: swap; src: url('/fonts/geist-sans-variable.woff2') format('woff2'); }
+@font-face { font-family: 'Geist Mono'; font-style: normal; font-weight: 100 900; font-display: swap; src: url('/fonts/geist-mono-variable.woff2') format('woff2'); }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 90px; }
+body { margin: 0; background: #0b0c0c; font-family: 'Geist Sans', sans-serif; }
+button, a { -webkit-tap-highlight-color: transparent; }
+button, input { font: inherit; }
+button { cursor: pointer; }
+svg { display: block; }
+button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid #34d399; outline-offset: 5px; }
+.vf-brand { display: inline-flex; gap: 10px; align-items: center; color: #fff; }
+.vf-brand-mark { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid #34d39970; border-radius: 8px; background: #101714; }
+.vf-brand-mark svg { width: 29px; height: 29px; }
+.vf-brand p { margin: 0; font-size: 21px; font-weight: 600; white-space: nowrap; }
+.vf-brand p span { color: #34d399; margin-left: 4px; }
+.vf-dialog-overlay { position: fixed; inset: 0; z-index: 80; background: #000c; backdrop-filter: blur(8px); }
+.vf-film-dialog { position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%); z-index: 81; width: calc(100% - 32px); display: grid; box-shadow: 0 20px 100px #0008; }
+.vf-dialog-close { position: absolute; right: 18px; top: 18px; display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid #ffffff30; border-radius: 50%; background: #141716; color: white; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; } }

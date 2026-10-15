@@ -1,7 +1,5 @@
 {
   "rewrites": [
-    { "source": "/videos-realistas", "destination": "/videos-realistas/index.html" },
-    { "source": "/videos-realistas/", "destination": "/videos-realistas/index.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
