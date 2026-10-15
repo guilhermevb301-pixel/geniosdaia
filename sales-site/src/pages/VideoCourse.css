@@ -431,9 +431,6 @@ html:has(.vf) { scroll-behavior: smooth; scroll-padding-top: 92px; }
 }
 
 .vf { --vf-bg: #0b0c0c; --vf-surface: #151717; --vf-line: #303434; --vf-muted: #adb2b0; }
-.vf-client-name { display: inline-flex; align-items: center; gap: 9px; font-size: 15px !important; }
-.vf-client-avatar { display: block; width: 44px; height: 44px; border-radius: 50%; overflow: hidden; background: #0b1015; flex-shrink: 0; }
-.vf-client-avatar img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 0% 50%; }
 .vf-artists { padding-top: 0; }
 .vf-artist-grid { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: 28px 22px; }
 .vf-artist { grid-column: span 2; padding: 0; border: 0; background: transparent; text-align: left; color: white; min-width: 0; }
@@ -499,8 +496,6 @@ html:has(.vf) { scroll-behavior: smooth; scroll-padding-top: 92px; }
   .vf-bonus h3 { font-size: 22px; }
 }
 @media (max-width: 600px) {
-  .vf-client-name { font-size: 12px !important; }
-  .vf-client-avatar { width: 35px; height: 35px; }
   .vf-artists { padding-top: 0; }
   .vf-artist-grid { grid-template-columns: 1fr; gap: 28px; }
   .vf-artist:last-child { grid-column: auto; max-width: none; }

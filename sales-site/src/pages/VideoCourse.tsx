@@ -116,7 +116,7 @@ export default function VideoCourse() {
         </section>
 
         <div className="vf-client-band">
-          <div className="vf-wrap"><p>Meu trabalho já chegou a<br /><strong>artistas e criadores como</strong></p><div>{artistCases.map(({name,image}) => <span className="vf-client-name" key={name}><span className="vf-client-avatar"><img src={`${assets}/${image}`} alt="" width="44" height="44"/></span>{name}</span>)}</div></div>
+          <div className="vf-wrap"><p>Meu trabalho já chegou a<br /><strong>artistas e criadores como</strong></p><div>{artistCases.map(({name}) => <span key={name}>{name}</span>)}</div></div>
         </div>
 
         <section className="vf-section vf-wrap" id="portfolio">
