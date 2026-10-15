@@ -35,3 +35,9 @@ Conteúdo e oferta se baseiam no pedido de Guilherme: criação de vídeo, ediç
 Guilherme informou que os R$12.055,09 da captura anexada foram recebidos por serviços em um dia. A página atribui o resultado a ele e explica que não é promessa de renda. R$8.000 e R$1.500 são exemplos de trabalhos distintos, não uma soma apresentada como resultado do mesmo dia. A montagem original de comprovantes, com CNPJs, chave Pix e identificador de transação, não foi copiada para os arquivos públicos. Apenas a captura do total líquido, sem esses identificadores, é publicada.
 
 Assinaturas e créditos das ferramentas são informados como custos separados do curso. Esta mudança cria a página de vendas; não altera produto, usuários, permissões, webhook ou liberação de acesso no Supabase/Kiwify.
+
+## Conferência do checkout
+
+Guilherme confirmou que Clone Criativo e Influencer de IA estão incluídos nos R$297 e autorizou retirar os dois order bumps de R$57 do checkout. Em 15/10/2026, o painel foi acessado, mas o controle de remoção não produziu alteração, inclusive após recarregar a página. A remoção permanece pendente; não foram excluídos produtos nem modificadas configurações de pagamento.
+
+Antes de iniciar tráfego pago, remover essas duas ofertas adicionais e conferir a liberação dos bônus na área de membros. A publicação da página não altera automaticamente os conteúdos liberados pelo webhook existente.
